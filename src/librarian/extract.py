@@ -201,13 +201,29 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
         workers = int(os.environ.get("LIBRARIAN_OCR_WORKERS", "3"))
         log.info("  LLM OCR: %d pages, %d workers (%s)", len(low), workers,
                  os.environ.get("LIBRARIAN_OCR_BACKEND", "codex"))
+        from concurrent.futures import as_completed
+        ocr_t, done, failed = Timer(), 0, 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            for p, (md, method) in zip(low, pool.map(lambda pg: ocr.llm_ocr(src, pg), low)):
+            futs = {pool.submit(ocr.llm_ocr, src, pg): pg for pg in low}
+            for fut in as_completed(futs):
+                p = futs[fut]
+                done += 1
+                try:
+                    md, method = fut.result()
+                except Exception:  # noqa: BLE001
+                    log.exception("  p%d OCR crashed", p)
+                    md, method = None, "llm-ocr"
                 if md is None:
-                    continue
-                lines = clean_lines(md)
-                results[p] = PageResult(lines, method, quality(lines), [f"prev q={results[p].quality}"])
-                log.debug("  p%d %s q=%.3f", p, method, results[p].quality)
+                    failed += 1
+                else:
+                    lines = clean_lines(md)
+                    results[p] = PageResult(lines, method, quality(lines), [f"prev q={results[p].quality}"])
+                    log.debug("  p%d %s q=%.3f", p, method, results[p].quality)
+                if done % 10 == 0 or done == len(low):
+                    rate = done / max(ocr_t.s, 1e-6) * 60
+                    eta = (len(low) - done) / max(rate, 1e-6)
+                    log.info("    OCR %d/%d pages, %d failed, %.1f pages/min, ~%.0f min left",
+                             done, len(low), failed, rate, eta)
         low = [p for p in low if results[p].quality < opt.q_min]
 
     pages_dir = obj / "pages"
