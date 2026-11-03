@@ -1,2 +1,18 @@
+# Normalise all text to LF in the repo and in working trees on every OS
+# (hal5000, zarathustra, cloud sessions). Overrides any core.autocrlf setting.
 * text=auto eol=lf
+
+# Windows-only scripts keep CRLF.
 *.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Never touch binaries.
+*.pdf    binary
+*.djvu   binary
+*.epub   binary
+*.png    binary
+*.jpg    binary
+*.zip    binary
+*.sqlite binary
+*.db     binary

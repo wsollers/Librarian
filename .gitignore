@@ -1,24 +1,44 @@
-# Copyright: extracted text, indexes and reports never go in git.
+# --- Copyright: books, extracted text, indexes and reports never go in git ---
 data/
 objects/
+reports/
+*.pdf
+*.djvu
+*.epub
 *.sqlite
 *.sqlite-*
 *.db
-*.md.cache
-reports/
+*.db-*
+*.lance/
 coverage*.md
 coverage*.csv
 
-# Python
+# --- Python ---
 __pycache__/
 *.py[cod]
 *.egg-info/
+.eggs/
+build/
+dist/
 .venv/
 venv/
 .pytest_cache/
-build/
-dist/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Local config
+# --- Local config and secrets (API keys for LLM OCR live here) ---
 config/local.toml
 .env
+.env.*
+!.env.example
+
+# --- OS / editors ---
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
