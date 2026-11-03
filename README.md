@@ -1,50 +1,73 @@
 # Librarian
 
 Library infrastructure for William's mathematics books (~905 files in
-`D:\Readings\Sources`). Goal: every book usable as **page-exact, line-numbered
-Markdown**, searchable by exact phrase (SQLite FTS5) and by description
-(embeddings), with citations of **book, printed page, PDF page and lines**.
+`D:\Readings\Sources`). Every book becomes **page-exact, line-numbered Markdown**,
+searchable by exact phrase (SQLite FTS5) and by description (embeddings), and every
+hit cites **book, printed page, PDF page and lines**.
 
 Consumers: AdventuresInMathematics (AIM), LRA, and anything else. Background,
-decisions and phases are in [HANDOFF.md](HANDOFF.md).
+decisions and phases: [HANDOFF.md](HANDOFF.md).
 
-> **Copyright.** Extracted text, indexes and coverage reports live under the
-> data directory (default `D:\Readings\librarian`) and are published only to
-> private Drive. They are never committed: see `.gitignore`.
+> **Copyright.** Books, extracted text, indexes and reports live under the data
+> directory (`D:\Readings\librarian`) and are published only to private Drive
+> (`G:\My Drive\Librarian`). They are never committed: see `.gitignore`.
+
+## Setup (hal5000, once)
+
+```powershell
+choco install poppler djvulibre        # pdftotext/pdftoppm/pdfimages; djvutxt
+scripts\bootstrap.ps1                  # .venv, CUDA torch, deps, requirements.lock, tool checks
+notepad .env                           # OPENAI_API_KEY for LLM OCR (API key, not ChatGPT)
+```
+
+`bootstrap.ps1` is the only supported way to build the environment; the CLI refuses to run
+outside `.venv`. Commit `requirements.lock` after the first run; later runs install it exactly.
+
+## Running
+
+```powershell
+scripts\run.ps1 run --select priority          # inventory → extract → pagemap → index
+scripts\run.ps1 search "construction sequence"
+scripts\run.ps1 search "type of continuity where the change is bounded by a constant"
+scripts\run.ps1 run --select all --llm-ocr     # whole library, OpenAI OCR for bad pages
+scripts\run.ps1 status
+```
+
+Each command writes `D:\Readings\librarian\logs\<timestamp>-<command>.log` (DEBUG: every
+page's method, quality and line count; every OCR call with token usage) and a
+`.summary.json` next to it. `-v` also shows DEBUG on the console.
+
+`--select` takes `priority` (`config/priority.txt`), `all`, or a path substring / sha prefix.
+Everything is incremental and cached by SHA-256; `--force` redoes a stage.
 
 ## Stages
 
-| Stage | Command | Status |
+| Stage | What it does | Output (under the data dir) |
 |---|---|---|
-| inventory | `librarian inventory` | done (phase 1) |
-| extract | `librarian extract` | phase 2 |
-| page map | (part of extract) | phase 2 |
-| index | `librarian index` | phase 2 |
-| search | `librarian search` | phase 2 |
-| publish | `librarian publish` | phase 3 |
+| inventory | hash, dedupe, probe text layer, legacy seeds | `books`/`files` tables, `reports/coverage.md` |
+| extract | pdftotext per page → quality score → legacy page → nougat (`--nougat`) → OpenAI vision (`--llm-ocr`) | `objects/<sha>/pages/NNNN.md`, `extract.json` |
+| pagemap | printed page per PDF page from running heads/feet; `pagemaps/` overrides | `pages.printed_page`, `objects/<sha>/book.md` |
+| index | page FTS5 + 12-line chunks embedded (bge-base on GPU, or Ollama) in sqlite-vec | `librarian.sqlite` |
+| search | FTS + vectors merged by reciprocal rank, definition pages boosted | citations |
+| publish | phase 3 | `G:\My Drive\Librarian` |
 
-All stages are incremental and cached by SHA-256.
+Line *n* of a citation is line *n* of `objects/<sha>/pages/NNNN.md`. `book.md` is the
+whole book with `<!-- page pdf=N printed=X -->` breaks.
 
-## Quick start (hal5000)
-
-```powershell
-py -m venv .venv; .venv\Scripts\activate
-pip install -e .[manifest,dev]
-copy config\example.toml config\local.toml   # adjust paths
-librarian inventory          # hashes, dedupes, probes; writes reports\coverage.md
-pytest
-```
-
-Requires poppler (`pdfinfo`, `pdftotext`) on PATH; `djvutxt` (djvulibre) for DjVu.
-
-## Inventory statuses
+## Inventory / book statuses
 
 | status | meaning |
 |---|---|
-| seeded | legacy `LIB-<sha16>.md` exists; verified against `pdfinfo` in phase 2 |
-| pending | readable PDF with a text layer, not yet extracted |
-| pending-ocr | no usable text layer: nougat, then LLM OCR (OpenAI > Claude > Gemini > Copilot; not Claude by default) |
-| unsupported | not pdf/djvu/epub |
-| error | unreadable, with the reason |
+| seeded | legacy `LIB-<sha16>.md` exists (reused only for pages it does better) |
+| pending | readable, text layer, not yet extracted |
+| pending-ocr | no usable text layer: needs `--nougat` / `--llm-ocr` |
+| extracted | extracted; a few low-quality pages (covers, plates) noted in `reason` |
+| extracted-partial | more than 5% of pages still below quality |
+| indexed | searchable |
+| unsupported / error | with the reason |
 
-Every distinct book has exactly one status, so the coverage report has no silent gaps.
+## Tests
+
+```powershell
+.venv\Scripts\python -m pytest
+```

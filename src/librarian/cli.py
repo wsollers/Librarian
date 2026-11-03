@@ -1,45 +1,184 @@
-"""librarian CLI. Each stage is incremental and safe to rerun."""
+"""librarian: page-exact extraction and hybrid search. Every stage is incremental and logged."""
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import sqlite3
+import sys
 from pathlib import Path
 
 from . import __version__, config, inventory
+from .db import connect
+from .log import Timer, log, setup, write_summary
+
+REPO = Path(__file__).resolve().parents[2]
+
+
+def in_venv() -> bool:
+    return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
+
+
+def select_books(con: sqlite3.Connection, sel: str) -> list[sqlite3.Row]:
+    con.row_factory = sqlite3.Row
+    rows = con.execute("SELECT * FROM books WHERE status != 'unsupported' ORDER BY path").fetchall()
+    if sel == "all":
+        return rows
+    if sel == "priority":
+        pats = [ln.strip().lower() for ln in (REPO / "config" / "priority.txt").read_text(encoding="utf-8").splitlines()
+                if ln.strip() and not ln.startswith("#")]
+    else:
+        pats = [sel.lower()]
+    return [r for r in rows if any(p in r["path"].lower() or r["sha256"].startswith(p) for p in pats)]
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="librarian", description=__doc__)
     ap.add_argument("--version", action="version", version=__version__)
     ap.add_argument("--config", type=Path, help="TOML config (default: config/local.toml)")
-    ap.add_argument("--sources", help="sources root (overrides config)")
-    ap.add_argument("--data", help="data directory for index, objects, reports")
-    ap.add_argument("--legacy", help="legacy lra index root to seed from")
-    ap.add_argument("--manifest", help="legacy source-manifest.yaml")
+    ap.add_argument("--sources")
+    ap.add_argument("--data")
+    ap.add_argument("--legacy")
+    ap.add_argument("--manifest")
+    ap.add_argument("-v", "--verbose", action="store_true", help="debug output on the console too")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    inv = sub.add_parser("inventory", help="phase 1: hash, dedupe, probe; write coverage report")
-    inv.add_argument("--rehash", action="store_true", help="ignore cached hashes and probes")
-    inv.add_argument("-q", "--quiet", action="store_true")
+    sub.add_parser("inventory", help="phase 1: hash, dedupe, probe; coverage report").add_argument(
+        "--rehash", action="store_true")
+    sub.add_parser("report", help="rewrite the coverage report")
+    sub.add_parser("status", help="counts by status, index stats")
 
-    sub.add_parser("report", help="rewrite the coverage report from the current index")
+    def add_sel(p):
+        p.add_argument("--select", default="priority", help="'priority' (config/priority.txt), 'all', or a path substring / sha prefix")
+        p.add_argument("--limit", type=int, help="process at most N books")
+        p.add_argument("--force", action="store_true", help="redo even if cached")
 
-    for name, phase in (("extract", 2), ("index", 2), ("search", 2), ("publish", 3)):
-        sub.add_parser(name, help=f"not implemented yet (phase {phase})")
+    def add_extract_opts(p):
+        p.add_argument("--nougat", action="store_true", help="escalate low-quality pages to nougat (docker, GPU)")
+        p.add_argument("--llm-ocr", action="store_true", help="escalate still-bad pages to OpenAI vision (OPENAI_API_KEY)")
+        p.add_argument("--no-legacy", action="store_true", help="do not reuse legacy lra extraction")
+
+    def add_embed(p):
+        p.add_argument("--embed", default=None, help="embedder spec, e.g. st:BAAI/bge-base-en-v1.5, ollama:nomic-embed-text")
+
+    p = sub.add_parser("extract", help="per-page Markdown with escalation"); add_sel(p); add_extract_opts(p)
+    p = sub.add_parser("pagemap", help="printed page numbers (detection + pagemaps/ overrides)"); add_sel(p)
+    p = sub.add_parser("index", help="FTS5 + embeddings"); add_sel(p); add_embed(p)
+    p.add_argument("--reembed", action="store_true", help="drop all vectors (embedder changed)")
+    p = sub.add_parser("run", help="inventory, extract, pagemap, index for a selection")
+    add_sel(p); add_extract_opts(p); add_embed(p)
+    p = sub.add_parser("search", help="hybrid search")
+    p.add_argument("query")
+    p.add_argument("--mode", choices=["hybrid", "phrase", "fts", "semantic"], default="hybrid")
+    p.add_argument("-k", type=int, default=10)
+    p.add_argument("--book", help="restrict to books whose title/author/path contains this")
+    p.add_argument("--json", action="store_true")
+    add_embed(p)
 
     a = ap.parse_args(argv)
+    if not in_venv() and not os.environ.get("LIBRARIAN_ALLOW_SYSTEM"):
+        print("librarian must run inside the project .venv (scripts\\bootstrap.ps1, then scripts\\run.ps1).\n"
+              "Set LIBRARIAN_ALLOW_SYSTEM=1 to override.", file=sys.stderr)
+        return 2
     cfg = config.load(a.config, sources=a.sources, data=a.data, legacy=a.legacy, manifest=a.manifest)
+    log_path = setup(cfg.data, a.cmd, a.verbose) if a.cmd not in ("search", "status") else None
+    if log_path:
+        log.info("librarian %s %s | sources=%s data=%s legacy=%s", __version__, a.cmd, cfg.sources, cfg.data, cfg.legacy)
+    t = Timer()
+    summary: dict = {"command": a.cmd, "version": __version__}
 
     if a.cmd == "inventory":
-        print(json.dumps(inventory.run(cfg, rehash=a.rehash, verbose=not a.quiet), indent=2))
+        summary.update(inventory.run(cfg, rehash=a.rehash, verbose=True))
     elif a.cmd == "report":
-        from .db import connect
+        summary.update(inventory.report(connect(cfg.db_path), cfg))
+    elif a.cmd == "status":
         con = connect(cfg.db_path)
-        print(json.dumps(inventory.report(con, cfg), indent=2))
-    else:
-        ap.error(f"'{a.cmd}' is not implemented yet; see HANDOFF.md phases")
+        print(json.dumps({
+            "books_by_status": dict(con.execute("SELECT status, count(*) FROM books GROUP BY status").fetchall()),
+            "pages_by_method": dict(con.execute("SELECT coalesce(method,'?'), count(*) FROM pages GROUP BY method").fetchall()),
+            "meta": dict(con.execute("SELECT key, value FROM meta").fetchall()),
+        }, indent=2))
+        return 0
+    elif a.cmd in ("extract", "pagemap", "index", "run"):
+        summary.update(run_stages(cfg, a))
+    elif a.cmd == "search":
+        from . import embed, search
+        from .index import connect_index
+        con = connect(cfg.db_path)
+        connect_index(con)
+        spec = a.embed or (con.execute("SELECT value FROM meta WHERE key='embed_spec'").fetchone() or [None])[0]
+        emb = embed.load(spec) if spec and a.mode in ("hybrid", "semantic") else None
+        hits = search.search(cfg, con, a.query, emb, a.mode, a.k, a.book)
+        if a.json:
+            print(json.dumps([search.as_dict(h) for h in hits], indent=2, ensure_ascii=False))
+        else:
+            for i, h in enumerate(hits, 1):
+                print(f"{i:2d}. {search.format_hit(h)}")
+        return 0
+
+    summary["seconds"] = round(t.s, 1)
+    if log_path:
+        write_summary(log_path, summary)
+    print(json.dumps({k: v for k, v in summary.items() if k != "books"}, indent=2, default=str))
     return 0
+
+
+def run_stages(cfg, a) -> dict:
+    from . import extract as ex, pagemap
+    from .index import VectorStore, connect_index, index_book
+
+    stages = {"extract": ["extract"], "pagemap": ["pagemap"], "index": ["index"],
+              "run": ["inventory", "extract", "pagemap", "index"]}[a.cmd]
+    out: dict = {"stages": stages, "books": []}
+    if "inventory" in stages:
+        out["inventory"] = inventory.run(cfg, verbose=True)
+    con = connect(cfg.db_path)
+    books = select_books(con, a.select)[: a.limit]
+    log.info("selected %d books (%s)", len(books), a.select)
+    for b in books:
+        log.debug("  %s | %s | %s", b["sha256"][:12], b["status"], b["path"])
+
+    errors = 0
+    if "extract" in stages:
+        opt = ex.Options(force=a.force, use_legacy=not a.no_legacy, nougat=a.nougat, llm_ocr=a.llm_ocr)
+        for i, b in enumerate(books, 1):
+            log.info("[%d/%d]", i, len(books))
+            try:
+                out["books"].append(ex.extract_book(cfg, con, b, opt))
+            except Exception:  # noqa: BLE001
+                errors += 1
+                log.exception("extract failed: %s", b["path"])
+    if "pagemap" in stages:
+        for b in books:
+            try:
+                pagemap.map_book(cfg, con, b["sha256"], b["title"])
+            except Exception:  # noqa: BLE001
+                errors += 1
+                log.exception("pagemap failed: %s", b["path"])
+    if "index" in stages:
+        from . import embed
+        connect_index(con)
+        if getattr(a, "reembed", False):
+            for t in ("chunks_vec", "chunks_blob"):
+                con.execute(f"DROP TABLE IF EXISTS {t}")
+            con.execute("DELETE FROM index_state")
+            con.execute("DELETE FROM meta WHERE key LIKE 'embed_%'")
+        spec = a.embed or (con.execute("SELECT value FROM meta WHERE key='embed_spec'").fetchone() or [embed.DEFAULT])[0]
+        emb = embed.load(spec)
+        store = VectorStore(con, emb.dim, emb.spec)
+        con.commit()
+        for i, b in enumerate(books, 1):
+            log.info("[%d/%d]", i, len(books))
+            try:
+                index_book(cfg, con, b["sha256"], b["title"], emb, store, a.force)
+            except Exception:  # noqa: BLE001
+                errors += 1
+                log.exception("index failed: %s", b["path"])
+    out["selected"] = len(books)
+    out["errors"] = errors
+    out["status"] = dict(con.execute("SELECT status, count(*) FROM books GROUP BY status").fetchall())
+    return out
 
 
 if __name__ == "__main__":

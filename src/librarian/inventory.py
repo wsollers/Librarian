@@ -32,7 +32,6 @@ STATUSES = {
     "error": "could not be read",
 }
 
-_FILENAME = re.compile(r"^(?P<title>.+?)\s+-\s+(?P<author>[^-]+)$")
 
 
 @dataclass
@@ -105,10 +104,19 @@ def load_manifest(path: Optional[Path]) -> dict[str, dict]:
     return out
 
 
+_EDITION = re.compile(r"^(\d+|\d+(st|nd|rd|th)( ed(ition)?)?|vol(ume)?\.? ?\d+|copy)$", re.I)
+
+
 def title_from_filename(rel: str) -> tuple[str, Optional[str]]:
-    stem = Path(rel).stem
-    m = _FILENAME.match(stem)
-    return (m.group("title").strip(), m.group("author").strip()) if m else (stem, None)
+    """'Title - 6th - Author.pdf', 'Title - Author - 2.pdf' -> (title [+ edition], author)."""
+    parts = [p.strip() for p in Path(rel).stem.split(" - ") if p.strip()]
+    tags = [p for p in parts[1:] if _EDITION.match(p)]
+    rest = [p for p in parts if p not in tags or p == parts[0]]
+    if len(rest) < 2:
+        return " - ".join(parts), None
+    title = " - ".join(rest[:-1])
+    ed = [t for t in tags if not t.isdigit() and t.lower() != "copy"]
+    return (f"{title} ({', '.join(ed)})" if ed else title), rest[-1]
 
 
 def run(cfg: Config, *, rehash: bool = False, verbose: bool = True) -> dict:
@@ -164,8 +172,9 @@ def run(cfg: Config, *, rehash: bool = False, verbose: bool = True) -> dict:
         rel, size, ext = sorted(entries)[0]
         meta = manifest.get(sha, {})
         ftitle, fauthor = title_from_filename(rel)
-        title = meta.get("title") or ftitle
-        author = meta.get("author") or fauthor
+        # Filenames are curated; legacy manifest titles are often series names or PDF metadata junk.
+        title = ftitle
+        author = meta.get("author") if (fauthor and meta.get("author") and fauthor.lower() in meta["author"].lower()) else fauthor
         category = rel.split("/", 1)[0] if "/" in rel else None
         seed_md = legacy_md / f"LIB-{sha[:16]}.md" if legacy_md else None
         seed_md = seed_md.relative_to(cfg.legacy).as_posix() if seed_md and seed_md.is_file() else None
@@ -206,7 +215,7 @@ def run(cfg: Config, *, rehash: bool = False, verbose: bool = True) -> dict:
             " title=excluded.title, author=excluded.author, category=excluded.category,"
             " pdf_pages=excluded.pdf_pages, has_text=excluded.has_text,"
             " seed_markdown=excluded.seed_markdown, seed_objects=excluded.seed_objects,"
-            " status=CASE WHEN books.status IN ('extracted','indexed') THEN books.status ELSE excluded.status END,"
+            " status=CASE WHEN books.status IN ('extracted','extracted-partial','indexed') THEN books.status ELSE excluded.status END,"
             " reason=excluded.reason, updated_at=excluded.updated_at",
             (sha, rel, ext, size, title, author, category, pages,
              None if has_text is None else int(has_text), seed_md, seed_obj, status, reason, stamp),

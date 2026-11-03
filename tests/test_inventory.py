@@ -37,5 +37,7 @@ def test_inventory_is_incremental(tmp_path):
 
 
 def test_title_from_filename():
-    assert inventory.title_from_filename("Logic/A Mathematical Introduction to Logic - Enderton.pdf") == (
-        "A Mathematical Introduction to Logic", "Enderton")
+    t = inventory.title_from_filename
+    assert t("Logic/A Mathematical Introduction to Logic - Enderton - 2.pdf") == ("A Mathematical Introduction to Logic", "Enderton")
+    assert t("Logic/Introduction to Mathematical Logic - 6th - Mendelson.pdf") == ("Introduction to Mathematical Logic (6th)", "Mendelson")
+    assert t("Analysis/cantor.png") == ("cantor", None)

@@ -4,4 +4,4 @@ sources = 'D:\Readings\Sources'
 data    = 'D:\Readings\librarian'          # SQLite index, objects/, reports/ (never in git)
 legacy  = 'D:\Readings\indexes\lra'        # old lra-* stack, read-only seed
 manifest = 'F:\repos\lra-source-profiles\data\source-manifest.yaml'
-publish = 'G:\My Drive\Librarian'          # open question: confirm
+publish = 'G:\My Drive\Librarian'          # phase 3: read-only published index

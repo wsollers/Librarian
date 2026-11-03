@@ -1,0 +1,16 @@
+# Phase 2 priority set: AIM logic core + Tao, plus two analysis texts for the Lipschitz test.
+# One case-insensitive substring of the path under the sources root per line.
+Foundations/Logic/A Mathematical Introduction to Logic - Enderton
+Foundations/Set Theory/Elements of Set Theory - Enderton
+Introduction to Logic and the Methodology of Deductive Science - Tarski
+Introduction to Mathematical Logic - 6th - Mendelson
+Foundations/Logic/Mathematical Logic - Ebbinghaus
+Mathematical Introduction to Mathematical Logic - Mileti
+A Course in Logic for Mathematicians - Manin
+Subsystems of Second Order Arithmetic - Simpson
+Reverse Mathematics Proofs From the Inside Out - Stillwell
+Analysis 1 - Tao
+Analysis 2 - Tao
+Type Theory and Formal Proof - Nederpelt
+The number systems Foundations of algebra and analysis - Feferman
+Basic Analysis I - Lebl
