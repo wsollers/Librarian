@@ -24,7 +24,6 @@ DEF_BOOST = 0.05      # added when the cited lines themselves define a term (rer
 DEF_BOOST_RRF = 0.15  # same, without a reranker (rank-fusion scores are flatter)
 CONTEXT = 4       # lines of context either side of a chunk given to the reranker
 WINDOW = 4        # citation granularity: best 4-line window inside the passage
-REFINE_N = 25     # how many top candidates get line-level refinement
 # Phrases that introduce a definition, not every use of "defined"/"definition of".
 _DEF_CUE = re.compile(
     r"(\bdefinition\s+\d|\bdefinition\b\s*[:.(]|\bis called\b|\bare called\b|\bwe say\b|\bwe call\b|"
@@ -33,9 +32,9 @@ _TOKEN = re.compile(r"\w+", re.UNICODE)
 STOP = set("""a an the of to in on for and or is are be by with as at that this what which where when how
 who why do does it its from into than then there their these those such some any all can may
 type kind sort set value change changes constant called mean means name named""".split())
-VEC_K = 200
-FTS_K = 50
-RERANK_N = 80
+VEC_K = 1000      # chunks from KNN (collapse to far fewer pages)
+FTS_K = 100
+RERANK_N = 300    # pages scored by the cross-encoder (and refined to 4-line windows)
 
 
 @dataclass
@@ -107,8 +106,20 @@ def _page_lines(cfg: Config, sha: str, p: int) -> list[str]:
 
 
 def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder], mode: str = "hybrid",
-           k: int = 10, book: Optional[str] = None, reranker=None, explain: int = 0) -> list[Hit]:
+           k: int = 10, book: Optional[str] = None, reranker=None, explain: int = 0,
+           expander=None) -> list[Hit]:
     descriptive = mode in ("hybrid", "semantic") and is_descriptive(q)
+    rq, fq, vq = q.strip('"'), q, q          # rerank / FTS / vector queries
+    if expander is not None and descriptive:
+        exp = expander.expand(rq)
+        if exp:
+            terms, passage = exp["terms"], exp["passage"]
+            fq = " ".join(terms) or q
+            vq = passage or q
+            rq = f"{rq} (terms: {', '.join(terms)})" if terms else rq
+            if explain:
+                import sys
+                print(f"# expanded: terms={terms}\n#   passage={passage[:200]}", file=sys.stderr)
     cands: dict[tuple[str, int], Cand] = {}
     bargs: list[str] = []
     bfilter = ""
@@ -124,17 +135,17 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
         fts_w = 0.5 if descriptive else 1.0
         rows = con.execute(
             f"SELECT sha256, pdf_page, text FROM pages_fts WHERE pages_fts MATCH ?{bfilter} "
-            f"ORDER BY bm25(pages_fts) LIMIT {FTS_K}", [fts_query(q, mode)] + bargs).fetchall()
+            f"ORDER BY bm25(pages_fts) LIMIT {FTS_K}", [fts_query(fq, mode)] + bargs).fetchall()
         for rank, (sha, p, text) in enumerate(rows):
             p = int(p)
-            c = cands.setdefault((sha, p), Cand(sha, p, line_span(text.split("\n"), q)))
+            c = cands.setdefault((sha, p), Cand(sha, p, line_span(text.split("\n"), fq)))
             c.rrf += fts_w / (RRF_K + rank)
             c.via.add("fts")
 
     if mode in ("hybrid", "semantic") and emb is not None:
         store = VectorStore(con, emb.dim, emb.spec, create=False)
         rank = 0
-        for cid, _sim in store.knn(emb.query(q), VEC_K * (3 if book else 1)):
+        for cid, _sim in store.knn(emb.query(vq), VEC_K * (3 if book else 1)):
             sha, p, a, b, text = con.execute(
                 "SELECT sha256, pdf_page, line_start, line_end, text FROM chunks WHERE id=?", (cid,)).fetchone()
             if bargs and sha not in bargs:
@@ -163,13 +174,11 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
         c.region = (max(1, a - CONTEXT), min(len(lines), b + CONTEXT)) if lines else (a, b)
         c.passage = "\n".join(lines[c.region[0] - 1:c.region[1]]) or c.passage
 
-    qq = q.strip('"')
     if reranker:
-        for c, s in zip(pool, reranker.scores(qq, [c.passage for c in pool])):
+        for c, s in zip(pool, reranker.scores(rq, [c.passage for c in pool])):
             c.rerank = _sigmoid(s)
             c.via.add("rr")
-        pool.sort(key=lambda c: -c.rerank)
-        refine(pool[:REFINE_N], lines_cache, qq, reranker)
+        refine(pool, lines_cache, rq, reranker)  # every reranked page, so scores are comparable
     else:
         top = pool[0].rrf if pool else 1
         for c in pool:

@@ -85,6 +85,43 @@ def load_reranker(model: str | None = None):
         return None
 
 
+EXPAND_PROMPT = """You help search a library of mathematics textbooks.
+A reader describes a concept, possibly without knowing its name:
+"{q}"
+Reply with JSON only: {{"terms": [up to 6 standard names and synonyms a textbook would use, most likely first],
+"passage": "two sentences as a textbook would state the definition, with the usual notation"}}"""
+
+
+class Expander:
+    """Query expansion with a local Ollama chat model (no cloud cost)."""
+
+    def __init__(self, model: str | None = None):
+        self.model = model or os.environ.get("LIBRARIAN_EXPAND_MODEL", "llama3.1:8b")
+        self.url = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/") + "/api/generate"
+
+    def expand(self, q: str) -> dict | None:
+        body = {"model": self.model, "prompt": EXPAND_PROMPT.format(q=q), "stream": False,
+                "format": "json", "options": {"temperature": 0}}
+        try:
+            req = urllib.request.Request(self.url, data=json.dumps(body).encode(),
+                                         headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=120) as r:
+                out = json.loads(json.load(r)["response"])
+        except Exception as e:  # noqa: BLE001
+            log.warning("query expansion failed (%s): %s", self.model, e)
+            return None
+        terms = [str(t).strip() for t in out.get("terms", []) if str(t).strip()][:6]
+        return {"terms": terms, "passage": str(out.get("passage", "")).strip()}
+
+
+def load_expander(spec: str | None):
+    spec = spec if spec is not None else os.environ.get("LIBRARIAN_EXPAND", "ollama")
+    if spec.lower() in ("", "none", "off"):
+        return None
+    kind, _, model = spec.partition(":")
+    return Expander(model or None) if kind == "ollama" else None
+
+
 class OllamaEmbedder(Embedder):
     def __init__(self, model: str):
         self.url = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/") + "/api/embed"

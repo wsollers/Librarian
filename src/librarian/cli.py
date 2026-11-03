@@ -75,6 +75,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--book", help="restrict to books whose title/author/path contains this")
     p.add_argument("--json", action="store_true")
     p.add_argument("--explain", type=int, default=0, metavar="N", help="print the top N candidates before reranking (stderr)")
+    p.add_argument("--expand", default=None, help="query expansion for descriptive queries: 'ollama[:model]' (default, $LIBRARIAN_EXPAND_MODEL or llama3.1:8b) or 'none'")
     p.add_argument("--rerank", default=None, help="cross-encoder model, or 'none' (default $LIBRARIAN_RERANK or BAAI/bge-reranker-v2-m3)")
     add_embed(p)
 
@@ -112,7 +113,8 @@ def main(argv: list[str] | None = None) -> int:
         spec = a.embed or (con.execute("SELECT value FROM meta WHERE key='embed_spec'").fetchone() or [None])[0]
         emb = embed.load(spec) if spec and a.mode in ("hybrid", "semantic") else None
         rr = embed.load_reranker(a.rerank) if a.mode in ("hybrid", "semantic") else None
-        hits = search.search(cfg, con, a.query, emb, a.mode, a.k, a.book, rr, a.explain)
+        ex = embed.load_expander(a.expand) if a.mode in ("hybrid", "semantic") else None
+        hits = search.search(cfg, con, a.query, emb, a.mode, a.k, a.book, rr, a.explain, ex)
         if a.json:
             print(json.dumps([search.as_dict(h) for h in hits], indent=2, ensure_ascii=False))
         else:
