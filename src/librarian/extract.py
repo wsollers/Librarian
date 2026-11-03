@@ -144,15 +144,20 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
     src = cfg.sources / row["path"]
     obj = cfg.objects / sha
     manifest_path = obj / "extract.json"
+    resume: Optional[dict] = None
     if manifest_path.is_file() and not opt.force:
         m = json.loads(manifest_path.read_text(encoding="utf-8"))
-        if m.get("extractor_version") == EXTRACTOR_VERSION and not (
-                (opt.nougat or opt.llm_ocr) and m.get("low_quality_pages")):
-            log.info("skip (cached): %s", row["title"])
-            return {"sha256": sha, "skipped": True}
+        if m.get("extractor_version") == EXTRACTOR_VERSION:
+            if not ((opt.nougat or opt.llm_ocr) and m.get("low_quality_pages")):
+                log.info("skip (cached): %s", row["title"])
+                return {"sha256": sha, "skipped": True}
+            resume = m  # keep every good page, escalate only the remaining low ones
 
     t = Timer()
-    log.info("extract: %s — %s [%s, %s]", row["title"], row["author"], ext, sha[:12])
+    log.info("extract: %s — %s [%s, %s]%s", row["title"], row["author"], ext, sha[:12],
+             f" (resuming {len(resume['low_quality_pages'])} low pages)" if resume else "")
+    if resume:
+        return _escalate(cfg, con, row, opt, t, src, obj, manifest_path, *_load_previous(obj, resume))
     if ext == "pdf":
         raw = pdf_pages_text(src, row["pdf_pages"])
     elif ext == "djvu":
@@ -178,6 +183,22 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
                 results[p].method = "blank"
                 low.remove(p)
     log.info("  %d pages, %d below quality %.2f", len(results), len(low), opt.q_min)
+    return _escalate(cfg, con, row, opt, t, src, obj, manifest_path, results, low)
+
+
+def _load_previous(obj: Path, m: dict) -> tuple[dict[int, "PageResult"], list[int]]:
+    results = {}
+    for key, info in m["page"].items():
+        p = int(key)
+        f = obj / "pages" / f"{p:04d}.md"
+        lines = f.read_text(encoding="utf-8").split("\n")[:-1] if f.is_file() else []
+        results[p] = PageResult(lines, info["method"], info["quality"])
+    return results, [p for p in m["low_quality_pages"] if p in results]
+
+
+def _escalate(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Options, t: Timer, src: Path,
+              obj: Path, manifest_path: Path, results: dict[int, "PageResult"], low: list[int]) -> dict:
+    sha, ext = row["sha256"], row["ext"]
 
     if low and opt.use_legacy:
         legacy = legacy_pages(cfg, row["seed_markdown"], len(results))
