@@ -197,13 +197,17 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
         else:
             log.warning("  nougat requested but docker / LIBRARIAN_NOUGAT_MODELS unavailable")
     if low and opt.llm_ocr and ext == "pdf":
-        for p in list(low):
-            md = ocr.openai_ocr(src, p)
-            if md is None:
-                continue
-            lines = clean_lines(md)
-            results[p] = PageResult(lines, "llm-ocr", quality(lines), [f"prev q={results[p].quality}"])
-            log.debug("  p%d llm-ocr q=%.3f", p, results[p].quality)
+        from concurrent.futures import ThreadPoolExecutor
+        workers = int(os.environ.get("LIBRARIAN_OCR_WORKERS", "3"))
+        log.info("  LLM OCR: %d pages, %d workers (%s)", len(low), workers,
+                 os.environ.get("LIBRARIAN_OCR_BACKEND", "codex"))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            for p, (md, method) in zip(low, pool.map(lambda pg: ocr.llm_ocr(src, pg), low)):
+                if md is None:
+                    continue
+                lines = clean_lines(md)
+                results[p] = PageResult(lines, method, quality(lines), [f"prev q={results[p].quality}"])
+                log.debug("  p%d %s q=%.3f", p, method, results[p].quality)
         low = [p for p in low if results[p].quality < opt.q_min]
 
     pages_dir = obj / "pages"
