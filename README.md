@@ -15,7 +15,8 @@ decisions and phases: [HANDOFF.md](HANDOFF.md).
 ## Setup (hal5000, once)
 
 ```powershell
-choco install poppler djvulibre        # pdftotext/pdftoppm/pdfimages; djvutxt
+choco install poppler                  # pdftotext/pdftoppm/pdfimages
+winget install --id DjVuLibre.DjView --exact   # djvutxt/djvused (found in Program Files (x86)\DjVuLibre)
 scripts\bootstrap.ps1                  # .venv, CUDA torch, deps, requirements.lock, tool checks
 notepad .env                           # OPENAI_API_KEY for LLM OCR (API key, not ChatGPT)
 ```

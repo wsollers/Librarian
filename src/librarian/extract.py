@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -47,6 +48,21 @@ class PageResult:
 
 # ---------- source readers ----------
 
+_DJVU_DIRS = [os.environ.get("LIBRARIAN_DJVULIBRE", ""), r"C:\Program Files (x86)\DjVuLibre",
+              r"C:\Program Files\DjVuLibre"]
+
+
+def djvu_tool(name: str) -> Optional[str]:
+    """djvutxt/djvused from PATH, $LIBRARIAN_DJVULIBRE, or the winget DjVuLibre install dir."""
+    found = shutil.which(name)
+    if found:
+        return found
+    for d in _DJVU_DIRS:
+        for exe in (name, name + ".exe"):
+            if d and (Path(d) / exe).is_file():
+                return str(Path(d) / exe)
+    return None
+
 def pdf_pages_text(pdf: Path, pages: int) -> list[str]:
     """Whole-book pdftotext split on form feeds; per-page fallback if the split is off."""
     r = subprocess.run(["pdftotext", "-q", "-enc", "UTF-8", str(pdf), "-"], capture_output=True, timeout=600)
@@ -73,9 +89,9 @@ def page_has_images(pdf: Path, page: int) -> bool:
 
 
 def djvu_pages_text(djvu: Path) -> list[str]:
-    n = int(subprocess.run(["djvused", "-e", "n", str(djvu)], capture_output=True, text=True,
+    n = int(subprocess.run([djvu_tool("djvused"), "-e", "n", str(djvu)], capture_output=True, text=True,
                            timeout=60).stdout.strip())
-    return [subprocess.run(["djvutxt", f"--page={p}", str(djvu)], capture_output=True,
+    return [subprocess.run([djvu_tool("djvutxt"), f"--page={p}", str(djvu)], capture_output=True,
                            timeout=120).stdout.decode("utf-8", "replace") for p in range(1, n + 1)]
 
 
@@ -140,7 +156,7 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
     if ext == "pdf":
         raw = pdf_pages_text(src, row["pdf_pages"])
     elif ext == "djvu":
-        if not shutil.which("djvutxt"):
+        if not (djvu_tool("djvutxt") and djvu_tool("djvused")):
             log.error("  djvutxt not installed: cannot extract %s", row["path"])
             return {"sha256": sha, "error": "djvutxt missing"}
         raw = djvu_pages_text(src)

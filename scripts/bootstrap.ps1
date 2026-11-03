@@ -62,8 +62,11 @@ Step "Checking tools"
 foreach ($t in "pdfinfo", "pdftotext", "pdftoppm", "pdfimages") {
     if (Get-Command $t -ErrorAction SilentlyContinue) { Ok $t } else { Warn "$t missing: install poppler (choco install poppler) - REQUIRED" }
 }
+$DjvuDirs = @($env:LIBRARIAN_DJVULIBRE, "${env:ProgramFiles(x86)}\DjVuLibre", "$env:ProgramFiles\DjVuLibre") | Where-Object { $_ }
 foreach ($t in "djvutxt", "djvused") {
-    if (Get-Command $t -ErrorAction SilentlyContinue) { Ok $t } else { Warn "$t missing: DjVu books (2) will not extract (choco install djvulibre)" }
+    $hit = Get-Command $t -ErrorAction SilentlyContinue
+    if (-not $hit) { $hit = $DjvuDirs | ForEach-Object { Join-Path $_ "$t.exe" } | Where-Object { Test-Path $_ } | Select-Object -First 1 }
+    if ($hit) { Ok $t } else { Warn "$t missing: DjVu books (2) will not extract (winget install --id DjVuLibre.DjView --exact)" }
 }
 if (Get-Command docker -ErrorAction SilentlyContinue) { Ok "docker (nougat)" } else { Warn "docker missing: --nougat unavailable" }
 if (Get-Command ollama -ErrorAction SilentlyContinue) { Ok "ollama" } else { Warn "ollama missing: only needed for --embed ollama:..." }

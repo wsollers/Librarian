@@ -202,7 +202,8 @@ def run(cfg: Config, *, rehash: bool = False, verbose: bool = True) -> dict:
                 status, reason = "pending-ocr", "sampled pages have no text layer"
         elif ext == "djvu":
             status = "seeded" if seed_md else "pending"
-            if not shutil.which("djvutxt"):
+            from .extract import djvu_tool
+            if not djvu_tool("djvutxt"):
                 reason = "djvulibre (djvutxt) not installed"
         else:  # epub
             status = "seeded" if seed_md else "pending"
