@@ -37,7 +37,8 @@ class STEmbedder(Embedder):
         log.info("embedder: %s on %s%s", model, device,
                  f" ({torch.cuda.get_device_name(0)})" if device == "cuda" else "")
         self.m = SentenceTransformer(model, device=device)
-        self.spec, self.dim = f"st:{model}", self.m.get_sentence_embedding_dimension()
+        dim_fn = getattr(self.m, "get_embedding_dimension", None) or self.m.get_sentence_embedding_dimension
+        self.spec, self.dim = f"st:{model}", dim_fn()
         lower = model.lower()
         self.qprefix = ("Represent this sentence for searching relevant passages: " if "bge" in lower and "m3" not in lower
                         else "search_query: " if "nomic" in lower else "query: " if "e5" in lower else "")
@@ -50,6 +51,38 @@ class STEmbedder(Embedder):
 
     def query(self, text):
         return _norm(self.m.encode([self.qprefix + text], normalize_embeddings=True))[0]
+
+
+class Reranker:
+    """Cross-encoder: scores (query, passage) pairs jointly. Default BAAI/bge-reranker-v2-m3."""
+
+    def __init__(self, model: str):
+        from sentence_transformers import CrossEncoder
+        import torch
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        log.info("reranker: %s on %s", model, device)
+        self.m = CrossEncoder(model, device=device, max_length=512)
+        self.model = model
+
+    def scores(self, query: str, passages: Sequence[str]) -> list[float]:
+        if not passages:
+            return []
+        return [float(s) for s in self.m.predict([(query, p) for p in passages], batch_size=32,
+                                                 show_progress_bar=False)]
+
+
+RERANK_DEFAULT = os.environ.get("LIBRARIAN_RERANK", "BAAI/bge-reranker-v2-m3")
+
+
+def load_reranker(model: str | None = None):
+    model = model or RERANK_DEFAULT
+    if model.lower() in ("", "none", "off"):
+        return None
+    try:
+        return Reranker(model)
+    except ImportError:
+        log.warning("reranker unavailable (sentence-transformers not installed)")
+        return None
 
 
 class OllamaEmbedder(Embedder):

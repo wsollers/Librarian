@@ -52,7 +52,8 @@ if ((Test-Path $Lock) -and -not $Relock) {
     Step "Installing librarian[embed,dev]"
     & $Py -m pip install --quiet -e ".[embed,dev]"
     Step "Freezing requirements.lock"
-    & $Py -m pip freeze --exclude-editable | Set-Content -Encoding utf8 $Lock
+    $frozen = & $Py -m pip freeze --exclude-editable
+    [IO.File]::WriteAllLines($Lock, $frozen, (New-Object Text.UTF8Encoding $false))  # no BOM
     Warn "commit requirements.lock so every machine gets the same environment"
 }
 if ($LASTEXITCODE -ne 0) { throw "pip failed" }

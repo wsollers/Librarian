@@ -47,3 +47,12 @@ def test_chunks_cover_page():
     lines = [f"line {i} with enough words to count as content here" for i in range(30)]
     ch = chunk_page(lines)
     assert ch[0][:2] == (1, 12) and ch[-1][1] == 30
+
+
+def test_descriptive_detection_and_def_cue():
+    assert search.is_descriptive("What is the type of continuity where the change is bounded by a set constant value")
+    assert not search.is_descriptive('"construction sequence"')
+    assert not search.is_descriptive("Lipschitz continuous")
+    assert search._DEF_CUE.search("obey the bound |f(x) - f(y)| <= M|x - y| are known as Lipschitz continuous")
+    assert search._DEF_CUE.search("Define a construction sequence to be a finite sequence")
+    assert not search._DEF_CUE.search("Using the definition of continuity directly prove that f is defined by")
