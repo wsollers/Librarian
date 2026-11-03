@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "librarian"
+version = "0.1.0"
+description = "Personal mathematics library: page-exact Markdown extraction, hybrid (FTS5 + vector) search, citations by book, printed page, PDF page and line."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+manifest = ["PyYAML>=6"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+librarian = "librarian.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,24 @@
+# Copyright: extracted text, indexes and reports never go in git.
+data/
+objects/
+*.sqlite
+*.sqlite-*
+*.db
+*.md.cache
+reports/
+coverage*.md
+coverage*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+build/
+dist/
+
+# Local config
+config/local.toml
+.env

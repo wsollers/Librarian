@@ -1,0 +1,7 @@
+# Copy to config/local.toml (git-ignored) or pass --config.
+# Paths are as seen on hal5000.
+sources = 'D:\Readings\Sources'
+data    = 'D:\Readings\librarian'          # SQLite index, objects/, reports/ (never in git)
+legacy  = 'D:\Readings\indexes\lra'        # old lra-* stack, read-only seed
+manifest = 'F:\repos\lra-source-profiles\data\source-manifest.yaml'
+publish = 'G:\My Drive\Librarian'          # open question: confirm
