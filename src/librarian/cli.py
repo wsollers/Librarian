@@ -25,12 +25,17 @@ def select_books(con: sqlite3.Connection, sel: str) -> list[sqlite3.Row]:
     rows = con.execute("SELECT * FROM books WHERE status != 'unsupported' ORDER BY path").fetchall()
     if sel == "all":
         return rows
-    if sel == "priority":
-        pats = [ln.strip().lower() for ln in (REPO / "config" / "priority.txt").read_text(encoding="utf-8").splitlines()
-                if ln.strip() and not ln.startswith("#")]
+    if sel == "priority" or sel.startswith("@"):
+        path = REPO / "config" / "priority.txt" if sel == "priority" else Path(sel[1:])
+        if not path.is_absolute() and not path.is_file():
+            path = REPO / path
+        pats = [ln.split("#", 1)[0].strip().lower() for ln in path.read_text(encoding="utf-8").splitlines()]
+        pats = [p for p in pats if p]
     else:
         pats = [sel.lower()]
-    return [r for r in rows if any(p in r["path"].lower() or r["sha256"].startswith(p) for p in pats)]
+    def first(r):  # list order = processing order
+        return next((i for i, p in enumerate(pats) if p in r["path"].lower() or r["sha256"].startswith(p)), None)
+    return sorted((r for r in rows if first(r) is not None), key=lambda r: (first(r), r["path"]))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -50,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("status", help="counts by status, index stats")
 
     def add_sel(p):
-        p.add_argument("--select", default="priority", help="'priority' (config/priority.txt), 'all', or a path substring / sha prefix")
+        p.add_argument("--select", default="priority", help="'priority' (config/priority.txt), '@file' (one pattern per line), 'all', or a path substring / sha prefix")
         p.add_argument("--limit", type=int, help="process at most N books")
         p.add_argument("--force", action="store_true", help="redo even if cached")
 

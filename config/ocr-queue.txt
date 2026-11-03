@@ -1,0 +1,27 @@
+# Books with no text layer, in the order to OCR (--select @config/ocr-queue.txt --llm-ocr).
+# Excluded: physics, pre-calculus (except Hardy), calculus.
+# Not listed because another copy already has text:
+#   Hrbacek "Introduction to Set Theory - 2"  -> Introduction to Set Theory - Hrbacek.pdf (text layer)
+#   Mendelson "Number Systems" (Foundations)  -> Analysis copy has legacy OCR text
+#   Gratzer "General Lattice Theory" (scan)   -> "General Lattice Theory - Gratzer - 2.pdf" (text layer)
+
+# Foundations
+The Real Number System - Olmsted
+
+# Analysis (Bridges done)
+A First Course in Real Analysis - Berberian
+Real Analysis - Folland
+Functional analysis in modern applied mathematics - Curtain
+A Comprehensive Introduction to Differential Geometry Volume 1 - Spivak
+
+# Algebra
+Abstract Algebra A First Course - Saracino
+Handbook of Boolean Algebras Volume 1 - Koppelberg
+Linear Algebra - Shilov
+
+# Topology, Geometry
+Topology Through Inquiry - Su
+Analytic Geometry of Three Dimensions - McCrea
+
+# Hardy
+Inequalities Hardy
