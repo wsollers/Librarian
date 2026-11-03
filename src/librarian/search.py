@@ -185,6 +185,11 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
             c.rerank = c.rrf / top
     for c in pool:
         lines = lines_cache.get((c.sha, c.page), [])
+        if lines and c.span[1] <= len(lines):
+            c.span = sentence_span(lines, *c.span)
+        if is_toc_page(lines):
+            c.via.add("toc")
+            c.rerank -= TOC_PENALTY
         a, b = c.span
         if _DEF_CUE.search(" ".join(lines[max(0, a - 2):b])):  # the cited lines (and the one before)
             c.via.add("def")
@@ -208,6 +213,35 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
                         "+".join(sorted(c.via)), snippet,
                         str(cfg.objects / c.sha / "pages" / f"{c.page:04d}.md"), c.sha))
     return hits
+
+
+_END = re.compile(r"[.!?:;)\]]\s*$|^\s*$")
+# dot leaders (with or without the number), bare page-number lines, index entries "term, 12, 47"
+_LEADER = re.compile(r"(\.\s?){4,}\s*\d*\s*$|^\s*[\dxvil]{1,4}\s*$|\s\d{1,4}(,\s*\d{1,4})+\s*$", re.I)
+TOC_PENALTY = 0.15
+MAX_EXTEND = 3
+
+
+def sentence_span(lines: list[str], a: int, b: int) -> tuple[int, int]:
+    """Grow [a, b] (1-based) to whole sentences: back while the previous line doesn't end one,
+    forward while the last line doesn't, at most MAX_EXTEND lines each way."""
+    for _ in range(MAX_EXTEND):
+        if a > 1 and not _END.search(lines[a - 2]):
+            a -= 1
+        else:
+            break
+    for _ in range(MAX_EXTEND):
+        if b < len(lines) and not _END.search(lines[b - 1]):
+            b += 1
+        else:
+            break
+    return a, b
+
+
+def is_toc_page(lines: list[str]) -> bool:
+    """Table of contents / index: most non-blank lines end in dot leaders or page-number lists."""
+    nb = [ln for ln in lines if ln.strip()]
+    return len(nb) >= 8 and sum(1 for ln in nb if _LEADER.search(ln)) >= 0.4 * len(nb)
 
 
 def _sigmoid(x: float) -> float:

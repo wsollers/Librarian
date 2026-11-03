@@ -76,3 +76,16 @@ def test_refine_pins_the_defining_lines():
     search.refine([c], {("s", 1): lines}, "lipschitz continuous functions constant", _FakeReranker())
     a, b = c.span
     assert a <= 12 <= b and b - a + 1 == search.WINDOW
+
+
+def test_sentence_span_completes_definition():
+    lines = ["the derivative is bounded.", "Functions which obey the bound |f(x) - f(y)| <= M|x - y| are known as",
+             "Lipschitz continuous functions with Lipschitz constant M; thus this", "exercise shows the claim.", "Next."]
+    assert search.sentence_span(lines, 1, 2) == (1, 4)
+    assert search.sentence_span(lines, 3, 3) == (2, 4)
+
+
+def test_toc_detection():
+    toc = [f"9.{i} Some section . . . . . . . . . . {230 + i}" for i in range(10)]
+    body = ["Definition 9.9.2 (Uniform continuity). Let X be a subset of R."] * 10
+    assert search.is_toc_page(toc) and not search.is_toc_page(body)
