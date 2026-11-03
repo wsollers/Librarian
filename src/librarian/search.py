@@ -20,7 +20,11 @@ from .embed import Embedder
 from .index import VectorStore
 
 RRF_K = 60
-DEF_BOOST = 0.15  # added to normalised score when the hit lines themselves define a term
+DEF_BOOST = 0.05      # added when the cited lines themselves define a term (reranked scores)
+DEF_BOOST_RRF = 0.15  # same, without a reranker (rank-fusion scores are flatter)
+CONTEXT = 4       # lines of context either side of a chunk given to the reranker
+WINDOW = 4        # citation granularity: best 4-line window inside the passage
+REFINE_N = 25     # how many top candidates get line-level refinement
 # Phrases that introduce a definition, not every use of "defined"/"definition of".
 _DEF_CUE = re.compile(
     r"(\bdefinition\s+\d|\bdefinition\b\s*[:.(]|\bis called\b|\bare called\b|\bwe say\b|\bwe call\b|"
@@ -58,6 +62,7 @@ class Cand:
     via: set = field(default_factory=set)
     passage: str = ""
     rerank: Optional[float] = None
+    region: tuple[int, int] = (1, 1)
 
 
 def is_descriptive(q: str) -> bool:
@@ -154,25 +159,28 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
     lines_cache: dict[tuple[str, int], list[str]] = {}
     for c in pool:
         lines = lines_cache.setdefault((c.sha, c.page), _page_lines(cfg, c.sha, c.page))
-        if not c.passage:
-            a, b = c.span
-            c.passage = "\n".join(lines[max(0, a - 5):b + 5])
         a, b = c.span
-        if _DEF_CUE.search(" ".join(lines[max(0, a - 3):b + 2])):
-            c.via.add("def")
+        c.region = (max(1, a - CONTEXT), min(len(lines), b + CONTEXT)) if lines else (a, b)
+        c.passage = "\n".join(lines[c.region[0] - 1:c.region[1]]) or c.passage
 
+    qq = q.strip('"')
     if reranker:
-        for c, s in zip(pool, reranker.scores(q.strip('"'), [c.passage for c in pool])):
-            c.rerank = 1 / (1 + math.exp(-s))  # logits -> 0..1
-            if "def" in c.via:
-                c.rerank += DEF_BOOST
+        for c, s in zip(pool, reranker.scores(qq, [c.passage for c in pool])):
+            c.rerank = _sigmoid(s)
             c.via.add("rr")
         pool.sort(key=lambda c: -c.rerank)
+        refine(pool[:REFINE_N], lines_cache, qq, reranker)
     else:
         top = pool[0].rrf if pool else 1
         for c in pool:
-            c.rerank = c.rrf / top + (DEF_BOOST if "def" in c.via else 0)
-        pool.sort(key=lambda c: -c.rerank)
+            c.rerank = c.rrf / top
+    for c in pool:
+        lines = lines_cache.get((c.sha, c.page), [])
+        a, b = c.span
+        if _DEF_CUE.search(" ".join(lines[max(0, a - 2):b])):  # the cited lines (and the one before)
+            c.via.add("def")
+            c.rerank += DEF_BOOST if reranker else DEF_BOOST_RRF
+    pool.sort(key=lambda c: -c.rerank)
 
     hits, seen = [], set()
     for c in pool:
@@ -191,6 +199,38 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
                         "+".join(sorted(c.via)), snippet,
                         str(cfg.objects / c.sha / "pages" / f"{c.page:04d}.md"), c.sha))
     return hits
+
+
+def _sigmoid(x: float) -> float:
+    return 1 / (1 + math.exp(-x))
+
+
+def windows(region: tuple[int, int], size: int = WINDOW) -> list[tuple[int, int]]:
+    a, b = region
+    if b - a + 1 <= size:
+        return [(a, b)]
+    return [(i, i + size - 1) for i in range(a, b - size + 2)]
+
+
+def refine(cands: list["Cand"], lines_cache: dict, q: str, reranker) -> None:
+    """Pin each candidate to its best WINDOW-line span and blend that score in."""
+    jobs = []
+    for c in cands:
+        lines = lines_cache.get((c.sha, c.page), [])
+        for w in windows(c.region):
+            text = "\n".join(lines[w[0] - 1:w[1]]).strip()
+            if text:
+                jobs.append((c, w, text))
+    scores = reranker.scores(q, [t for _, _, t in jobs])
+    best: dict[int, tuple[float, tuple[int, int]]] = {}
+    for (c, w, _), s in zip(jobs, scores):
+        if id(c) not in best or s > best[id(c)][0]:
+            best[id(c)] = (s, w)
+    for c in cands:
+        if id(c) in best:
+            s, w = best[id(c)]
+            c.span = w
+            c.rerank = 0.5 * c.rerank + 0.5 * _sigmoid(s)
 
 
 def format_hit(h: Hit) -> str:

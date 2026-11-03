@@ -56,3 +56,23 @@ def test_descriptive_detection_and_def_cue():
     assert search._DEF_CUE.search("obey the bound |f(x) - f(y)| <= M|x - y| are known as Lipschitz continuous")
     assert search._DEF_CUE.search("Define a construction sequence to be a finite sequence")
     assert not search._DEF_CUE.search("Using the definition of continuity directly prove that f is defined by")
+
+
+class _FakeReranker:
+    """Scores a passage by how many query words it contains (stands in for the cross-encoder)."""
+
+    def scores(self, q, passages):
+        qs = set(q.lower().split())
+        return [float(len(qs & set(p.lower().replace(".", " ").split()))) - 2 for p in passages]
+
+
+def test_refine_pins_the_defining_lines():
+    lines = ["filler line"] * 10 + [
+        "Functions which obey the bound |f(x) - f(y)| <= M|x - y| are known as",
+        "Lipschitz continuous functions with Lipschitz constant M.",
+    ] + ["more filler"] * 10
+    c = search.Cand("s", 1, (5, 16))
+    c.region, c.rerank = (1, len(lines)), 0.5
+    search.refine([c], {("s", 1): lines}, "lipschitz continuous functions constant", _FakeReranker())
+    a, b = c.span
+    assert a <= 12 <= b and b - a + 1 == search.WINDOW
