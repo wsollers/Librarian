@@ -73,6 +73,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--reembed", action="store_true", help="drop all vectors (embedder changed)")
     p = sub.add_parser("run", help="inventory, extract, pagemap, index for a selection")
     add_sel(p); add_extract_opts(p); add_embed(p)
+    p = sub.add_parser("nougat-test", help="run nougat on extracted books into objects/<sha>/nougat/ and compare with current pages")
+    add_sel(p)
     p = sub.add_parser("search", help="hybrid search")
     p.add_argument("query")
     p.add_argument("--mode", choices=["hybrid", "phrase", "fts", "semantic"], default="hybrid")
@@ -108,6 +110,21 @@ def main(argv: list[str] | None = None) -> int:
             "meta": dict(con.execute("SELECT key, value FROM meta").fetchall()),
         }, indent=2))
         return 0
+    elif a.cmd == "nougat-test":
+        from .compare import nougat_test
+        from . import ocr
+        if not ocr.nougat_available():
+            print(f"nougat unavailable: need docker on PATH and {ocr.nougat_models()}", file=sys.stderr)
+            return 2
+        con = connect(cfg.db_path)
+        summary["books"] = []
+        for b in select_books(con, a.select)[: a.limit]:
+            if not (cfg.objects / b["sha256"] / "extract.json").is_file():
+                log.warning("not extracted yet, skipped: %s", b["title"])
+                continue
+            n = con.execute("SELECT count(*) FROM pages WHERE sha256=?", (b["sha256"],)).fetchone()[0]
+            summary["books"].append(nougat_test(cfg, b["sha256"], b["title"], n))
+        summary["results"] = summary.pop("books")
     elif a.cmd in ("extract", "pagemap", "index", "run"):
         summary.update(run_stages(cfg, a))
     elif a.cmd == "search":

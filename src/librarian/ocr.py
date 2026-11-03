@@ -108,29 +108,58 @@ def llm_ocr(pdf: Path, page: int) -> tuple[Optional[str], str]:
     return codex_ocr(pdf, page), "llm-ocr:codex"
 
 
+CONTAINER_DIR = Path(__file__).resolve().parent / "container"
+NOUGAT_CHUNK = 64  # pages per container run (one model load each)
+
+
 def nougat_available() -> bool:
-    return bool(shutil.which("docker")) and bool(os.environ.get("LIBRARIAN_NOUGAT_MODELS"))
+    return bool(shutil.which("docker")) and Path(nougat_models()).is_dir()
 
 
-def nougat_ocr(pdf: Path, pages: list[int]) -> dict[int, str]:
-    """Run nougat on a set of pages via the legacy image. Returns {page: markdown}."""
+def nougat_models() -> str:
+    return os.environ.get("LIBRARIAN_NOUGAT_MODELS", r"D:\Readings\indexes\lra\nougat-models")
+
+
+def _ranges(pages: list[int]) -> str:
+    pages, out, i = sorted(pages), [], 0
+    while i < len(pages):
+        j = i
+        while j + 1 < len(pages) and pages[j + 1] == pages[j] + 1:
+            j += 1
+        out.append(str(pages[i]) if i == j else f"{pages[i]}-{pages[j]}")
+        i = j + 1
+    return ",".join(out)
+
+
+def nougat_ocr(pdf: Path, pages: list[int]) -> dict[int, tuple[str, str]]:
+    """Nougat on many pages with one model load per chunk. Returns {page: (markdown, state)};
+    state is 'ok', 'repetition' or 'out-of-domain' (markdown empty unless ok)."""
     image = os.environ.get("LIBRARIAN_NOUGAT_IMAGE", "lra-nougat-pilot:0.1.17")
-    models = os.environ["LIBRARIAN_NOUGAT_MODELS"]  # e.g. D:\Readings\indexes\lra\nougat-models
-    model = os.environ.get("LIBRARIAN_NOUGAT_MODEL", "0.1.0-base")
-    out: dict[int, str] = {}
-    with tempfile.TemporaryDirectory() as td:
-        for p in pages:
-            work = Path(td) / f"p{p}"
-            work.mkdir()
-            cmd = ["docker", "run", "--rm", "--gpus", "all", "-v", f"{pdf}:/input/source.pdf:ro",
-                   "-v", f"{work}:/output", "-v", f"{models}:/models", image, "run",
-                   "--no-skipping", "--model", model, "--pages", str(p), "/input/source.pdf"]
+    model = os.environ.get("LIBRARIAN_NOUGAT_MODEL", "0.1.0-small")
+    batch = os.environ.get("LIBRARIAN_NOUGAT_BATCH", "4")
+    out: dict[int, tuple[str, str]] = {}
+    pages = sorted(pages)
+    for c in range(0, len(pages), NOUGAT_CHUNK):
+        chunk = pages[c:c + NOUGAT_CHUNK]
+        with tempfile.TemporaryDirectory() as td:
+            cmd = ["docker", "run", "--rm", "--gpus", "all",
+                   "-v", f"{pdf}:/input/source.pdf:ro", "-v", f"{td}:/output",
+                   "-v", f"{nougat_models()}:/models", "-v", f"{CONTAINER_DIR}:/librarian:ro",
+                   "--entrypoint", "python", image, "/librarian/nougat_pages.py",
+                   "--pdf", "/input/source.pdf", "--pages", _ranges(chunk), "--out", "/output",
+                   "--model", model, "--batchsize", batch]
             log.debug("nougat: %s", " ".join(cmd))
-            r = subprocess.run(cmd, capture_output=True, timeout=900)
-            if r.returncode != 0:
-                log.error("nougat failed %s p%d: %s", pdf.name, p, r.stderr.decode(errors="replace")[-500:])
+            r = subprocess.run(cmd, capture_output=True, timeout=60 * 60)
+            status_file = Path(td) / "status.json"
+            if r.returncode != 0 or not status_file.is_file():
+                log.error("nougat failed %s pages %s (exit %s): %s", pdf.name, _ranges(chunk), r.returncode,
+                          r.stderr.decode("utf-8", "replace")[-800:])
                 continue
-            mmd = sorted(work.rglob("*.mmd"))
-            if mmd:
-                out[p] = mmd[0].read_text(encoding="utf-8", errors="replace")
+            st = json.loads(status_file.read_text(encoding="utf-8"))
+            log.info("    nougat %s: %d pages in %.0fs (model load %.0fs, cuda=%s)", _ranges(chunk), len(chunk),
+                     st.get("seconds", 0), st.get("load_seconds", 0), st.get("cuda"))
+            for p in chunk:
+                f = Path(td) / f"p{p:04d}.mmd"
+                state = st["pages"].get(str(p), "missing")
+                out[p] = (f.read_text(encoding="utf-8") if f.is_file() else "", state)
     return out

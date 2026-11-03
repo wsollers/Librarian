@@ -189,13 +189,17 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
                     low.remove(p)
     if low and opt.nougat and ext == "pdf":
         if ocr.nougat_available():
-            got = ocr.nougat_ocr(src, low)
-            for p, md in got.items():
+            log.info("  nougat: %d pages", len(low))
+            for p, (md, state) in ocr.nougat_ocr(src, low).items():
                 lines = clean_lines(md)
-                results[p] = PageResult(lines, "nougat", quality(lines), [f"prev q={results[p].quality}"])
+                q = quality(lines)
+                if state == "ok" and q > results[p].quality:
+                    results[p] = PageResult(lines, "nougat", q, [f"prev q={results[p].quality}"])
+                else:
+                    log.debug("  p%d nougat %s q=%.3f: not used", p, state, q)
             low = [p for p in low if results[p].quality < opt.q_min]
         else:
-            log.warning("  nougat requested but docker / LIBRARIAN_NOUGAT_MODELS unavailable")
+            log.warning("  nougat requested but docker or the model folder (%s) is missing", ocr.nougat_models())
     if low and opt.llm_ocr and ext == "pdf":
         from concurrent.futures import ThreadPoolExecutor
         workers = int(os.environ.get("LIBRARIAN_OCR_WORKERS", "3"))
