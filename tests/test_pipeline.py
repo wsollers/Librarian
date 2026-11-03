@@ -123,3 +123,11 @@ def test_printed_to_pdf_and_locate(tmp_path):
         ("s", 1, 2, "1.1", "The Language of Sentential Logic", "13", 26, 32, "toc", 1)])
     assert sections.locate(con, "s", 30) == {"chapter": "1 Sentential Logic", "section": "1.1 The Language of Sentential Logic"}
     assert sections.locate(con, "s", 5) == {}
+
+
+def test_damage_patterns():
+    from librarian import audit, text
+    damaged = "for each \u03b5 A \uf639, there is a \u03b4 A \uf639 such that"
+    brace = "g(\u03c3) = \uf8f1\n\uf8f4 0 if |\u03c3| = 0\n\uf8f2 1 if |\u03c3| = 1"
+    assert len(audit.PUA.findall(damaged)) == 2 and not audit.PUA.findall(brace)
+    assert text.quality([damaged] * 5) < text.quality([brace.replace("\n", " ")] * 5)

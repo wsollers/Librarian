@@ -11,6 +11,7 @@ _CID = re.compile(r"\(cid:\d+\)")
 _LIGATURES = str.maketrans({"\ufb00": "ff", "\ufb01": "fi", "\ufb02": "fl", "\ufb03": "ffi",
                             "\ufb04": "ffl", "\ufb05": "st", "\ufb06": "st"})
 _WORD = re.compile(r"[A-Za-z]{2,}")
+_PUA = re.compile("[\ue000-\uf8e4]")  # U+F8E5-F8FF are big-delimiter pieces, not damage
 
 
 def clean_lines(raw: str) -> list[str]:
@@ -32,7 +33,8 @@ def quality(lines: list[str]) -> float:
     if nonspace < 40:
         return 0.0
     letters = sum(1 for c in text if c.isalpha())
-    bad = text.count("\ufffd") + 8 * len(_CID.findall(text))
+    # replacement chars, (cid:N) and private-use glyphs = font-encoding damage (symbols lost)
+    bad = text.count("\ufffd") + 8 * len(_CID.findall(text)) + 4 * len(_PUA.findall(text))
     words = _WORD.findall(text)
     vowelish = sum(1 for w in words if re.search(r"[aeiouyAEIOUY]", w))
     word_ok = vowelish / len(words) if words else 0.0

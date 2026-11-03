@@ -53,6 +53,9 @@ def main(argv: list[str] | None = None) -> int:
         "--rehash", action="store_true")
     sub.add_parser("report", help="rewrite the coverage report")
     sub.add_parser("status", help="counts by status, index stats")
+    p = sub.add_parser("audit", help="per-book correctness check: reports/audit.md + audit.csv")
+    p.add_argument("--mark", action="store_true", help="queue damaged pages for the next extract --llm-ocr")
+    p.add_argument("--no-fonts", action="store_true", help="skip the pdffonts evidence check")
 
     def add_sel(p):
         p.add_argument("--select", default="priority", help="'priority' (config/priority.txt), '@file' (one pattern per line), 'all', or a path substring / sha prefix")
@@ -102,6 +105,9 @@ def main(argv: list[str] | None = None) -> int:
         summary.update(inventory.run(cfg, rehash=a.rehash, verbose=True))
     elif a.cmd == "report":
         summary.update(inventory.report(connect(cfg.db_path), cfg))
+    elif a.cmd == "audit":
+        from .audit import audit
+        summary.update(audit(cfg, connect(cfg.db_path), mark=a.mark, fonts=not a.no_fonts))
     elif a.cmd == "status":
         con = connect(cfg.db_path)
         print(json.dumps({

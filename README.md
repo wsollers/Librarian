@@ -33,6 +33,7 @@ scripts\run.ps1 search "construction sequence"
 scripts\run.ps1 search "type of continuity where the change is bounded by a constant"
 scripts\run.ps1 run --select all --llm-ocr     # whole library, OpenAI OCR for bad pages
 scripts\run.ps1 status
+scripts\run.ps1 audit                         # reports\audit.md: what still isn't indexed correctly, and why
 ```
 
 Each command writes `D:\Readings\librarian\logs\<timestamp>-<command>.log` (DEBUG: every
