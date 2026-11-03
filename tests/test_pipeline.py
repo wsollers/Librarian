@@ -96,3 +96,30 @@ def test_nougat_ranges_and_similarity():
     assert ocr._ranges([5, 1, 2, 3, 9, 10]) == "1-3,5,9-10"
     assert compare.similarity(r"Let $f:\mathbb R\to\mathbb R$ be continuous", "Let $f: R \\to R$ be continuous") > 0.9
     assert compare.similarity("completely different words here", "nothing alike at all") < 0.3
+
+
+def test_toc_entry_formats():
+    from librarian.sections import parse_entry as P
+    e = P("  1.1 What is analysis? . . . . . . . . . . . . . . .       1")
+    assert (e.level, e.number, e.title, e.printed) == (2, "1.1", "What is analysis?", "1")
+    e = P("       CHAPTER ONE       Sentential Logic             11")
+    assert (e.level, e.number, e.title, e.printed) == (1, "1", "Sentential Logic", "11")
+    e = P("Preface to the \ufb01rst edition                                    xiii")
+    assert (e.level, e.number, e.title, e.printed) == (1, None, "Preface to the first edition", "xiii")
+    e = P("| 3.4 | Uniform continuity | 138 |")
+    assert (e.number, e.title, e.printed) == ("3.4", "Uniform continuity", "138")
+    assert P("viii                                       Contents") is None
+
+
+def test_printed_to_pdf_and_locate(tmp_path):
+    import sqlite3
+    from librarian import sections
+    mapping = {p: (str(p - 13) if p > 13 else None) for p in range(1, 60)}
+    assert sections.printed_to_pdf("17", mapping) == 30
+    con = sqlite3.connect(":memory:")
+    con.executescript(sections.SCHEMA)
+    con.executemany("INSERT INTO sections VALUES(?,?,?,?,?,?,?,?,?,?)", [
+        ("s", 0, 1, "1", "Sentential Logic", "11", 24, 79, "toc", 1),
+        ("s", 1, 2, "1.1", "The Language of Sentential Logic", "13", 26, 32, "toc", 1)])
+    assert sections.locate(con, "s", 30) == {"chapter": "1 Sentential Logic", "section": "1.1 The Language of Sentential Logic"}
+    assert sections.locate(con, "s", 5) == {}

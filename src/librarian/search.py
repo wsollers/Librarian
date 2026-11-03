@@ -18,6 +18,7 @@ from typing import Optional
 from .config import Config
 from .embed import Embedder
 from .index import VectorStore
+from .sections import locate
 
 RRF_K = 60
 DEF_BOOST = 0.05      # added when the cited lines themselves define a term (reranked scores)
@@ -50,6 +51,9 @@ class Hit:
     snippet: str
     page_file: str
     sha256: str
+    chapter: Optional[str] = None
+    section: Optional[str] = None
+    pdf_uri: Optional[str] = None   # file:///...pdf#page=N
 
 
 @dataclass
@@ -205,13 +209,17 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
         if key in seen:
             continue
         seen.add(key)
-        title, author = con.execute("SELECT title, author FROM books WHERE sha256=?", (c.sha,)).fetchone()
+        title, author, path = con.execute("SELECT title, author, path FROM books WHERE sha256=?", (c.sha,)).fetchone()
+        loc = locate(con, c.sha, c.page)
+        src = (cfg.sources / path)
+        uri = (src.resolve().as_uri() + (f"#page={c.page}" if path.lower().endswith(".pdf") else "")) if src.is_absolute() or src.exists() else None
         printed = con.execute("SELECT printed_page FROM pages WHERE sha256=? AND pdf_page=?", (c.sha, c.page)).fetchone()
         a, b = c.span
         snippet = " ".join(ln.strip() for ln in lines[a - 1:b])[:300]
         hits.append(Hit(round(c.rerank, 4), title, author, printed[0] if printed else None, c.page, a, b,
                         "+".join(sorted(c.via)), snippet,
-                        str(cfg.objects / c.sha / "pages" / f"{c.page:04d}.md"), c.sha))
+                        str(cfg.objects / c.sha / "pages" / f"{c.page:04d}.md"), c.sha,
+                        loc.get("chapter"), loc.get("section"), uri))
     return hits
 
 
@@ -278,8 +286,11 @@ def refine(cands: list["Cand"], lines_cache: dict, q: str, reranker) -> None:
 
 def format_hit(h: Hit) -> str:
     pp = f"p. {h.printed_page}" if h.printed_page else "p. ?"
-    return (f"{h.title} — {h.author or '?'}: {pp} (PDF {h.pdf_page}), lines {h.line_start}–{h.line_end} "
-            f"[{h.via} {h.score}]\n    {h.snippet}\n    {h.page_file}")
+    where = h.section if h.section else ""
+    if h.chapter and h.chapter != h.section:
+        where = f"{h.chapter} › {h.section}"
+    return (f"{h.title} — {h.author or '?'}{', ' + where if where else ''}: {pp} (PDF {h.pdf_page}), "
+            f"lines {h.line_start}–{h.line_end} [{h.via} {h.score}]\n    {h.snippet}\n    {h.pdf_uri or h.page_file}")
 
 
 def as_dict(h: Hit) -> dict:

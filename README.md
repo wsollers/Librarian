@@ -48,12 +48,13 @@ Everything is incremental and cached by SHA-256; `--force` redoes a stage.
 |---|---|---|
 | inventory | hash, dedupe, probe text layer, legacy seeds | `books`/`files` tables, `reports/coverage.md` |
 | extract | pdftotext per page → quality score → legacy page → nougat (`--nougat`) → LLM OCR (`--llm-ocr`: Codex CLI or OpenAI API, parallel) | `objects/<sha>/pages/NNNN.md`, `extract.json` |
-| pagemap | printed page per PDF page from running heads/feet; `pagemaps/` overrides | `pages.printed_page`, `objects/<sha>/book.md` |
+| pagemap | printed page per PDF page from running heads/feet; `pagemaps/` overrides; chapters/sections from the contents page (fallback: numbered headings) | `pages.printed_page`, `sections`, `objects/<sha>/book.md` |
 | index | page FTS5 + 12-line chunks embedded (bge-base on GPU, or Ollama) in sqlite-vec | `librarian.sqlite` |
 | search | FTS + vectors merged by reciprocal rank, definition pages boosted | citations |
 | publish | phase 3 | `G:\My Drive\Librarian` |
 
-Line *n* of a citation is line *n* of `objects/<sha>/pages/NNNN.md`. `book.md` is the
+Every hit carries book, author, chapter › section, printed page, PDF page, line span and a
+`file:///…pdf#page=N` link. Line *n* of a citation is line *n* of `objects/<sha>/pages/NNNN.md`. `book.md` is the
 whole book with `<!-- page pdf=N printed=X -->` breaks.
 
 ## Inventory / book statuses

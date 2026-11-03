@@ -68,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--embed", default=None, help="embedder spec, e.g. st:BAAI/bge-base-en-v1.5, ollama:nomic-embed-text")
 
     p = sub.add_parser("extract", help="per-page Markdown with escalation"); add_sel(p); add_extract_opts(p)
-    p = sub.add_parser("pagemap", help="printed page numbers (detection + pagemaps/ overrides)"); add_sel(p)
+    p = sub.add_parser("pagemap", help="printed page numbers (detection + pagemaps/ overrides), chapters and sections"); add_sel(p)
     p = sub.add_parser("index", help="FTS5 + embeddings"); add_sel(p); add_embed(p)
     p.add_argument("--reembed", action="store_true", help="drop all vectors (embedder changed)")
     p = sub.add_parser("run", help="inventory, extract, pagemap, index for a selection")
@@ -177,12 +177,14 @@ def run_stages(cfg, a) -> dict:
                 errors += 1
                 log.exception("extract failed: %s", b["path"])
     if "pagemap" in stages:
+        from . import sections
         for b in books:
             try:
                 pagemap.map_book(cfg, con, b["sha256"], b["title"])
+                sections.build(cfg, con, b["sha256"], b["title"], b["path"])
             except Exception:  # noqa: BLE001
                 errors += 1
-                log.exception("pagemap failed: %s", b["path"])
+                log.exception("pagemap/sections failed: %s", b["path"])
     if "index" in stages:
         from . import embed
         connect_index(con)
