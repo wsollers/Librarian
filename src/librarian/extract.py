@@ -22,7 +22,7 @@ from . import ocr
 from .config import Config
 from .db import now
 from .log import Timer, log
-from .text import clean_lines, quality
+from .text import clean_lines, is_confirmed_sparse, quality
 
 EXTRACTOR_VERSION = 2   # 2: ligatures expanded
 Q_MIN = 0.45            # below this a page is escalated
@@ -249,7 +249,8 @@ def _escalate(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Optio
                     eta = (len(low) - done) / max(rate, 1e-6)
                     log.info("    OCR %d/%d pages, %d failed, %.1f pages/min, ~%.0f min left",
                              done, len(low), failed, rate, eta)
-        low = [p for p in low if results[p].quality < opt.q_min]
+        low = [p for p in low if results[p].quality < opt.q_min
+               and not is_confirmed_sparse(results[p].method, results[p].lines)]
 
     pages_dir = obj / "pages"
     pages_dir.mkdir(parents=True, exist_ok=True)

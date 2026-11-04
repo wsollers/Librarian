@@ -26,6 +26,19 @@ def clean_lines(raw: str) -> list[str]:
     return lines
 
 
+SPARSE_CHARS = 40
+
+
+def nonspace(lines: list[str]) -> int:
+    return sum(1 for ln in lines for c in ln if not c.isspace())
+
+
+def is_confirmed_sparse(method: str, lines: list[str]) -> bool:
+    """OCR looked at the page image and found almost nothing: blank verso with a page number,
+    part title, figure. Such a page is complete, not low quality."""
+    return method.startswith("llm-ocr") and nonspace(lines) < SPARSE_CHARS
+
+
 def quality(lines: list[str]) -> float:
     """0..1 heuristic: 0 = no text, low = garbled/encoding junk, ~1 = clean prose/math."""
     text = "\n".join(lines)

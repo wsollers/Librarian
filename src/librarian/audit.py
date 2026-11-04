@@ -6,7 +6,9 @@ Flags
   damaged-text       text layer with font-encoding damage: private-use / replacement / (cid:) glyphs on
                      >= 3 pages or >= 2% of pages (symbol fonts without a Unicode map listed as evidence)
   few-printed-pages  printed page known for < 50% of pages: citations fall back to PDF pages
-  no-sections        no chapters/sections found; sections-unverified: < 50% confirmed on their page
+  no-sections        no chapters/sections found; few-sections: < 5 for a 100+ page book;
+                     sections-unverified: < 50% confirmed on their page
+  (pages OCR confirmed as nearly empty - blank versos, part titles - are not low quality)
   not-indexed        extracted but not in the search index, or index older than the extraction
 
 `--mark` adds damaged pages to the book's low pages, so the next `extract --llm-ocr` re-OCRs them.
@@ -25,13 +27,14 @@ from pathlib import Path
 from .config import Config
 from .db import now
 from .log import log
+from .text import is_confirmed_sparse
 
 # Private use area, except U+F8E5-F8FF: the brace/bracket pieces of big delimiters (CMEX, Symbol),
 # which are layout, not lost symbols.
 PUA = re.compile("[\ue000-\uf8e4\ufffd]|\\(cid:\\d+\\)")
 SYMBOL_FONT = re.compile(r"sym|cmsy|cmmi|cmex|msam|msbm|mnsymbol|math|txsy|euler|eus[mb]|stix|mtsy|rsfs|wasy", re.I)
 FLAG_ORDER = ["not-extracted", "damaged-text", "low-body-pages", "not-indexed", "few-printed-pages",
-              "no-sections", "sections-unverified"]
+              "no-sections", "few-sections", "sections-unverified"]
 
 
 def damaged_pages(obj: Path) -> list[int]:
@@ -57,6 +60,13 @@ def unmapped_symbol_fonts(pdf: Path) -> list[str]:
             if SYMBOL_FONT.search(name):
                 names.add(name)
     return sorted(names)
+
+
+def _sparse(obj: Path, m: dict, p: int) -> bool:
+    info = m["page"].get(str(p), {})
+    f = obj / "pages" / f"{p:04d}.md"
+    lines = f.read_text(encoding="utf-8").split("\n") if f.is_file() else []
+    return is_confirmed_sparse(info.get("method", ""), lines)
 
 
 def _table(con, name) -> bool:
@@ -85,7 +95,7 @@ def audit(cfg: Config, con: sqlite3.Connection, mark: bool = False, fonts: bool 
         n = m["pages"]
         r["pages"] = n
         r["methods"] = " ".join(f"{k}:{v}" for k, v in sorted(m["methods"].items()))
-        low = m.get("low_quality_pages", [])
+        low = [p for p in m.get("low_quality_pages", []) if not _sparse(obj, m, p)]
         edge = max(1, round(0.05 * n))
         body = [p for p in low if edge < p <= n - edge]
         r["low"] = len(low)
@@ -116,6 +126,8 @@ def audit(cfg: Config, con: sqlite3.Connection, mark: bool = False, fonts: bool 
             r["sections"], r["sections_verified"] = s[0], s[1]
             if n > 20 and s[0] == 0:
                 flag("no-sections", "no contents page or numbered headings found")
+            elif n > 100 and s[0] < 5:
+                flag("few-sections", f"only {s[0]} entries for {n} pages: contents page probably not parsed")
             elif s[0] and s[1] < 0.5 * s[0]:
                 flag("sections-unverified", f"only {s[1]}/{s[0]} confirmed on their page")
         if has_index:

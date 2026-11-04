@@ -131,3 +131,10 @@ def test_damage_patterns():
     brace = "g(\u03c3) = \uf8f1\n\uf8f4 0 if |\u03c3| = 0\n\uf8f2 1 if |\u03c3| = 1"
     assert len(audit.PUA.findall(damaged)) == 2 and not audit.PUA.findall(brace)
     assert text.quality([damaged] * 5) < text.quality([brace.replace("\n", " ")] * 5)
+
+
+def test_confirmed_sparse_pages():
+    assert text.is_confirmed_sparse("llm-ocr:codex", ["50"])
+    assert text.is_confirmed_sparse("llm-ocr:codex", ["PART II", "", "Analysis of Abstract Equations"])
+    assert not text.is_confirmed_sparse("textlayer", ["50"])          # text layer empty != page empty
+    assert not text.is_confirmed_sparse("llm-ocr:codex", ["A real paragraph of mathematics " * 3])
