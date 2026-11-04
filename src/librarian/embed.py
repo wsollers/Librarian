@@ -62,12 +62,14 @@ class Reranker:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         log.info("reranker: %s on %s", model, device)
         self.m = CrossEncoder(model, device=device, max_length=512)
+        if device == "cuda":
+            self.m.model.half()  # fp16: ~2x faster on the GPU, same ranking
         self.model = model
 
     def scores(self, query: str, passages: Sequence[str]) -> list[float]:
         if not passages:
             return []
-        return [float(s) for s in self.m.predict([(query, p) for p in passages], batch_size=32,
+        return [float(s) for s in self.m.predict([(query, p) for p in passages], batch_size=64,
                                                  show_progress_bar=False)]
 
 

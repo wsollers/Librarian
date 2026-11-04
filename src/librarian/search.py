@@ -35,7 +35,8 @@ who why do does it its from into than then there their these those such some any
 type kind sort set value change changes constant called mean means name named""".split())
 VEC_K = 1000      # chunks from KNN (collapse to far fewer pages)
 FTS_K = 100
-RERANK_N = 300    # pages scored by the cross-encoder (and refined to 4-line windows)
+RERANK_N = 300    # pages scored by the cross-encoder
+REFINE_N = 40     # of those, the best are refined to 4-line windows; final hits come only from these
 
 
 @dataclass
@@ -191,7 +192,9 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
         for c, s in zip(pool, reranker.scores(rq, [c.passage for c in pool])):
             c.rerank = _sigmoid(s)
             c.via.add("rr")
-        refine(pool, lines_cache, rq, reranker)  # every reranked page, so scores are comparable
+        pool.sort(key=lambda c: -c.rerank)
+        pool = pool[:REFINE_N]                   # refine (and rank) only the best pages: scores stay comparable
+        refine(pool, lines_cache, rq, reranker)
     else:
         top = pool[0].rrf if pool else 1
         for c in pool:
