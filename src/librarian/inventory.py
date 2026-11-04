@@ -119,6 +119,33 @@ def title_from_filename(rel: str) -> tuple[str, Optional[str]]:
     return (f"{title} ({', '.join(ed)})" if ed else title), rest[-1]
 
 
+def purge_vanished(con: sqlite3.Connection) -> list[str]:
+    """Remove books whose files are all gone (moved, deleted), with everything that refers to them:
+    pages, sections, chunks and their vectors, full-text rows, index state. Page files under
+    objects/ are kept as a cache (same SHA-256 -> reused if the file comes back)."""
+    gone = [r[0] for r in con.execute("SELECT sha256 FROM books WHERE sha256 NOT IN (SELECT sha256 FROM files)")]
+    if not gone:
+        return gone
+    tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master")}
+    from .index import has_vec
+    vec = "chunks_vec" in tables and has_vec(con)
+    for sha in gone:
+        if "chunks" in tables:
+            ids = [r[0] for r in con.execute("SELECT id FROM chunks WHERE sha256=?", (sha,))]
+            for t, col in (("chunks_vec", "rowid"), ("chunks_blob", "id")):
+                if t in tables and ids and (t != "chunks_vec" or vec):
+                    for i in range(0, len(ids), 500):
+                        part = ids[i:i + 500]
+                        con.execute(f"DELETE FROM {t} WHERE {col} IN ({','.join('?' * len(part))})", part)
+            con.execute("DELETE FROM chunks WHERE sha256=?", (sha,))
+        for t in ("pages_fts", "index_state", "sections", "pages"):
+            if t in tables:
+                con.execute(f"DELETE FROM {t} WHERE sha256=?", (sha,))
+        con.execute("DELETE FROM books WHERE sha256=?", (sha,))
+    print(f"  removed {len(gone)} books whose files are gone", file=sys.stderr)
+    return gone
+
+
 def run(cfg: Config, *, rehash: bool = False, verbose: bool = True) -> dict:
     root = cfg.sources
     if not root.is_dir():
@@ -165,7 +192,7 @@ def run(cfg: Config, *, rehash: bool = False, verbose: bool = True) -> dict:
         r[0]: r[1:]
         for r in con.execute("SELECT sha256, pdf_pages, has_text, status, reason FROM books")
     }
-    con.execute("DELETE FROM books WHERE sha256 NOT IN (SELECT sha256 FROM files)")
+    purge_vanished(con)
     for n, (sha, entries) in enumerate(by_sha.items(), 1):
         if n % 25 == 0:
             con.commit()

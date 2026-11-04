@@ -150,8 +150,11 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
         store = VectorStore(con, emb.dim, emb.spec, create=False)
         rank = 0
         for cid, _sim in store.knn(emb.query(vq), VEC_K * (3 if book else 1)):
-            sha, p, a, b, text = con.execute(
+            row = con.execute(
                 "SELECT sha256, pdf_page, line_start, line_end, text FROM chunks WHERE id=?", (cid,)).fetchone()
+            if row is None:  # vector without its chunk (book removed while sqlite-vec was unavailable)
+                continue
+            sha, p, a, b, text = row
             if bargs and sha not in bargs:
                 continue
             c = cands.setdefault((sha, p), Cand(sha, p, (a, b)))

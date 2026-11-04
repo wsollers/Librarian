@@ -41,3 +41,19 @@ def test_title_from_filename():
     assert t("Logic/A Mathematical Introduction to Logic - Enderton - 2.pdf") == ("A Mathematical Introduction to Logic", "Enderton")
     assert t("Logic/Introduction to Mathematical Logic - 6th - Mendelson.pdf") == ("Introduction to Mathematical Logic (6th)", "Mendelson")
     assert t("Analysis/cantor.png") == ("cantor", None)
+
+
+def test_inventory_purges_vanished_book_with_pages(tmp_path):
+    cfg = make_cfg(tmp_path)
+    inventory.run(cfg, verbose=False)
+    con = sqlite3.connect(cfg.db_path)
+    con.execute("PRAGMA foreign_keys=ON")
+    sha = con.execute("SELECT sha256 FROM files WHERE path LIKE '%Other%'").fetchone()[0]
+    con.execute("INSERT INTO pages(sha256, pdf_page) VALUES(?, 1)", (sha,))  # extracted book
+    con.commit()
+    con.close()
+    (cfg.sources / "Logic" / "Other - Else.png").unlink()
+    s = inventory.run(cfg, verbose=False)  # used to fail: FOREIGN KEY constraint failed
+    assert s["books"] == 1
+    con = sqlite3.connect(cfg.db_path)
+    assert con.execute("SELECT count(*) FROM pages").fetchone()[0] == 0
