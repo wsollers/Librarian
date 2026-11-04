@@ -21,13 +21,52 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
-from rapidfuzz.distance import Levenshtein
-
 try:
-    from pylatexenc.latex2text import LatexNodes2Text
-    _L2T = LatexNodes2Text(math_mode="text", strict_latex_spaces=False)
-except ImportError:  # pragma: no cover
-    _L2T = None
+    from rapidfuzz.distance import Levenshtein
+    lev = Levenshtein.distance
+except ImportError:  # pure-python fallback (pages are a few thousand chars)
+    def lev(a: str, b: str) -> int:
+        if len(a) < len(b):
+            a, b = b, a
+        prev = list(range(len(b) + 1))
+        for i, ca in enumerate(a, 1):
+            cur = [i]
+            for j, cb in enumerate(b, 1):
+                cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+            prev = cur
+        return prev[-1]
+
+# Small, deterministic LaTeX -> Unicode reduction (same on every machine; no pylatexenc).
+_CMD = {
+    "alpha": "α", "beta": "β", "gamma": "γ", "delta": "δ", "epsilon": "ε", "varepsilon": "ε", "zeta": "ζ",
+    "eta": "η", "theta": "θ", "iota": "ι", "kappa": "κ", "lambda": "λ", "mu": "μ", "nu": "ν", "xi": "ξ",
+    "pi": "π", "rho": "ρ", "sigma": "σ", "tau": "τ", "upsilon": "υ", "phi": "φ", "varphi": "φ", "chi": "χ",
+    "psi": "ψ", "omega": "ω", "Gamma": "Γ", "Delta": "Δ", "Theta": "Θ", "Lambda": "Λ", "Xi": "Ξ", "Pi": "Π",
+    "Sigma": "Σ", "Phi": "Φ", "Psi": "Ψ", "Omega": "Ω",
+    "in": "∈", "notin": "∉", "subset": "⊂", "subseteq": "⊆", "supset": "⊃", "supseteq": "⊇", "cup": "∪",
+    "cap": "∩", "emptyset": "∅", "varnothing": "∅", "neq": "≠", "ne": "≠", "leq": "≤", "le": "≤", "geq": "≥",
+    "ge": "≥", "leqq": "≤", "geqq": "≥", "cong": "≅", "equiv": "≡", "sim": "∼", "to": "→", "rightarrow": "→",
+    "mapsto": "↦", "leftarrow": "←", "leftrightarrow": "↔", "Rightarrow": "⇒", "implies": "⇒", "Leftrightarrow": "⇔",
+    "iff": "⇔", "forall": "∀", "exists": "∃", "neg": "¬", "lnot": "¬", "wedge": "∧", "land": "∧", "vee": "∨",
+    "lor": "∨", "times": "×", "cdot": "·", "circ": "∘", "pm": "±", "infty": "∞", "sum": "∑", "prod": "∏",
+    "int": "∫", "sqrt": "√", "ldots": "...", "cdots": "...", "dots": "...", "vdots": "", "ddots": "",
+    "lbrace": "\x01", "rbrace": "\x02", "{": "\x01", "}": "\x02", "langle": "<", "rangle": ">", "mid": "|", "vert": "|",
+    "colon": ":", "quad": " ", "qquad": " ", ",": " ", ";": " ", "!": "", " ": " ", "\\\\": "\n",
+    "blacksquare": "■", "square": "□", "Box": "□", "qed": "■", "prime": "'", "setminus": "\\",
+}
+_UNWRAP = re.compile(r"\\(?:mathbb|mathcal|mathrm|mathbf|mathit|mathsf|mathfrak|text|textbf|textit|emph|operatorname|"
+                     r"boldsymbol|bm|mbox|textrm|hat|bar|tilde|overline|underline|left|right|big|Big|bigg|Bigg)\b\s*")
+
+
+def latex_plain(t: str) -> str:
+    t = re.sub(r"\\begin\{[a-z*]+\}(\{[^}]*\})?|\\end\{[a-z*]+\}", " ", t)
+    t = re.sub(r"\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}", r"\1/\2", t)
+    t = _UNWRAP.sub("", t)
+    t = re.sub(r"\\([A-Za-z]+|[{},;! ]|\\\\)", lambda m: _CMD.get(m.group(1), ""), t)
+    t = t.replace("&", " ").replace("$", "")
+    t = t.replace("{", "").replace("}", "")          # grouping braces
+    return t.replace("\x01", "{").replace("\x02", "}")
+
 
 MATH = set("αβγδεζηθικλμνξπρστυφχψωΓΔΘΛΞΠΣΦΨΩϕϵ∈∉⊂⊆⊃⊇∪∩∅≠≤≥≅≡∼→↦←↔⇒⇔∀∃¬∧∨×·∘±∞∑∏∫√=<>+()[]{}|")
 _LATEX_HINT = re.compile(r"\\[a-zA-Z]+|\$|\\\(|\\\[")
@@ -36,13 +75,9 @@ _LATEX_HINT = re.compile(r"\\[a-zA-Z]+|\$|\\\(|\\\[")
 def plain(text: str) -> str:
     t = text.replace("\r", "")
     t = re.sub(r"```[a-z]*", "", t)
-    if _L2T and _LATEX_HINT.search(t):
-        # math delimiters pylatexenc may not know
-        t = t.replace("\\(", "$").replace("\\)", "$").replace("\\[", "$$").replace("\\]", "$$")
-        try:
-            t = _L2T.latex_to_text(t)
-        except Exception:
-            pass
+    if _LATEX_HINT.search(t):
+        t = t.replace("\\(", " ").replace("\\)", " ").replace("\\[", " ").replace("\\]", " ")
+        t = latex_plain(t)
     t = re.sub(r"(?m)^\s{0,3}#{1,6}\s*", "", t)          # headings
     t = t.replace("**", "").replace("__", "")
     t = re.sub(r"(?<![A-Za-z0-9])_([^_\n]+)_(?![A-Za-z0-9])", r"\1", t)  # _italic_
@@ -85,7 +120,7 @@ def score_dir(truth: dict, d: Path) -> dict:
     for stem, tt in truth.items():
         o = plain(read_out(d, stem))
         ta, oa = alnum(tt), alnum(o)
-        ed += Levenshtein.distance(ta, oa)
+        ed += lev(ta, oa)
         tl += len(ta)
         a, b = words(tt), words(o)
         m = overlap(a, b)
