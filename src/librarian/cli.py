@@ -93,6 +93,15 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--replace", help="existing PDF (same book) to retire to _duplicates; the new PDF takes its path")
     p.add_argument("--dpi", type=int, default=200)
     p.add_argument("--keep-djvu", action="store_true", help="leave the DjVu in Sources (default: retire it too)")
+    p = sub.add_parser("leancheck", help="OCR confidence check: statements -> Lean 4 + Mathlib (sorry) -> compile + back-translation")
+    p.add_argument("stage", choices=["statements", "formalize", "backcheck", "compile", "report"])
+    p.add_argument("name", help="work dir name under <data>/leancheck/")
+    p.add_argument("--select", help="statements: the book (substring, as for run --select)")
+    p.add_argument("--pages", help="statements: PDF page range A-B")
+    p.add_argument("--mmd", help="statements: read nougat .mmd chunks (pages-A-B.mmd) from this dir instead of pages/")
+    p.add_argument("--workers", type=int, default=3)
+    p.add_argument("--project", help="compile: Lean project with Mathlib (default $LIBRARIAN_LEAN_PROJECT)")
+    p.add_argument("--no-plausible", action="store_true")
     p = sub.add_parser("search", help="hybrid search")
     p.add_argument("query")
     p.add_argument("--mode", choices=["hybrid", "phrase", "fts", "semantic"], default="hybrid")
@@ -149,6 +158,8 @@ def main(argv: list[str] | None = None) -> int:
             n = con.execute("SELECT count(*) FROM pages WHERE sha256=?", (b["sha256"],)).fetchone()[0]
             summary["books"].append(nougat_test(cfg, b["sha256"], b["title"], n))
         summary["results"] = summary.pop("books")
+    elif a.cmd == "leancheck":
+        summary.update(lean_check(cfg, a))
     elif a.cmd in ("extract", "pagemap", "index", "run"):
         summary.update(run_stages(cfg, a))
     elif a.cmd == "search":
@@ -217,6 +228,63 @@ def djvu_to_pdf(cfg, a) -> dict:
     res["pdf"] = str(out)
     log.info("next: scripts\\run.ps1 run --select \"%s\"", out.stem)
     return res
+
+
+def _page_range(spec: str | None) -> tuple[int, int]:
+    if not spec:
+        return 1, 10**6
+    a_, _, b_ = spec.partition("-")
+    return int(a_), int(b_ or a_)
+
+
+def lean_check(cfg, a) -> dict:
+    import re as _re
+    from . import leancheck as lc
+    work = cfg.data / "leancheck" / a.name
+    work.mkdir(parents=True, exist_ok=True)
+    if a.stage == "statements":
+        lo, hi = _page_range(a.pages)
+        pages: dict[int, list[str]] = {}
+        book = a.name
+        if a.mmd:
+            # nougat chunks have no page breaks: key each chunk by its first PDF page
+            for f in sorted(Path(a.mmd).glob("pages-*.mmd")):
+                m = _re.match(r"pages-(\d+)-(\d+)", f.stem)
+                if m and int(m.group(2)) >= lo and int(m.group(1)) <= hi:
+                    pages[int(m.group(1))] = f.read_text(encoding="utf-8", errors="replace").splitlines()
+        else:
+            if not a.select:
+                raise SystemExit("leancheck statements needs --select <book> (or --mmd <dir>)")
+            con = connect(cfg.db_path)
+            books = select_books(con, a.select)
+            if len(books) != 1:
+                raise SystemExit(f"--select matched {len(books)} books; make it specific: "
+                                 + "; ".join(b["title"] for b in books[:8]))
+            b = books[0]
+            book = f'{b["title"]} - {b["author"] or "Unknown"}'
+            for f in sorted((cfg.objects / b["sha256"] / "pages").glob("*.md")):
+                n = int(f.stem)
+                if lo <= n <= hi:
+                    pages[n] = f.read_text(encoding="utf-8").splitlines()
+        rows = lc.extract(pages, book)
+        lc._write(work / "statements.jsonl", rows)
+        kinds: dict[str, int] = {}
+        for r in rows:
+            kinds[r["kind"]] = kinds.get(r["kind"], 0) + 1
+        log.info("leancheck %s: %d statements from %d pages -> %s", a.name, len(rows), len(pages), work)
+        return {"work": str(work), "pages": len(pages), "statements": len(rows), "kinds": kinds}
+    if a.stage == "formalize":
+        lc.formalize(work, a.workers)
+    elif a.stage == "backcheck":
+        lc.backcheck(work, a.workers)
+    elif a.stage == "compile":
+        proj = a.project or os.environ.get("LIBRARIAN_LEAN_PROJECT")
+        if not proj:
+            raise SystemExit("leancheck compile needs --project <lean project with Mathlib>")
+        lc.compile_all(work, Path(proj), plausible=not a.no_plausible)
+    elif a.stage == "report":
+        return {"work": str(work), **lc.report(work)}
+    return {"work": str(work), "stage": a.stage}
 
 
 def run_stages(cfg, a) -> dict:
