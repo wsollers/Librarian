@@ -72,10 +72,10 @@ def render(djvu: Path, page: int, dpi: int, out_dir: Path):
     f = out_dir / f"p{page}.pnm"
     subprocess.run([_tool("ddjvu"), "-format=pnm", f"-page={page}", f"-scale={dpi}", str(djvu), str(f)],
                    check=True, capture_output=True, timeout=300)
-    img = Image.open(f)
-    img.load()
+    with Image.open(f) as im:          # close the file before deleting it (Windows locks open files)
+        img = im.convert("L")          # convert() copies the pixels
     f.unlink()
-    return img.convert("L") if img.mode not in ("L", "1") else img.convert("L")
+    return img
 
 
 def _font():
