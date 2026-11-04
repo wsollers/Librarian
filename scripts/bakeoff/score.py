@@ -54,6 +54,9 @@ _CMD = {
     "int": "∫", "sqrt": "√", "ldots": "...", "cdots": "...", "dots": "...", "vdots": "", "ddots": "",
     "lbrace": "\x01", "rbrace": "\x02", "{": "\x01", "}": "\x02", "langle": "<", "rangle": ">", "mid": "|", "vert": "|",
     "colon": ":", "quad": " ", "qquad": " ", ",": " ", ";": " ", "!": "", " ": " ", "\\\\": "\n",
+    "bmod": " mod ", "pmod": " mod ", "mod": " mod ",
+    **{w: f" {w} " for w in ("gcd", "lcm", "deg", "det", "ker", "log", "ln", "exp", "sin", "cos", "tan", "max",
+                             "min", "lim", "sup", "inf", "dim", "hom", "Hom", "Aut", "Im", "Re", "id")},
     "blacksquare": "■", "square": "□", "Box": "□", "qed": "■", "prime": "'", "setminus": "\\",
 }
 _UNWRAP = re.compile(r"\\(?:mathbb|mathcal|mathrm|mathbf|mathit|mathsf|mathfrak|text|textbf|textit|emph|operatorname|"
