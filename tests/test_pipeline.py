@@ -138,3 +138,21 @@ def test_confirmed_sparse_pages():
     assert text.is_confirmed_sparse("llm-ocr:codex", ["PART II", "", "Analysis of Abstract Equations"])
     assert not text.is_confirmed_sparse("textlayer", ["50"])          # text layer empty != page empty
     assert not text.is_confirmed_sparse("llm-ocr:codex", ["A real paragraph of mathematics " * 3])
+
+
+def test_toc_two_columns_ranges_wraps_and_page_less_chapters():
+    from librarian.sections import parse_toc_lines
+    lines = ["TABLE OF CONTENTS", "", "CHAPTER II. ELEMENTARY MEAN VALUES", "",
+             "2.1. Ordinary means . . . . . . . . .   12–13",
+             "2.22. The elementary symmetric functions of $n$",
+             "      positive numbers  . . . . . . . . .                   51–55        51–55",
+             "4.2.  Applications of the mean value theorem  . .  140–143     102–104",
+             "8.5.\u3000Applications to Fourier series\u3000.\u3000.\u3000.\u3000\u3000\u3000202–203",
+             "~~1.7. Selection of proofs . . . . . . . .   6–8~~"]
+    got = [(e.level, e.number, e.title, e.printed) for e in parse_toc_lines(lines)]
+    assert got == [(1, "II", "ELEMENTARY MEAN VALUES", "12"),
+                   (2, "2.1", "Ordinary means", "12"),
+                   (2, "2.22", "The elementary symmetric functions of $n$ positive numbers", "51"),
+                   (2, "4.2", "Applications of the mean value theorem", "102"),
+                   (2, "8.5", "Applications to Fourier series", "202"),
+                   (2, "1.7", "Selection of proofs", "6")]

@@ -41,8 +41,12 @@ CREATE INDEX IF NOT EXISTS sections_page ON sections(sha256, pdf_start, pdf_end)
 _WORDNUM = {w: i for i, w in enumerate(
     "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen "
     "sixteen seventeen eighteen nineteen twenty".split())}
+_RANGE = r"(?:\s*[\u2013\u2014-]\s*\d{1,4})?"
 _PAGE_TAIL = re.compile(
-    r"^(?P<title>.*?\S)\s*(?:(?:\.\s?){2,}|\s{2,}|\s(?=[0-9ivxlc]+\s*$))\s*(?P<page>\d{1,4}|[ivxlc]{1,7})\s*$", re.I)
+    r"^(?P<title>.*?\S)\s*(?:(?:\.\s?){2,}|\s{2,}|\s(?=[0-9ivxlc]+" + _RANGE + r"\s*$))\s*"
+    r"(?P<page>\d{1,4}|[ivxlc]{1,7})" + _RANGE + r"\s*$", re.I)
+_NUM_COLUMN = re.compile(r"(?:\s+(?:\.\s?)*\d{1,4}" + _RANGE + r")+\s*$")  # 'Theorems' column before 'Pages'
+_HEADING_ONLY = re.compile(r"^(?:chapter|part|appendix|book)\s+([0-9]+|[ivxlc]+|[a-z]+)\b[.:]?\s*\S", re.I)
 _NUM = re.compile(
     r"^(?:(?P<kw>chapter|part|appendix|lecture|lesson)\s+(?P<kwn>[0-9]+|[A-Z]|[ivxlc]+|[a-z]+)\b[.:]?\s*"
     r"|§?\s*(?P<dot>\d{1,2}(?:\.\d{1,2}){0,3})\.?(?=\s)\s*"
@@ -63,13 +67,60 @@ class Entry:
     verified: bool = False
 
 
+def normalise_toc_line(line: str) -> str:
+    line = line.translate(_LIGATURES).replace("\u3000", "  ").replace("\uff0e", ".").replace("\u2002", " ")
+    line = line.replace("~~", "").replace("*", "").replace("\u00a0", " ")
+    return line.rstrip()
+
+
+def parse_toc_lines(lines: list[str]) -> list["Entry"]:
+    """Line-level parse with two layouts handled across lines:
+    a title that wraps (numbered line without a page, continued on the next line), and a chapter
+    heading without a page (takes the page of the first entry after it)."""
+    out: list[Entry] = []
+    carry = ""            # wrapped title waiting for its continuation
+    pending_heads: list[Entry] = []
+    for raw in lines:
+        line = normalise_toc_line(raw)
+        if not line.strip():
+            continue
+        e = parse_entry((carry + " " + line.strip()) if carry else line)
+        if e is None and carry:
+            e = parse_entry(line)
+        if e:
+            carry = ""
+            for h in pending_heads:
+                h.printed = e.printed
+                out.append(h)
+            pending_heads = []
+            out.append(e)
+            continue
+        txt = line.strip()
+        if _HEADING_ONLY.match(txt):
+            h = parse_entry(txt + "  0")
+            if h:
+                h.title = re.sub(r"\s+", " ", h.title).strip()
+                pending_heads.append(h)
+            carry = ""
+        elif _NUM.match(txt) and re.search(r"[A-Za-z]{3}", txt) and len(txt) < 120:
+            carry = txt  # numbered entry whose page is on the next line
+        elif carry and len(carry) < 200 and pending_heads == []:
+            carry = carry + " " + txt
+        elif pending_heads and not _NUM.match(txt) and txt.isupper():
+            pending_heads[-1].title += " " + txt  # heading wrapped over lines
+        else:
+            carry = ""
+    return out
+
+
 def parse_entry(line: str) -> Optional[Entry]:
-    line = line.translate(_LIGATURES).rstrip()
+    line = normalise_toc_line(line)
     raw = line.replace("|", "   ").strip()
     m = _PAGE_TAIL.match(raw)
     if not m:
         return None
-    title, page = m.group("title").strip(" .|*#"), m.group("page")
+    title, page = m.group("title"), m.group("page")
+    title = _NUM_COLUMN.sub("", title).strip(" .|*#")
     if not re.search(r"[A-Za-z]{3}", title) or len(title) > 140:
         return None
     level, number = 1, None
@@ -100,22 +151,31 @@ def layout_text(pdf: Path, page: int) -> str:
 
 
 def toc_entries(pdf: Optional[Path], pages: dict[int, list[str]], methods: dict[int, str]) -> list[Entry]:
-    """Parse the contents pages: those in the first fifth of the book that parse as >= 5 entries,
-    starting at a 'Contents' heading or the first such page, continuing while pages keep parsing."""
+    """Parse the contents pages in the first fifth of the book: runs start at a 'Contents' heading
+    with >= 3 entries or any page with >= 6, continue while pages keep parsing (>= 3 entries);
+    the longest run wins."""
     n = max(pages) if pages else 0
-    entries: list[Entry] = []
-    started = False
-    for p in range(1, max(1, min(n, 60, n // 5 + 10)) + 1):
+    scan = range(1, max(1, min(n, 60, n // 5 + 10)) + 1)
+    parsed: dict[int, tuple[list[Entry], bool]] = {}
+    for p in scan:
         use_layout = pdf is not None and methods.get(p) == "textlayer"
         lines = layout_text(pdf, p).splitlines() if use_layout else pages.get(p, [])
-        got = [e for e in (parse_entry(ln) for ln in lines) if e]
-        heading = any(_CONTENTS.match(ln) for ln in lines[:6])
-        if (heading and len(got) >= 3) or len(got) >= 6:
-            entries += got
-            started = True
-        elif started and len(got) < 3:
-            break
-    return entries
+        heading = any(_CONTENTS.match(normalise_toc_line(ln)) for ln in lines[:6])
+        parsed[p] = (parse_toc_lines(lines), heading)
+    starts = [p for p in scan if (parsed[p][1] and len(parsed[p][0]) >= 3) or len(parsed[p][0]) >= 6]
+
+    def run_from(start: int) -> list[Entry]:
+        out: list[Entry] = []
+        for p in range(start, scan[-1] + 1):
+            if p > start and len(parsed[p][0]) < 3:
+                break
+            out += parsed[p][0]
+        return out
+
+    # The contents is the longest run of entry-dense pages; a preface or a handbook overview
+    # with a few numbered lines makes a short run and loses.
+    runs = [run_from(p) for p in starts]
+    return max(runs, key=len) if runs else []
 
 
 def printed_to_pdf(printed: str, mapping: dict[int, Optional[str]]) -> Optional[int]:
