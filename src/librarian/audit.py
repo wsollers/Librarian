@@ -78,6 +78,32 @@ def audit(cfg: Config, con: sqlite3.Connection, mark: bool = False, fonts: bool 
     has_sections, has_index = _table(con, "sections"), _table(con, "index_state")
     rows, flagged = [], {}
     books = con.execute("SELECT * FROM books WHERE status != 'unsupported' ORDER BY path").fetchall()
+
+    # File work (page scans, pdffonts) in parallel; SQL stays on this thread.
+    from concurrent.futures import ThreadPoolExecutor
+    import time
+    t0 = time.time()
+
+    def scan(b):
+        obj = cfg.objects / b["sha256"]
+        if not (obj / "extract.json").is_file():
+            return b["sha256"], None
+        m = json.loads((obj / "extract.json").read_text(encoding="utf-8"))
+        n = m["pages"]
+        dmg = damaged_pages(obj)
+        low = [p for p in m.get("low_quality_pages", []) if not _sparse(obj, m, p)]
+        fonts_bad = []
+        if fonts and b["ext"] == "pdf" and (len(dmg) >= 3 or (n and len(dmg) >= 0.02 * n)):
+            fonts_bad = unmapped_symbol_fonts(cfg.sources / b["path"])
+        return b["sha256"], (m, dmg, low, fonts_bad)
+
+    scanned = {}
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for i, (sha, res) in enumerate(pool.map(scan, books), 1):
+            scanned[sha] = res
+            if i % 50 == 0 or i == len(books):
+                log.info("  audit: scanned %d/%d books (%.0fs)", i, len(books), time.time() - t0)
+
     for b in books:
         sha = b["sha256"]
         obj = cfg.objects / sha
@@ -87,15 +113,14 @@ def audit(cfg: Config, con: sqlite3.Connection, mark: bool = False, fonts: bool 
         def flag(f, why):
             r["flags"].append(f)
             r["reasons"].append(why)
-        if not mpath.is_file():
+        if scanned.get(sha) is None:
             flag("not-extracted", b["status"])
             rows.append(r)
             continue
-        m = json.loads(mpath.read_text(encoding="utf-8"))
+        m, dmg, low, fonts_bad = scanned[sha]
         n = m["pages"]
         r["pages"] = n
         r["methods"] = " ".join(f"{k}:{v}" for k, v in sorted(m["methods"].items()))
-        low = [p for p in m.get("low_quality_pages", []) if not _sparse(obj, m, p)]
         edge = max(1, round(0.05 * n))
         body = [p for p in low if edge < p <= n - edge]
         r["low"] = len(low)
@@ -104,10 +129,8 @@ def audit(cfg: Config, con: sqlite3.Connection, mark: bool = False, fonts: bool 
         if body:
             flag("low-body-pages", f"{len(body)} body pages: {body[:12]}{'…' if len(body) > 12 else ''}")
 
-        dmg = damaged_pages(obj)
         r["damaged"] = len(dmg)
         if len(dmg) >= 3 or (n and len(dmg) >= 0.02 * n):
-            fonts_bad = unmapped_symbol_fonts(cfg.sources / b["path"]) if fonts and b["ext"] == "pdf" else []
             flag("damaged-text", f"{len(dmg)} pages with unmapped glyphs" +
                  (f"; symbol fonts without Unicode map: {', '.join(fonts_bad[:5])}" if fonts_bad else ""))
             if mark:
