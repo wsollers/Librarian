@@ -11,7 +11,6 @@ from __future__ import annotations
 import io
 import re
 import subprocess
-import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -67,15 +66,13 @@ def page_words(djvu: Path, page: int) -> list[tuple[int, int, int, int, str]]:
     return []
 
 
-def render(djvu: Path, page: int, dpi: int, out_dir: Path):
+def render(djvu: Path, page: int, dpi: int, out_dir: Optional[Path] = None):
+    """Page image straight from ddjvu's stdout: no temporary file for antivirus to lock (WinError 32)."""
     from PIL import Image
-    f = out_dir / f"p{page}.pnm"
-    subprocess.run([_tool("ddjvu"), "-format=pnm", f"-page={page}", f"-scale={dpi}", str(djvu), str(f)],
-                   check=True, capture_output=True, timeout=300)
-    with Image.open(f) as im:          # close the file before deleting it (Windows locks open files)
-        img = im.convert("L")          # convert() copies the pixels
-    f.unlink()
-    return img
+    r = subprocess.run([_tool("ddjvu"), "-format=pnm", f"-page={page}", f"-scale={dpi}", str(djvu)],
+                       check=True, capture_output=True, timeout=300)
+    with Image.open(io.BytesIO(r.stdout)) as im:
+        return im.convert("L")
 
 
 def _font():
@@ -103,11 +100,11 @@ def convert(djvu: Path, out: Path, dpi: int = 200, quality: int = 70, title: Opt
     c.setTitle(title or djvu.stem)
     c.setCreator("librarian djvu2pdf (DjVu hidden text as invisible text layer)")
     words_total = 0
-    with tempfile.TemporaryDirectory() as td:
+    if True:
         for p, (w, h, native) in enumerate(infos, 1):
             W, H = w * 72 / native, h * 72 / native          # page size in points
             c.setPageSize((W, H))
-            img = render(djvu, p, min(dpi, native), Path(td))
+            img = render(djvu, p, min(dpi, native))
             buf = io.BytesIO()
             img.save(buf, "JPEG", quality=quality, optimize=True)
             buf.seek(0)
