@@ -99,6 +99,8 @@ def audit(cfg: Config, con: sqlite3.Connection, mark: bool = False, fonts: bool 
         edge = max(1, round(0.05 * n))
         body = [p for p in low if edge < p <= n - edge]
         r["low"] = len(low)
+        r["ocr_body"] = body
+        r["ocr_all"] = low
         if body:
             flag("low-body-pages", f"{len(body)} body pages: {body[:12]}{'…' if len(body) > 12 else ''}")
 
@@ -180,6 +182,23 @@ def write(cfg: Config, rows: list[dict], flagged: dict) -> None:
     md += ["", f"## clean ({len(clean)})", ""]
     md += [f"- {r['title']} — {r['author'] or '?'}: {r['pages']} pp, {r.get('printed_pct')}% printed pages, "
            f"{r.get('sections', 0)} sections, {r.get('chunks', 0)} chunks" for r in clean]
+    work = sorted((r for r in rows if r.get("ocr_body")), key=lambda r: -len(r["ocr_body"]))
+    rate = 11.0  # pages/min with 3 Codex workers, measured on the OCR queue
+    with (cfg.reports / "ocr-worklist.csv").open("w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["body_pages", "all_low_pages", "pages", "minutes", "title", "author", "path", "pages_list"])
+        for r in work:
+            w.writerow([len(r["ocr_body"]), len(r["ocr_all"]), r["pages"], round(len(r["ocr_body"]) / rate, 1),
+                        r["title"], r["author"], r["path"], " ".join(map(str, r["ocr_body"]))])
+    (cfg.reports / "ocr-worklist.txt").write_text(
+        "# Books with low-quality body pages (from audit). Use: run --select @<this file> --llm-ocr --body-only\n"
+        + "".join(f"{r['sha256'][:16]}  # {r['title']} - {len(r['ocr_body'])} pages\n" for r in work),
+        encoding="utf-8")
+    total = sum(len(r["ocr_body"]) for r in work)
+    md += ["", f"## OCR worklist: {len(work)} books, {total} body pages, ~{total / rate / 60:.1f} h", "",
+           "`reports/ocr-worklist.csv` (per book, with page lists) and `ocr-worklist.txt` "
+           "(`run --select @<data>/reports/ocr-worklist.txt --llm-ocr --body-only`).", ""]
+    md += [f"- {len(r['ocr_body'])} pages: {r['title']} — {r['author'] or '?'}" for r in work[:25]]
     (cfg.reports / "audit.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     keys = ["title", "author", "category", "status", "pages", "methods", "low", "damaged", "printed_pct",
             "sections", "sections_verified", "chunks", "flags", "reasons", "path", "sha256"]

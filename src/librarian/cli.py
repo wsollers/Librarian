@@ -64,7 +64,8 @@ def main(argv: list[str] | None = None) -> int:
 
     def add_extract_opts(p):
         p.add_argument("--nougat", action="store_true", help="escalate low-quality pages to nougat (docker, GPU)")
-        p.add_argument("--llm-ocr", action="store_true", help="escalate still-bad pages to OpenAI vision (OPENAI_API_KEY)")
+        p.add_argument("--llm-ocr", action="store_true", help="escalate still-bad pages to LLM OCR (Codex CLI or OpenAI API)")
+        p.add_argument("--body-only", action="store_true", help="with --llm-ocr: skip the first/last 5%% of each book (covers, front/back matter)")
         p.add_argument("--no-legacy", action="store_true", help="do not reuse legacy lra extraction")
 
     def add_embed(p):
@@ -174,7 +175,8 @@ def run_stages(cfg, a) -> dict:
 
     errors = 0
     if "extract" in stages:
-        opt = ex.Options(force=a.force, use_legacy=not a.no_legacy, nougat=a.nougat, llm_ocr=a.llm_ocr)
+        opt = ex.Options(force=a.force, use_legacy=not a.no_legacy, nougat=a.nougat, llm_ocr=a.llm_ocr,
+                         body_only=a.body_only)
         for i, b in enumerate(books, 1):
             log.info("[%d/%d]", i, len(books))
             try:

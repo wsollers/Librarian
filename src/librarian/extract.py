@@ -35,6 +35,7 @@ class Options:
     use_legacy: bool = True
     nougat: bool = False
     llm_ocr: bool = False
+    body_only: bool = False   # OCR only pages outside the first/last 5% (skip covers, front/back matter)
     q_min: float = Q_MIN
 
 
@@ -44,6 +45,11 @@ class PageResult:
     method: str
     quality: float
     notes: list[str] = field(default_factory=list)
+
+
+def body_edge(n_pages: int) -> int:
+    """Pages counted as front/back matter at each end: 5% of the book, at least 1."""
+    return max(1, round(0.05 * n_pages))
 
 
 # ---------- source readers ----------
@@ -223,13 +229,20 @@ def _escalate(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Optio
             log.warning("  nougat requested but docker or the model folder (%s) is missing", ocr.nougat_models())
     if low and opt.llm_ocr and ext == "pdf":
         from concurrent.futures import ThreadPoolExecutor
+        n_pages = len(results)
+        if opt.body_only:
+            edge = body_edge(n_pages)
+            skipped = [p for p in low if not (edge < p <= n_pages - edge)]
+            if skipped:
+                log.info("  --body-only: not OCRing %d front/back pages %s", len(skipped), skipped[:10])
+        ocr_pages = [p for p in low if not opt.body_only or body_edge(n_pages) < p <= n_pages - body_edge(n_pages)]
         workers = int(os.environ.get("LIBRARIAN_OCR_WORKERS", "3"))
-        log.info("  LLM OCR: %d pages, %d workers (%s)", len(low), workers,
+        log.info("  LLM OCR: %d pages, %d workers (%s)", len(ocr_pages), workers,
                  os.environ.get("LIBRARIAN_OCR_BACKEND", "codex"))
         from concurrent.futures import as_completed
         ocr_t, done, failed = Timer(), 0, 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            futs = {pool.submit(ocr.llm_ocr, src, pg): pg for pg in low}
+            futs = {pool.submit(ocr.llm_ocr, src, pg): pg for pg in ocr_pages}
             for fut in as_completed(futs):
                 p = futs[fut]
                 done += 1
@@ -244,11 +257,11 @@ def _escalate(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Optio
                     lines = clean_lines(md)
                     results[p] = PageResult(lines, method, quality(lines), [f"prev q={results[p].quality}"])
                     log.debug("  p%d %s q=%.3f", p, method, results[p].quality)
-                if done % 10 == 0 or done == len(low):
+                if done % 10 == 0 or done == len(ocr_pages):
                     rate = done / max(ocr_t.s, 1e-6) * 60
-                    eta = (len(low) - done) / max(rate, 1e-6)
+                    eta = (len(ocr_pages) - done) / max(rate, 1e-6)
                     log.info("    OCR %d/%d pages, %d failed, %.1f pages/min, ~%.0f min left",
-                             done, len(low), failed, rate, eta)
+                             done, len(ocr_pages), failed, rate, eta)
         low = [p for p in low if results[p].quality < opt.q_min
                and not is_confirmed_sparse(results[p].method, results[p].lines)]
 
