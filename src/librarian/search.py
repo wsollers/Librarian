@@ -112,6 +112,9 @@ def _page_lines(cfg: Config, sha: str, p: int) -> list[str]:
 def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder], mode: str = "hybrid",
            k: int = 10, book: Optional[str] = None, reranker=None, explain: int = 0,
            expander=None) -> list[Hit]:
+    import time as _t
+    T = {"t0": _t.perf_counter()}
+    mark = lambda k: T.__setitem__(k, _t.perf_counter())
     descriptive = mode in ("hybrid", "semantic") and is_descriptive(q)
     rq, fq, vq = q.strip('"'), q, q          # rerank / FTS / vector queries
     if expander is not None and descriptive:
@@ -135,6 +138,7 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
             return []
         bfilter = f" AND sha256 IN ({','.join('?' * len(bargs))})"
 
+    mark("expand")
     if mode in ("hybrid", "phrase", "fts"):
         fts_w = 0.5 if descriptive else 1.0
         rows = con.execute(
@@ -146,6 +150,7 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
             c.rrf += fts_w / (RRF_K + rank)
             c.via.add("fts")
 
+    mark("fts")
     if mode in ("hybrid", "semantic") and emb is not None:
         store = VectorStore(con, emb.dim, emb.spec, create=False)
         rank = 0
@@ -166,6 +171,7 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
                 c.span, c.passage = (a, b), text
             rank += 1
 
+    mark("vector")
     ordered = sorted(cands.values(), key=lambda c: -c.rrf)
     if explain:
         import sys
@@ -203,6 +209,7 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
             c.rerank += DEF_BOOST if reranker else DEF_BOOST_RRF
     pool.sort(key=lambda c: -c.rerank)
 
+    mark("rerank")
     hits, seen = [], set()
     for c in pool:
         if len(hits) >= k:
@@ -223,6 +230,10 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
                         "+".join(sorted(c.via)), snippet,
                         str(cfg.objects / c.sha / "pages" / f"{c.page:04d}.md"), c.sha,
                         loc.get("chapter"), loc.get("section"), uri))
+    mark("done")
+    keys = ["t0", "expand", "fts", "vector", "rerank", "done"]
+    LAST_TIMING.clear()
+    LAST_TIMING.update({k: round(T[k] - T[keys[i - 1]], 2) for i, k in enumerate(keys) if i and k in T})
     return hits
 
 
@@ -285,6 +296,9 @@ def refine(cands: list["Cand"], lines_cache: dict, q: str, reranker) -> None:
             s, w = best[id(c)]
             c.span = w
             c.rerank = 0.5 * c.rerank + 0.5 * _sigmoid(s)
+
+
+LAST_TIMING: dict = {}
 
 
 def format_hit(h: Hit) -> str:

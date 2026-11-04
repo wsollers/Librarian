@@ -38,7 +38,16 @@ def select_books(con: sqlite3.Connection, sel: str) -> list[sqlite3.Row]:
     return sorted((r for r in rows if first(r) is not None), key=lambda r: (first(r), r["path"]))
 
 
+def _utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _utf8_stdio()
     ap = argparse.ArgumentParser(prog="librarian", description=__doc__)
     ap.add_argument("--version", action="version", version=__version__)
     ap.add_argument("--config", type=Path, help="TOML config (default: config/local.toml)")
@@ -79,12 +88,18 @@ def main(argv: list[str] | None = None) -> int:
     add_sel(p); add_extract_opts(p); add_embed(p)
     p = sub.add_parser("nougat-test", help="run nougat on extracted books into objects/<sha>/nougat/ and compare with current pages")
     add_sel(p)
+    p = sub.add_parser("djvu2pdf", help="DjVu -> PDF with the DjVu hidden text as a searchable text layer")
+    p.add_argument("djvu", help="DjVu file (absolute, or relative to the sources root)")
+    p.add_argument("--replace", help="existing PDF (same book) to retire to _duplicates; the new PDF takes its path")
+    p.add_argument("--dpi", type=int, default=200)
+    p.add_argument("--keep-djvu", action="store_true", help="leave the DjVu in Sources (default: retire it too)")
     p = sub.add_parser("search", help="hybrid search")
     p.add_argument("query")
     p.add_argument("--mode", choices=["hybrid", "phrase", "fts", "semantic"], default="hybrid")
     p.add_argument("-k", type=int, default=10)
     p.add_argument("--book", help="restrict to books whose title/author/path contains this")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--timing", action="store_true", help="print time per phase (stderr)")
     p.add_argument("--explain", type=int, default=0, metavar="N", help="print the top N candidates before reranking (stderr)")
     p.add_argument("--expand", default=None, help="query expansion for descriptive queries: 'ollama[:model]' (default, $LIBRARIAN_EXPAND_MODEL or llama3.1:8b) or 'none'")
     p.add_argument("--rerank", default=None, help="cross-encoder model, or 'none' (default $LIBRARIAN_RERANK or BAAI/bge-reranker-v2-m3)")
@@ -106,6 +121,8 @@ def main(argv: list[str] | None = None) -> int:
         summary.update(inventory.run(cfg, rehash=a.rehash, verbose=True))
     elif a.cmd == "report":
         summary.update(inventory.report(connect(cfg.db_path), cfg))
+    elif a.cmd == "djvu2pdf":
+        summary.update(djvu_to_pdf(cfg, a))
     elif a.cmd == "audit":
         from .audit import audit
         summary.update(audit(cfg, connect(cfg.db_path), mark=a.mark, fonts=not a.no_fonts))
@@ -135,6 +152,8 @@ def main(argv: list[str] | None = None) -> int:
     elif a.cmd in ("extract", "pagemap", "index", "run"):
         summary.update(run_stages(cfg, a))
     elif a.cmd == "search":
+        import time as _t
+        t_start = _t.perf_counter()
         from . import embed, search
         from .index import connect_index
         con = connect(cfg.db_path)
@@ -143,12 +162,16 @@ def main(argv: list[str] | None = None) -> int:
         emb = embed.load(spec) if spec and a.mode in ("hybrid", "semantic") else None
         rr = embed.load_reranker(a.rerank) if a.mode in ("hybrid", "semantic") else None
         ex = embed.load_expander(a.expand) if a.mode in ("hybrid", "semantic") else None
+        t_models = _t.perf_counter() - t_start
         hits = search.search(cfg, con, a.query, emb, a.mode, a.k, a.book, rr, a.explain, ex)
         if a.json:
             print(json.dumps([search.as_dict(h) for h in hits], indent=2, ensure_ascii=False))
         else:
             for i, h in enumerate(hits, 1):
                 print(f"{i:2d}. {search.format_hit(h)}")
+        if a.timing:
+            print(f"# timing: load models {t_models:.1f}s | " +
+                  " | ".join(f"{k} {v:.1f}s" for k, v in search.LAST_TIMING.items()), file=sys.stderr)
         return 0
 
     summary["seconds"] = round(t.s, 1)
@@ -156,6 +179,44 @@ def main(argv: list[str] | None = None) -> int:
         write_summary(log_path, summary)
     print(json.dumps({k: v for k, v in summary.items() if k != "books"}, indent=2, default=str))
     return 0
+
+
+def _retire(cfg, rel: Path, reason: str, replacement: str) -> None:
+    """Move a file under Sources to <sources parent>/_duplicates/Sources/<same path>; log it."""
+    import datetime
+    root = cfg.sources.parent / "_duplicates"
+    dst = root / "Sources" / rel
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists():
+        dst = dst.with_name(dst.stem + " (2)" + dst.suffix)
+    (cfg.sources / rel).replace(dst)
+    with (root / "MOVED.tsv").open("a", encoding="utf-8") as f:
+        f.write(f"{rel.as_posix()}\t{replacement}\t{reason} ({datetime.date.today()})\n")
+    log.info("retired %s -> %s", rel, dst)
+
+
+def djvu_to_pdf(cfg, a) -> dict:
+    from .djvu2pdf import convert
+    djvu = Path(a.djvu)
+    if not djvu.is_absolute():
+        djvu = cfg.sources / djvu
+    if not djvu.is_file():
+        raise SystemExit(f"not found: {djvu}")
+    out = djvu.with_suffix(".pdf")
+    if a.replace:
+        old = Path(a.replace)
+        old = old if old.is_absolute() else cfg.sources / old
+        out = old
+    tmp = out.with_name(out.stem + ".from-djvu.pdf")
+    res = convert(djvu, tmp, dpi=a.dpi, title=out.stem)
+    if out.exists():
+        _retire(cfg, out.relative_to(cfg.sources), "damaged text layer; rebuilt from DjVu", djvu.name)
+    tmp.replace(out)
+    if not a.keep_djvu:
+        _retire(cfg, djvu.relative_to(cfg.sources), "converted to PDF with its text layer", out.name)
+    res["pdf"] = str(out)
+    log.info("next: scripts\\run.ps1 run --select \"%s\"", out.stem)
+    return res
 
 
 def run_stages(cfg, a) -> dict:

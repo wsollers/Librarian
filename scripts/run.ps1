@@ -19,6 +19,10 @@ if (Test-Path $EnvFile) {
         }
     }
 }
+# UTF-8 console I/O; load cached Hugging Face models without asking the Hub every run
+# (set HF_HUB_OFFLINE=0 in .env when a new model must be downloaded).
+$env:PYTHONIOENCODING = "utf-8"
+if (-not $env:HF_HUB_OFFLINE) { $env:HF_HUB_OFFLINE = "1" }
 Push-Location $Repo
 try {
     & $Py -m librarian @args
