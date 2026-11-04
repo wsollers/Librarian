@@ -23,6 +23,12 @@ if (Test-Path $EnvFile) {
 # (set HF_HUB_OFFLINE=0 in .env when a new model must be downloaded).
 $env:PYTHONIOENCODING = "utf-8"
 if (-not $env:HF_HUB_OFFLINE) { $env:HF_HUB_OFFLINE = "1" }
+# Quiet model loading: no progress bars or Hub notices (errors still show).
+foreach ($v in @("HF_HUB_DISABLE_PROGRESS_BARS=1", "HF_HUB_VERBOSITY=error", "TRANSFORMERS_VERBOSITY=error",
+                 "TRANSFORMERS_NO_ADVISORY_WARNINGS=1", "TQDM_DISABLE=1")) {
+    $k, $val = $v -split "=", 2
+    if (-not [Environment]::GetEnvironmentVariable($k, "Process")) { [Environment]::SetEnvironmentVariable($k, $val, "Process") }
+}
 Push-Location $Repo
 try {
     & $Py -m librarian @args
