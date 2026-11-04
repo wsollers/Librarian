@@ -68,7 +68,6 @@ foreach ($t in "djvutxt", "djvused") {
     if (-not $hit) { $hit = $DjvuDirs | ForEach-Object { Join-Path $_ "$t.exe" } | Where-Object { Test-Path $_ } | Select-Object -First 1 }
     if ($hit) { Ok $t } else { Warn "$t missing: DjVu books (2) will not extract (winget install --id DjVuLibre.DjView --exact)" }
 }
-if (Get-Command docker -ErrorAction SilentlyContinue) { Ok "docker (nougat)" } else { Warn "docker missing: --nougat unavailable" }
 if (Get-Command ollama -ErrorAction SilentlyContinue) { Ok "ollama" } else { Warn "ollama missing: only needed for --embed ollama:..." }
 if (Get-Command nvidia-smi -ErrorAction SilentlyContinue) {
     $gpu = (& nvidia-smi --query-gpu=name,memory.total --format=csv,noheader) -join "; "

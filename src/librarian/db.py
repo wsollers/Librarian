@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS pages (
     sha256       TEXT NOT NULL REFERENCES books(sha256),
     pdf_page     INTEGER NOT NULL,   -- 1-based
     printed_page TEXT,               -- 'xiv', '17', NULL if unknown
-    method       TEXT,               -- textlayer | nougat | llm-ocr | legacy
+    method       TEXT,               -- textlayer | llm-ocr:codex | legacy (older rows may say nougat / llm-ocr:openai)
     quality      REAL,
     line_count   INTEGER,
     PRIMARY KEY (sha256, pdf_page)

@@ -19,7 +19,7 @@ choco install poppler                  # pdftotext/pdftoppm/pdfimages
 winget install --id DjVuLibre.DjView --exact   # djvutxt/djvused (found in Program Files (x86)\DjVuLibre)
 scripts\bootstrap.ps1                  # .venv, CUDA torch, deps, requirements.lock, tool checks
 codex login                            # LLM OCR uses the Codex CLI on your ChatGPT plan (default)
-notepad .env                           # or LIBRARIAN_OCR_BACKEND=openai + OPENAI_API_KEY
+notepad .env                           # optional settings (see .env.example)
 ```
 
 `bootstrap.ps1` is the only supported way to build the environment; the CLI refuses to run
@@ -48,7 +48,7 @@ Everything is incremental and cached by SHA-256; `--force` redoes a stage.
 | Stage | What it does | Output (under the data dir) |
 |---|---|---|
 | inventory | hash, dedupe, probe text layer, legacy seeds | `books`/`files` tables, `reports/coverage.md` |
-| extract | pdftotext per page → quality score → legacy page → nougat (`--nougat`) → LLM OCR (`--llm-ocr`: Codex CLI or OpenAI API, parallel) | `objects/<sha>/pages/NNNN.md`, `extract.json` |
+| extract | pdftotext per page → quality score → Codex OCR for low pages (`--llm-ocr`, parallel; without it, legacy pages fill in) | `objects/<sha>/pages/NNNN.md`, `extract.json` |
 | pagemap | printed page per PDF page from running heads/feet; `pagemaps/` overrides; chapters/sections from the contents page (fallback: numbered headings) | `pages.printed_page`, `sections`, `objects/<sha>/book.md` |
 | index | page FTS5 + 12-line chunks embedded (bge-base on GPU, or Ollama) in sqlite-vec | `librarian.sqlite` |
 | search | FTS + vectors merged by reciprocal rank, definition pages boosted | citations |
@@ -64,7 +64,7 @@ whole book with `<!-- page pdf=N printed=X -->` breaks.
 |---|---|
 | seeded | legacy `LIB-<sha16>.md` exists (reused only for pages it does better) |
 | pending | readable, text layer, not yet extracted |
-| pending-ocr | no usable text layer: needs `--nougat` / `--llm-ocr` |
+| pending-ocr | no usable text layer: needs `--llm-ocr` |
 | extracted | extracted; a few low-quality pages (covers, plates) noted in `reason` |
 | extracted-partial | more than 5% of pages still below quality |
 | indexed | searchable |

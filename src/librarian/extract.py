@@ -33,7 +33,6 @@ _LEGACY_PAGE = re.compile(r"^=== Page (\d+) ===\s*$", re.M)
 class Options:
     force: bool = False
     use_legacy: bool = True
-    nougat: bool = False
     llm_ocr: bool = False
     body_only: bool = False   # OCR only pages outside the first/last 5% (skip covers, front/back matter)
     q_min: float = Q_MIN
@@ -154,7 +153,7 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
     if manifest_path.is_file() and not opt.force:
         m = json.loads(manifest_path.read_text(encoding="utf-8"))
         if m.get("extractor_version") == EXTRACTOR_VERSION:
-            if not ((opt.nougat or opt.llm_ocr) and m.get("low_quality_pages")):
+            if not (opt.llm_ocr and m.get("low_quality_pages")):
                 log.info("skip (cached): %s", row["title"])
                 return {"sha256": sha, "skipped": True}
             resume = m  # keep every good page, escalate only the remaining low ones
@@ -206,7 +205,8 @@ def _escalate(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Optio
               obj: Path, manifest_path: Path, results: dict[int, "PageResult"], low: list[int]) -> dict:
     sha, ext = row["sha256"], row["ext"]
 
-    if low and opt.use_legacy:
+    # Legacy pages are old Tesseract output: with --llm-ocr, Codex reads the page instead.
+    if low and opt.use_legacy and not opt.llm_ocr:
         legacy = legacy_pages(cfg, row["seed_markdown"], len(results))
         for p in list(low):
             if p in legacy and quality(legacy[p]) > results[p].quality:
@@ -214,19 +214,6 @@ def _escalate(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Optio
                                         [f"textlayer q={results[p].quality}"])
                 if results[p].quality >= opt.q_min:
                     low.remove(p)
-    if low and opt.nougat and ext == "pdf":
-        if ocr.nougat_available():
-            log.info("  nougat: %d pages", len(low))
-            for p, (md, state) in ocr.nougat_ocr(src, low).items():
-                lines = clean_lines(md)
-                q = quality(lines)
-                if state == "ok" and q > results[p].quality:
-                    results[p] = PageResult(lines, "nougat", q, [f"prev q={results[p].quality}"])
-                else:
-                    log.debug("  p%d nougat %s q=%.3f: not used", p, state, q)
-            low = [p for p in low if results[p].quality < opt.q_min]
-        else:
-            log.warning("  nougat requested but docker or the model folder (%s) is missing", ocr.nougat_models())
     if low and opt.llm_ocr and ext == "pdf":
         from concurrent.futures import ThreadPoolExecutor
         n_pages = len(results)
@@ -237,8 +224,7 @@ def _escalate(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Optio
                 log.info("  --body-only: not OCRing %d front/back pages %s", len(skipped), skipped[:10])
         ocr_pages = [p for p in low if not opt.body_only or body_edge(n_pages) < p <= n_pages - body_edge(n_pages)]
         workers = int(os.environ.get("LIBRARIAN_OCR_WORKERS", "3"))
-        log.info("  LLM OCR: %d pages, %d workers (%s)", len(ocr_pages), workers,
-                 os.environ.get("LIBRARIAN_OCR_BACKEND", "codex"))
+        log.info("  LLM OCR (codex): %d pages, %d workers", len(ocr_pages), workers)
         from concurrent.futures import as_completed
         ocr_t, done, failed = Timer(), 0, 0
         with ThreadPoolExecutor(max_workers=workers) as pool:

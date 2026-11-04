@@ -72,8 +72,7 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--force", action="store_true", help="redo even if cached")
 
     def add_extract_opts(p):
-        p.add_argument("--nougat", action="store_true", help="escalate low-quality pages to nougat (docker, GPU)")
-        p.add_argument("--llm-ocr", action="store_true", help="escalate still-bad pages to LLM OCR (Codex CLI or OpenAI API)")
+        p.add_argument("--llm-ocr", action="store_true", help="OCR low-quality pages with the Codex CLI (ChatGPT plan)")
         p.add_argument("--body-only", action="store_true", help="with --llm-ocr: skip the first/last 5%% of each book (covers, front/back matter)")
         p.add_argument("--no-legacy", action="store_true", help="do not reuse legacy lra extraction")
 
@@ -86,8 +85,6 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--reembed", action="store_true", help="drop all vectors (embedder changed)")
     p = sub.add_parser("run", help="inventory, extract, pagemap, index for a selection")
     add_sel(p); add_extract_opts(p); add_embed(p)
-    p = sub.add_parser("nougat-test", help="run nougat on extracted books into objects/<sha>/nougat/ and compare with current pages")
-    add_sel(p)
     p = sub.add_parser("djvu2pdf", help="DjVu -> PDF with the DjVu hidden text as a searchable text layer")
     p.add_argument("djvu", help="DjVu file (absolute, or relative to the sources root)")
     p.add_argument("--replace", help="existing PDF (same book) to retire to _duplicates; the new PDF takes its path")
@@ -98,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("name", help="work dir name under <data>/leancheck/")
     p.add_argument("--select", help="statements: the book (substring, as for run --select)")
     p.add_argument("--pages", help="statements: PDF page range A-B")
-    p.add_argument("--mmd", help="statements: read nougat .mmd chunks (pages-A-B.mmd) from this dir instead of pages/")
+    p.add_argument("--mmd", help="statements: read .mmd chunks (pages-A-B.mmd, e.g. old nougat output) from this dir instead of pages/")
     p.add_argument("--workers", type=int, default=3)
     p.add_argument("--project", help="compile: Lean project with Mathlib (default $LIBRARIAN_LEAN_PROJECT)")
     p.add_argument("--no-plausible", action="store_true")
@@ -143,21 +140,6 @@ def main(argv: list[str] | None = None) -> int:
             "meta": dict(con.execute("SELECT key, value FROM meta").fetchall()),
         }, indent=2))
         return 0
-    elif a.cmd == "nougat-test":
-        from .compare import nougat_test
-        from . import ocr
-        if not ocr.nougat_available():
-            print(f"nougat unavailable: need docker on PATH and {ocr.nougat_models()}", file=sys.stderr)
-            return 2
-        con = connect(cfg.db_path)
-        summary["books"] = []
-        for b in select_books(con, a.select)[: a.limit]:
-            if not (cfg.objects / b["sha256"] / "extract.json").is_file():
-                log.warning("not extracted yet, skipped: %s", b["title"])
-                continue
-            n = con.execute("SELECT count(*) FROM pages WHERE sha256=?", (b["sha256"],)).fetchone()[0]
-            summary["books"].append(nougat_test(cfg, b["sha256"], b["title"], n))
-        summary["results"] = summary.pop("books")
     elif a.cmd == "leancheck":
         summary.update(lean_check(cfg, a))
     elif a.cmd in ("extract", "pagemap", "index", "run"):
@@ -304,7 +286,7 @@ def run_stages(cfg, a) -> dict:
 
     errors = 0
     if "extract" in stages:
-        opt = ex.Options(force=a.force, use_legacy=not a.no_legacy, nougat=a.nougat, llm_ocr=a.llm_ocr,
+        opt = ex.Options(force=a.force, use_legacy=not a.no_legacy, llm_ocr=a.llm_ocr,
                          body_only=a.body_only)
         for i, b in enumerate(books, 1):
             log.info("[%d/%d]", i, len(books))

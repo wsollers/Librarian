@@ -91,13 +91,6 @@ def test_toc_detection():
     assert search.is_toc_page(toc) and not search.is_toc_page(body)
 
 
-def test_nougat_ranges_and_similarity():
-    from librarian import compare, ocr
-    assert ocr._ranges([5, 1, 2, 3, 9, 10]) == "1-3,5,9-10"
-    assert compare.similarity(r"Let $f:\mathbb R\to\mathbb R$ be continuous", "Let $f: R \\to R$ be continuous") > 0.9
-    assert compare.similarity("completely different words here", "nothing alike at all") < 0.3
-
-
 def test_toc_entry_formats():
     from librarian.sections import parse_entry as P
     e = P("  1.1 What is analysis? . . . . . . . . . . . . . . .       1")

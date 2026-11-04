@@ -27,7 +27,7 @@ SUPPORTED = {"pdf", "djvu", "epub"}
 STATUSES = {
     "seeded": "legacy Markdown exists; to be verified against pdfinfo in phase 2",
     "pending": "readable, text layer present, not yet extracted",
-    "pending-ocr": "readable, no usable text layer: needs nougat / LLM OCR",
+    "pending-ocr": "readable, no usable text layer: needs --llm-ocr (Codex)",
     "unsupported": "file type Librarian does not extract",
     "error": "could not be read",
 }
