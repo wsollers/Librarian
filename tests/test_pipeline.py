@@ -156,3 +156,12 @@ def test_toc_two_columns_ranges_wraps_and_page_less_chapters():
                    (2, "4.2", "Applications of the mean value theorem", "102"),
                    (2, "8.5", "Applications to Fourier series", "202"),
                    (2, "1.7", "Selection of proofs", "6")]
+
+
+def test_toc_parser_has_no_catastrophic_backtracking():
+    import time
+    from librarian.sections import parse_toc_lines
+    for ln in [" " * 1290 + "x 12", ". " * 600 + "1", "1.1 " + " . " * 400 + "x", "a" + " 1" * 500]:
+        t = time.time()
+        parse_toc_lines([ln])
+        assert time.time() - t < 0.5

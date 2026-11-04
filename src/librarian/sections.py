@@ -45,7 +45,8 @@ _RANGE = r"(?:\s*[\u2013\u2014-]\s*\d{1,4})?"
 _PAGE_TAIL = re.compile(
     r"^(?P<title>.*?\S)\s*(?:(?:\.\s?){2,}|\s{2,}|\s(?=[0-9ivxlc]+" + _RANGE + r"\s*$))\s*"
     r"(?P<page>\d{1,4}|[ivxlc]{1,7})" + _RANGE + r"\s*$", re.I)
-_NUM_COLUMN = re.compile(r"(?:\s+(?:\.\s?)*\d{1,4}" + _RANGE + r")+\s*$")  # 'Theorems' column before 'Pages'
+_TRAILING_NUM = re.compile(r"\s(\d{1,4}" + _RANGE + r")\s*$")  # one trailing number column
+MAX_TOC_LINE = 300
 _HEADING_ONLY = re.compile(r"^(?:chapter|part|appendix|book)\s+([0-9]+|[ivxlc]+|[a-z]+)\b[.:]?\s*\S", re.I)
 _NUM = re.compile(
     r"^(?:(?P<kw>chapter|part|appendix|lecture|lesson)\s+(?P<kwn>[0-9]+|[A-Z]|[ivxlc]+|[a-z]+)\b[.:]?\s*"
@@ -69,8 +70,23 @@ class Entry:
 
 def normalise_toc_line(line: str) -> str:
     line = line.translate(_LIGATURES).replace("\u3000", "  ").replace("\uff0e", ".").replace("\u2002", " ")
-    line = line.replace("~~", "").replace("*", "").replace("\u00a0", " ")
+    line = line.replace("~~", "").replace("*", "").replace("\u00a0", " ").replace("\t", "    ")
+    # Long runs of spaces (layout mode pads columns) only matter as 'a gap': keep three.
+    line = re.sub(r" {4,}", "   ", line)
     return line.rstrip()
+
+
+def strip_number_columns(title: str) -> str:
+    """Drop trailing number columns ('Theorems' before 'Pages'), keeping some words."""
+    for _ in range(4):
+        m = _TRAILING_NUM.search(title)
+        if not m:
+            break
+        rest = title[:m.start()].rstrip(" .")
+        if not re.search(r"[A-Za-z]{3}", rest):
+            break
+        title = rest
+    return title
 
 
 def parse_toc_lines(lines: list[str]) -> list["Entry"]:
@@ -115,12 +131,14 @@ def parse_toc_lines(lines: list[str]) -> list["Entry"]:
 
 def parse_entry(line: str) -> Optional[Entry]:
     line = normalise_toc_line(line)
+    if len(line) > MAX_TOC_LINE:  # garbled or a paragraph, not a contents entry
+        return None
     raw = line.replace("|", "   ").strip()
     m = _PAGE_TAIL.match(raw)
     if not m:
         return None
     title, page = m.group("title"), m.group("page")
-    title = _NUM_COLUMN.sub("", title).strip(" .|*#")
+    title = strip_number_columns(title).strip(" .|*#")
     if not re.search(r"[A-Za-z]{3}", title) or len(title) > 140:
         return None
     level, number = 1, None
