@@ -9,6 +9,8 @@ Metrics per engine x level (pages pooled):
   w_rec    prose word recall (words >= 3 letters, multiset)  -> dropped text
   w_prec   prose word precision                              -> hallucinated / garbage text
   sym_f1   F1 on math symbols (Greek, relations, set ops, arrows, brackets)
+  lines    share of printed lines (>= 3 words) whose first three words start a line of the output;
+           librarian cites line numbers, so engines that reflow paragraphs score low here
   bad_pp   pages with w_rec < 0.80 (page-level failures: loops, truncation, blank)
   s/page   wall seconds per page if timing.json exists
 
@@ -100,6 +102,15 @@ def syms(t: str) -> Counter:
     return Counter(c for c in t if c in MATH)
 
 
+def line_starts(raw: str) -> set:
+    out = set()
+    for ln in raw.splitlines():
+        w = re.findall(r"[a-z]{3,}", plain(ln))
+        if len(w) >= 3:
+            out.add(" ".join(w[:3]))
+    return out
+
+
 def overlap(a: Counter, b: Counter) -> int:
     return sum((a & b).values())
 
@@ -112,13 +123,17 @@ def read_out(d: Path, stem: str) -> str:
     return ""
 
 
-def score_dir(truth: dict, d: Path) -> dict:
+def score_dir(truth: dict, d: Path, raw: dict) -> dict:
+    lh = lt = 0
     ed = tl = 0
     tw = ow = mw = 0
     ts = os_ = ms = 0
     bad = []
     for stem, tt in truth.items():
-        o = plain(read_out(d, stem))
+        ro = read_out(d, stem)
+        o = plain(ro)
+        T, O = line_starts(raw[stem]), line_starts(ro)
+        lh, lt = lh + len(T & O), lt + len(T)
         ta, oa = alnum(tt), alnum(o)
         ed += lev(ta, oa)
         tl += len(ta)
@@ -132,7 +147,7 @@ def score_dir(truth: dict, d: Path) -> dict:
     p = ms / os_ if os_ else 0
     r = ms / ts if ts else 0
     res = {"cer": ed / tl if tl else 1, "w_rec": mw / tw if tw else 0, "w_prec": mw / ow if ow else 0,
-           "sym_f1": 2 * p * r / (p + r) if p + r else 0, "bad_pp": len(bad), "bad": bad}
+           "sym_f1": 2 * p * r / (p + r) if p + r else 0, "lines": lh / lt if lt else 0, "bad_pp": len(bad), "bad": bad}
     tj = d / "timing.json"
     if tj.is_file():
         t = json.loads(tj.read_text())
@@ -142,19 +157,20 @@ def score_dir(truth: dict, d: Path) -> dict:
 
 def main():
     set_dir, out = Path(sys.argv[1]), Path(sys.argv[2])
-    truth = {f.stem: plain(f.read_text(encoding="utf-8")) for f in sorted((set_dir / "truth").glob("p*.txt"))}
+    raw = {f.stem: f.read_text(encoding="utf-8") for f in sorted((set_dir / "truth").glob("p*.txt"))}
+    truth = {k: plain(v) for k, v in raw.items()}
     rows = []
     for eng in sorted(p for p in out.iterdir() if p.is_dir()):
         for lvl in sorted(p for p in eng.iterdir() if p.is_dir()):
-            r = score_dir(truth, lvl)
+            r = score_dir(truth, lvl, raw)
             rows.append({"engine": eng.name, "level": lvl.name, **r})
     rows.sort(key=lambda r: (r["level"], r["cer"]))
-    hdr = f"{'engine':<22}{'level':<6}{'CER':>7}{'w_rec':>7}{'w_prec':>8}{'sym_F1':>8}{'bad_pp':>8}{'s/page':>8}"
+    hdr = f"{'engine':<22}{'level':<6}{'CER':>7}{'w_rec':>7}{'w_prec':>8}{'sym_F1':>8}{'lines':>7}{'bad_pp':>8}{'s/page':>8}"
     print(hdr)
     for r in rows:
         sp = f"{r['s_per_page']:.1f}" if "s_per_page" in r else "-"
         print(f"{r['engine']:<22}{r['level']:<6}{r['cer']:7.3f}{r['w_rec']:7.3f}{r['w_prec']:8.3f}"
-              f"{r['sym_f1']:8.3f}{r['bad_pp']:8d}{sp:>8}")
+              f"{r['sym_f1']:8.3f}{r['lines']:7.2f}{r['bad_pp']:8d}{sp:>8}")
     if "--csv" in sys.argv:
         import csv
         with open(sys.argv[sys.argv.index("--csv") + 1], "w", newline="", encoding="utf-8") as f:
