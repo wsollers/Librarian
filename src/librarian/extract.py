@@ -153,7 +153,8 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
     if manifest_path.is_file() and not opt.force:
         m = json.loads(manifest_path.read_text(encoding="utf-8"))
         if m.get("extractor_version") == EXTRACTOR_VERSION:
-            if not (opt.llm_ocr and m.get("low_quality_pages")):
+            legacy_left = opt.llm_ocr and bool(_legacy_to_ocr(m, opt))
+            if not (opt.llm_ocr and m.get("low_quality_pages")) and not legacy_left:
                 log.info("skip (cached): %s", row["title"])
                 return {"sha256": sha, "skipped": True}
             resume = m  # keep every good page, escalate only the remaining low ones
@@ -161,6 +162,9 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
     t = Timer()
     log.info("extract: %s — %s [%s, %s]%s", row["title"], row["author"], ext, sha[:12],
              f" (resuming {len(resume['low_quality_pages'])} low pages)" if resume else "")
+    if resume and opt.llm_ocr:
+        # legacy pages are old Tesseract OCR: hand them to Codex as well
+        resume = dict(resume, low_quality_pages=sorted(set(resume["low_quality_pages"]) | _legacy_to_ocr(resume, opt)))
     if resume:
         return _escalate(cfg, con, row, opt, t, src, obj, manifest_path, *_load_previous(obj, resume))
     if ext == "pdf":
@@ -189,6 +193,14 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
                 low.remove(p)
     log.info("  %d pages, %d below quality %.2f", len(results), len(low), opt.q_min)
     return _escalate(cfg, con, row, opt, t, src, obj, manifest_path, results, low)
+
+
+def _legacy_to_ocr(m: dict, opt: Options) -> set[int]:
+    """Pages filled from legacy (old Tesseract) text that --llm-ocr should redo with Codex."""
+    n = len(m["page"])
+    edge = body_edge(n) if opt.body_only else 0
+    return {int(k) for k, v in m["page"].items()
+            if v.get("method") == "legacy" and edge < int(k) <= n - edge}
 
 
 def _load_previous(obj: Path, m: dict) -> tuple[dict[int, "PageResult"], list[int]]:

@@ -1,6 +1,7 @@
 # OCR queue 2 (from the 2026-11-04 audit): math books with low-quality body pages or damaged symbols.
 # Excluded: Physics, Calculus, Pre Calculus folders; 6 books with a better source (see librarian notes).
-# 248 books, ~5606 pages, ~8.5 h at 3 Codex workers. Foundations first, then largest first.
+# 248 books, ~5606 low pages + ~4150 body pages still on legacy (Tesseract) text, which --llm-ocr now
+# also sends to Codex: ~9.8k pages, ~15 h at 3 Codex workers. Foundations first, then largest first.
 # Run: scripts\run.ps1 audit --mark   then   scripts\run.ps1 run --select @config/ocr-queue-2.txt --llm-ocr --body-only
 
 213e5200da01b3d0  #  213 pages  Foundations/Logic/Syllogistic Logic and Mathematical Proof - Mancuso.pdf
