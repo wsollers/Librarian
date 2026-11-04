@@ -121,7 +121,8 @@ def _codex(prompt: str, timeout: int = 300) -> Optional[str]:
         if os.environ.get("LIBRARIAN_CODEX_MODEL"):
             cmd += ["--model", os.environ["LIBRARIAN_CODEX_MODEL"]]
         try:
-            subprocess.run(cmd + [prompt], cwd=td, capture_output=True, stdin=subprocess.DEVNULL, timeout=timeout)
+            # prompt on stdin: multi-line arguments do not survive the codex.cmd shim on Windows
+            subprocess.run(cmd + ["-"], cwd=td, input=prompt.encode("utf-8"), capture_output=True, timeout=timeout)
         except subprocess.TimeoutExpired:
             return None
         return out.read_text(encoding="utf-8", errors="replace") if out.is_file() else None
