@@ -1,0 +1,253 @@
+# OCR queue 2 (from the 2026-11-04 audit): math books with low-quality body pages or damaged symbols.
+# Excluded: Physics, Calculus, Pre Calculus folders; 6 books with a better source (see librarian notes).
+# 248 books, ~5606 pages, ~8.5 h at 3 Codex workers. Foundations first, then largest first.
+# Run: scripts\run.ps1 audit --mark   then   scripts\run.ps1 run --select @config/ocr-queue-2.txt --llm-ocr --body-only
+
+213e5200da01b3d0  #  213 pages  Foundations/Logic/Syllogistic Logic and Mathematical Proof - Mancuso.pdf
+dd759647fde980a2  #   71 pages  Foundations/Set Theory/Set Theory - Hardegree.pdf
+b3ed5b5fbcabd333  #   25 pages  Foundations/Logic/First course in mathematical logic - Suppes.pdf
+bf6dd3033719468c  #   22 pages  Foundations/An Infinite Descent into Pure Mathematics - Newstead.pdf
+4946777cea9f189a  #   13 pages  Foundations/Logic/Mathematical Logic An Introduction - De Gruyter.pdf
+f70e246277bd9c5f  #   12 pages  Foundations/Type Theory/Pogramming in Martin-Lofs Type Theory - Nordstrom.pdf
+656c35120853bb63  #   11 pages  Foundations/Lattice and Order Theory/General Lattice Theory - George Gr tzer.djvu
+9a4f8cc3f4a2bde9  #   11 pages  Foundations/Reference/All the Mathematics You Missed - Garrity.pdf
+208cc030cb5fa311  #   10 pages  Foundations/Type Theory/Homotopy Type Theory Univalent Foundations of Mathematics - The Univalent Foundations Program.pdf
+4d263a9472266efc  #   10 pages  Foundations/NumberSystems/The Foundations of Real Numbers An Axiomatic Approach - Suman.pdf
+f32402f6aba79927  #   10 pages  Foundations/Logic/Kenneth Rosen - Discrete Mathematics and Its Applications - 8th edition.pdf
+d29895a0083904dd  #    9 pages  Foundations/Set Theory/Introduction to Set Theory - Hrbacek.pdf
+2c0a1da5a662defc  #    8 pages  Foundations/Category Theory/F William Lawvere Stephen H Schanuel - Conceptual Mathematics A First Introduction to Categories 2009 Cambridge University Press 1 text.pdf
+9b50c76ca4a13291  #    7 pages  Foundations/Category Theory/a5cbd382a54723dc36226c9ab977c7e1 - Unknown.pdf
+36a1238a9a1291ad  #    6 pages  Foundations/Model Theory/Basic Model Theory - Doets.pdf
+7b5925fed9a34d63  #    6 pages  Foundations/Logic/Statistical Inference - Casella.pdf
+d64b4d95b73c7707  #    6 pages  Foundations/Category Theory/Infinity Category Theory - Riehl.pdf
+f330fcd8af23551a  #    6 pages  Foundations/Category Theory/Introduction to Higher-Order Categorical Logic - Lambek Scott.pdf
+06bc4dc5b7a15bff  #    5 pages  Foundations/Type Theory/Homotopy Type Theory - UFP.pdf
+5e03f745deeaf1b5  #    5 pages  Foundations/Type Theory/Type Theory and Functional Programming - Thompson.pdf
+c2000cdb104204e7  #    5 pages  Foundations/Logic/Introduction to Logic - Suppes.pdf
+cdd3444c3389c0a9  #    5 pages  Foundations/Logic/A Concise Introduction to Logic - Hurley - 2.pdf
+d2e5236457692284  #    5 pages  Foundations/Logic/A Philosophical Introduction to Higher Order Logics - Bacon.pdf
+d779f6b4ded9bb5c  #    5 pages  Foundations/Logic/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf
+fe385ee8ffef3fc9  #    5 pages  Foundations/Logic/A New Introduction to Modal Logic - Hughes.pdf
+551fa76a62607351  #    4 pages  Foundations/Logic/Logic As Algebra - Givant.djvu
+06d1e265ab23cc06  #    3 pages  Foundations/Logic/An Introduction to Theory of Computation An Algorithmic Exploration - Ogihara.pdf
+2defaae8fa33db45  #    3 pages  Foundations/Proof Theory/Book of Proof - Hammack - 2.pdf
+2f3f95340c28cc5a  #    3 pages  Foundations/Logic/The Art of Proof - Beck.pdf
+7210e78839224079  #    3 pages  Foundations/Type Theory/Basic Simple Type Theory - Hindley.pdf
+725ebe141f9a2003  #    3 pages  Foundations/Logic/Basics of Second-Order Predicate Logic - Unknown.pdf
+97214992c50c1443  #    3 pages  Foundations/Logic/A Gentle Introduction to the Art of Mathematics - Fields.pdf
+c183901f9065ca2d  #    3 pages  Foundations/Model Theory/A Course in Model Theory I - Grossberg.pdf
+c59642703ed16664  #    3 pages  Foundations/Logic/Calculus of Relations Axiomatisation and Algorithms - Llopez.pdf
+e0e471ca794ddda7  #    3 pages  Foundations/Proof Theory/Book of Proof - Hammack.pdf
+f0304c6f6d037c7b  #    3 pages  Foundations/Logic/A Beginner s Guide to Mathematical Logic - Smullyan.pdf
+f7627839e877b758  #    3 pages  Foundations/Logic/Concise Introduction to Logic and Set Theory - Jebril.pdf
+0563e3586e7d56c7  #    2 pages  Foundations/Logic/Mathematical Logic On Number Sets Structures and Symmetry - Unknown.pdf
+0be1f1425dfd5f41  #    2 pages  Foundations/Logic/Mathematical Logic - Kossak.pdf
+4244b4039d2e5354  #    2 pages  Foundations/Logic/Non Classical Logic - Priest.pdf
+4e71fb2020537ff2  #    2 pages  Foundations/Lattice and Order Theory/Lattice Theory - Garrett Birkhoff.pdf
+6c760e0e2c03764c  #    2 pages  Foundations/Category Theory/Category Theory for Scientists - David I Spivak.pdf
+b55c51ebee0be093  #    2 pages  Foundations/Logic/Logic a Brief Course - Mundici.pdf
+c030b4e23f6e2722  #    2 pages  Foundations/Logic/Introduction to Mathematical Logic - Buss.pdf
+c0d920b0c615ab93  #    2 pages  Foundations/Model Theory/Beyond First Order Model Theory - Iovino.pdf
+c573e010d7eb7ef1  #    2 pages  Foundations/Logic/The Algebra of Logic - Couturat.pdf
+edaec50b03ae3164  #    2 pages  Foundations/Set Theory/Set Theory - Jech.pdf
+0ab9ce65afb96746  #    1 pages  Foundations/Logic/A Concise Introduction to Logic - Delancey.pdf
+11e624b7137da4aa  #    1 pages  Foundations/Logic/Logic and Structure - van Dalen - 2.pdf
+159604a2cd262e64  #    1 pages  Foundations/Logic/Introduction to Theory of Computation - Maheshwari.pdf
+25df3e8fa47587f6  #    1 pages  Foundations/Logic/Sets Models and Proofs - Oosten.pdf
+297f78eb6b6c0f19  #    1 pages  Foundations/Logic/Foundations of Mathematical Logic - Curry.pdf
+3b88214407fdc3c4  #    1 pages  Foundations/Logic/Logic and Structure - Van Dalen.pdf
+484a456c3773d481  #    1 pages  Foundations/Proof Theory/Compact Companion 3 Proof Theory - Jervell.pdf
+640125bc2382c20e  #    1 pages  Foundations/Logic/Higher Order Logic - Hetzl.pdf
+7b686279a000671a  #    1 pages  Foundations/Computability and Recursion Theory/Recursion Theory - Schoenfield.pdf
+c7b90d2b74bd5622  #    1 pages  Foundations/Logic/The Logic Book - Merrie Bergmann.pdf
+c87b83497598826e  #    1 pages  Foundations/Set Theory/Set Theory With an Introduction to Descriptive Set Theory - Unknown.pdf
+d3a4873fdddd37fb  #    1 pages  Foundations/Logic/Logic and Structure - van Dalen - 3.pdf
+e91462a85f8a9bd5  #    1 pages  Foundations/Proof Theory/Introduction to Proofs and Proof Strategies - Fuchs.pdf
+f1ac68d8a42dd457  #    1 pages  Foundations/Type Theory/Notes on Type Theory - Bauer.pdf
+f67726a93f3f5ac9  #    1 pages  Foundations/Reference/Princeton Companion To Mathematics - Unknown.pdf
+9e74c47d70b73368  #  488 pages  Analysis/Real Analysis/Basic Analysis I Functions of a Real Variable - Peterson.pdf
+9dc431136654e342  #  414 pages  Measure Theory/Stochastic Theory/A First Course in Stochastic Processes - Karlin.pdf
+5ca845be90e7dbcc  #  347 pages  Analysis/Functional Analysis/Applied Functional Analysis - Unknown.pdf
+14480422a211e7e2  #  314 pages  Algebra/Linear Algebra/Introduction to Linear Algebra - Strang.pdf
+0072a904cf8ffff9  #  304 pages  Differential Equations/Ordinary Differntial Equations/Ordinary Differential Equations - Arnold.pdf
+45e98fb3ae5a477f  #  292 pages  Measure Theory/Core/The Essentials of Measure Theory - Kubrusly.pdf
+299da9a567b37b4a  #  283 pages  Measure Theory/Stochastic Theory/An Introduction to Stochastic Processes With Application to Biology - Allen.pdf
+706e846e1f1ccf25  #  245 pages  Analysis/Real Analysis/Introduction to Real Analysis 4th - Bartle.pdf
+68243f930c43f0aa  #  213 pages  Analysis/Real Analysis/An Introduction to Analysis in Several Variables - Taylor.pdf
+5fa6829c1b874262  #  155 pages  Differential Equations/Partial Differential Equations/Introduction to Partial Differential Equations - Herman.pdf
+ee02351abff9172f  #  145 pages  Analysis/Complex Analysis/Complex Analysis - Howie.pdf
+5c5d5e549c254449  #  139 pages  Analysis/Vector and Tensor Analysis/Fundamentals of Vector and Tensor Analysis - Zhaksybekova.pdf
+71e9fd2896fdd33d  #  129 pages  Analysis/Complex Analysis/Tasty Bits of Several Complex Variables - Lebl.pdf
+bc567899302644b1  #  119 pages  Geometry/Spherical Trigonometry - Murray.pdf
+0a65f1626b44ceba  #  112 pages  Differential Equations/ODE/DIFFERENTIAL EQUATIONS AND VECTOR CALCULUS - Utukur.pdf
+362fc25d9713226f  #  110 pages  Measure Theory/Stochastic Theory/Stochastic Analysis - Bourgrade.pdf
+e568fcf9a7bbe0de  #  101 pages  Differential Equations/Dynamical Systems/Dynamics - Meriam.pdf
+d4f3a1586209f800  #   82 pages  Analysis/Functional Analysis/Introduction to Functional Analysis Banach Spaces and Differential Calculus - Nachbin.pdf
+4bdcc172bafd29ed  #   80 pages  Analysis/Metric Spaces/Metric Spaces - Kupferman.pdf
+c29101bd6b80f47b  #   77 pages  History/Journey Through Genius - Dunham.pdf
+b4460ee7b400b2b2  #   58 pages  Analysis/Manifolds/Analysis on Manifolds - Munkres.pdf
+21196249b7eb2513  #   44 pages  Algebra/Linear Algebra/Linear Algebra and Its Applications - Strang.pdf
+6ec28c91ac5cfdd6  #   38 pages  Analysis/Complex Analysis/Concepts of Function Theory - Muller.pdf
+a18684d5b8d42353  #   35 pages  Analysis/Real Analysis/A Companion To Analysis A Second First and Second Course in Analysis - Korner.pdf
+70603b5ad90bf1f8  #   23 pages  Analysis/Real Analysis/A Course in Analysis Vol IV - Jacob.pdf
+fa963ffc06d9fad6  #   23 pages  Analysis/Differential Geometry/Lectures on Differential Geometry - Fernandes.pdf
+9b10d2d6c76f3730  #   20 pages  Analysis/Functional Analysis/Basic Analysis V Functional Analysis and Topology - Peterson.pdf
+a1f91e337445851d  #   18 pages  Analysis/Algebra Topology Differential Calculus and Optimization Theory for Computer Science and Machine Learning - Gallier.pdf
+22a4930e2d08c06a  #   17 pages  Analysis/Real Analysis/Course in Analysis Vol II Differentiation And Integration Of Functions Of Several Variables Vector Calculus - Jacob.pdf
+62ff04431f18c197  #   17 pages  Analysis/Real Analysis/Real Analysis Structures - Faris.pdf
+74b02cb53bf22ae1  #   14 pages  Geometry/Analytical Geometry of Two and Three Dimensions - Das.pdf
+5091ffe05e95d84b  #   12 pages  Topology/Intro Metric Topological Spaces - Sutherland.pdf
+872a938d90cf9617  #   12 pages  Number Theory/Numbers - Ebbinghaus.pdf
+d5b6e1b01e79bfac  #   12 pages  History/UH60Festschrift - Unknown.pdf
+03b74ac7f206c7d0  #   11 pages  Analysis/Lecture Notes for Rudin - Unknown.pdf
+a9b7f3eb9c3540bb  #   11 pages  Differential Equations/Dynamical Systems/A First Course in Discrete Dynamical Systems - Holmgren.pdf
+e4c3681c828fd301  #   11 pages  Differential Equations/Dynamical Systems/Nonlinear Dynamics and Chaos - Strogatz.pdf
+10c2ad789a4f7259  #   10 pages  Differential Equations/Dynamical Systems/A First Course in Chaotic Dynamical Systems Theory and Experiment - Devaney.pdf
+401a797a2d01457b  #   10 pages  Analysis/Real Analysis/Introduction to Interval Analysis - Moore.pdf
+4c2d26732eaeb8f9  #   10 pages  Topology/General Topology - Franz.pdf
+9c434679624d1208  #   10 pages  Measure Theory/Probability Theory/Probability and Statistics The Science of Uncertainty - Evans.pdf
+34cf96ed05a17461  #    9 pages  Algebra/Abstract Algebra/Commutative Algebra - Matsumura.pdf
+d83ab5b1e9b76210  #    9 pages  Analysis/Real Analysis/Real Analysis For The Graduate Student - Bass.pdf
+0cffb128cf43845b  #    8 pages  History/Ancient Mathematics - Herrman.pdf
+26f45b1f3be94bbf  #    8 pages  Analysis/Real Analysis/Functions of Several Real Variables - Raja.pdf
+4f4d5b114e9db250  #    8 pages  Analysis/Functional Analysis/Fourier Analysis/Fourier Analysis and its Applications - Vretblad.pdf
+7953989b89de70a9  #    8 pages  Topology/Introduction to Topology and Modern Analysis - Simmons.pdf
+9b1ab21c1da08d0e  #    8 pages  Differential Equations/Ergodic Theory/A First Course in Ergodic Theory - Dajani.pdf
+c61fea4aeaae066b  #    8 pages  Numerical Analysis/An Introduction to Numerical Anlysis - Atkinson.pdf
+4bf30f7d25bb0acc  #    7 pages  Analysis/Functional Analysis/Initinite Dimensional Analysis - Lunardi.pdf
+4df3fd75e2c04087  #    7 pages  Measure Theory/Stochastic Theory/Introduction to Stochastic Calculus With Applications - Klebaner.pdf
+6443c2bacd59e247  #    7 pages  Analysis/Real Analysis/Real Analysis - Royden.pdf
+789a6a86ac814863  #    7 pages  Algebra/Linear Algebra/The Geometry of Euclidean Space - Jerry Marsden.pdf
+a31fa8ccc4efbfa2  #    7 pages  Measure Theory/Core/Measure Theory and Integration - Carpignani.pdf
+a75b49884026d1f1  #    7 pages  Algebra/Algebraic Geometry/Undergraduate Algbraic Geometry - Reid.pdf
+cea502eda67a5937  #    7 pages  Algebra/A First Course in Coding Theory - Hill.pdf
+e2102e4bbb2ff17b  #    7 pages  Topology/Introduction to Topology Pure and Applied - Adams.pdf
+ed6b85f0e33430dd  #    7 pages  Analysis/Metric Spaces/Set Theory and Metric Spaces - Kaplansky.pdf
+1e654b5b0c0632b4  #    6 pages  Geometry/An Introduction To The Geometry Of N Dimensions - Sommerville.pdf
+2521ec7892c7f19e  #    6 pages  Analysis/Real Analysis/Real Analysis and Applications - Morgan.pdf
+3400e68915f46b8a  #    6 pages  Number Theory/Elementary Number THeory - Dudley.pdf
+48e4e90a58f6de22  #    6 pages  Analysis/Real Analysis/A Radical Approach to Real Analysis - Bressoud.pdf
+4ab73e7c5f43eb02  #    6 pages  Measure Theory/Core/Measure Theory Volumes 1 to 5 - Fremlin.pdf
+4b29aa7599ecee6d  #    6 pages  Analysis/problems-in-mathematical-analysis-demidovich - Unknown.pdf
+5683dbad810d39ba  #    6 pages  Analysis/Real Analysis/Mathematical Analysis 2 - Zorich.pdf
+cb37c5985c131075  #    6 pages  Topology/Characteristic Classes - Milnor.pdf
+eba73bc3faf1bbcb  #    6 pages  Measure Theory/Integration/REAL ANALYSIS Theory of Measure and Integration - Yeh.pdf
+0e9beb641fe5b6a6  #    5 pages  Analysis/Real Analysis/Foundations of Analysis over Surreal Number Fields - Alling.pdf
+11e9b4fb0b497758  #    5 pages  Measure Theory/Probability Theory/Markov Chains on Metric Spaces - Benaim.pdf
+27085980e45856f4  #    5 pages  Algebra/Symmetry A Mathematical Exploration - Tapp.pdf
+273c33600a79bbd5  #    5 pages  Analysis/Calculus on Manifolds - Spivak.pdf
+355474fd2a6b7cd0  #    5 pages  Analysis/Differential Geometry/Introduction to Differential Geometry - Robbin - 2.pdf
+3964ba9f032879bb  #    5 pages  History/The Making of Mathematics - Celluci.pdf
+5799e9908af0d6ba  #    5 pages  Measure Theory/Core/LEBESGUE S THEORY Of INTEGRATION - Hawkins.pdf
+61cdda0b9b00a7d0  #    5 pages  Algebra/Abstract Algebra/Contemporary Abstract Algebra e7 - Gallian.pdf
+b26feec799af7f5b  #    5 pages  Algebra/Abstract Algebra/Lectures on Abstract Algebra Preliminary Version - Elman.pdf
+c3366c55fbc1f0ab  #    5 pages  Topology/COMPUTATIONAL TOPOLOGY - Edelsbrunner.pdf
+215ed2dc1e68e4be  #    4 pages  Analysis/Real Analysis/Theory of the Integral - Thomson.pdf
+239dab7237780441  #    4 pages  Measure Theory/Integration/The Elements of Integration and Lebesgue Measure - Bartle.pdf
+484521433950aad8  #    4 pages  Measure Theory/Stochastic Theory/Stochastic Calculus An Introduction With Applications - Lawler.pdf
+60145cbab4120013  #    4 pages  Measure Theory/Stochastic Theory/Brownian Motion and Potential Theory Modern and Classical - Jorgensen Rao and Tian.pdf
+68231519fa21d8b0  #    4 pages  Analysis/Vector and Tensor Analysis/Analytical Geometry of Two and Three Dimensions and Vector Analysis - Khan.pdf
+7cef133bdddf5078  #    4 pages  Analysis/Real Analysis/A Course in Calculus and Real Analysis - Ghorpade.pdf
+828d123595b86256  #    4 pages  Analysis/Real Analysis/Principles of Mathematical Analysis - Rudin - 2.pdf
+93b42da1c8d5111c  #    4 pages  Measure Theory/Probability Theory/Modern Martingalw Methods Theory and Applications - Whitehouse.pdf
+d0c3b3f6ea872b6d  #    4 pages  Algebra/Abstract Algebra/Number System of Algebra - Fine.pdf
+d95143b6cc510c89  #    4 pages  Differential Equations/Control Theory/Mathematical Control Theory - Zabcsyk.pdf
+dc0efa0cdd14f4e2  #    4 pages  Differential Equations/Control Theory/Mathematical Control Theory - Sontag.pdf
+e3f4276690f6fdda  #    4 pages  Differential Equations/Control Theory/Introduction to Geometric Control Theory - Boscain.pdf
+f00a7268d2b139ea  #    4 pages  Measure Theory/Stochastic Theory/MATH 545 Introduction to Stochastic Calculus - Unknown.pdf
+f81fc060764be9d4  #    4 pages  Analysis/Real Analysis/Limits limits everywhere the tools of mathematical analysis - APPLEBAUM.pdf
+00fb16d39b2f999d  #    3 pages  Applied/Understanding Data - Erickson.pdf
+05cd82e4872bcf2e  #    3 pages  Combinatorics and Graph Theory/Enumerative Combinatorics - Charalambides.pdf
+0676c6d9f060b06f  #    3 pages  Differential Equations/Ordinary Differntial Equations/Notes on Diffy Qs - Lebl.pdf
+0da3a47d090f0847  #    3 pages  Numerical Analysis/Perturbation Theory/Asymptotic Analysis and Singular Perturbation Theory - Hunter.pdf
+18ebe2a33451ce63  #    3 pages  Analysis/Real Analysis/Lecture Notes in Advanced Calculus 1 - Kupferman.pdf
+21db93ed052967c2  #    3 pages  Differential Equations/Stability/Nonlinear Systems Stability Dynamics And Control - Chen.pdf
+268abcd056dd4b11  #    3 pages  Analysis/Real Analysis/REAL ANALYSIS - Nagy.pdf
+2bfb281d84710890  #    3 pages  Geometry/Spherical Geometry and its Applications - Whittlesey.pdf
+2cc5dcba250eaedc  #    3 pages  Algebra/Fundamentals of Matrix Computations - Watkins.pdf
+3774e13e6ba030c0  #    3 pages  Numerical Analysis/Numerical Algorithms - Solomon.pdf
+40d976c83c18cce1  #    3 pages  Applied/Optimization/Convex Optimization - Boyd.pdf
+48f4f2e1ebfb3cb0  #    3 pages  Analysis/Real Analysis/Lecture Notes on Inverse Theory - Fichtner.pdf
+4d52b85e64603185  #    3 pages  Analysis/Real Analysis/Introduction to Tensor Analysis and the Calculus of Moving Surfaces - Pavel Grinfeld.pdf
+4e4e1217e03b828b  #    3 pages  Algebra/Algebraic Geometry/Algebraic Curves and Riemann Surfaces for Undergraduates - Nerode.pdf
+5a0930326bd792d5  #    3 pages  Algebra/Abstract Algebra/Algebra Notes From the Underground - Aluffi.pdf
+62bd1ed250f80dc5  #    3 pages  Analysis/Real Analysis/The Theory of Functions of a real Variable - Jeffery.pdf
+66a79162c884059d  #    3 pages  Differential Equations/Control Theory/Introduction to The Calculus of Variations - Dacorogna.pdf
+7436b7cee93d5153  #    3 pages  Topology/Topological Spaces - From Distance to Neighborhood - Buskes.pdf
+81a4e130ad995969  #    3 pages  Analysis/Real Analysis/Functions Of Several Variables - Woll.pdf
+8ac3aa7f77a80a29  #    3 pages  Differential Equations/Partial Differential Equations/Analysis and Partial Differential Equations - Alazard.pdf
+97ae1246fec02b56  #    3 pages  Measure Theory/Geometric Measure Theory/Measure Theory and Fine Properties of Functions - Evans.pdf
+99807ba6907e1ac5  #    3 pages  Algebra/Linear Algebra/Linear Algebra and its Applications 5th Edition - Lay.pdf
+a25b0c5cef4bacf8  #    3 pages  Measure Theory/Core/Probabilistic Metric Spaces - Schweizer.pdf
+a728706a955ad4aa  #    3 pages  Algebra/Abstract Algebra/Abstract Algebra - Lee.pdf
+a9487157adf3c29c  #    3 pages  Measure Theory/Stochastic Theory/Measure Theory Probability and Stochastic Processes - Gall.pdf
+a96b6079521f536c  #    3 pages  Analysis/Functional Analysis/Fourier Analysis/A First Course in Harmonic Analysis - Deitmar.pdf
+a9c9c144f8da45fb  #    3 pages  Analysis/Functional Analysis/A First Course in Harmonic Analysis - Deitmar.pdf
+b9fbb8249c069b64  #    3 pages  Analysis/Real Analysis/Theory of Functions of A Real Variable - Sternberg.pdf
+d9bd158e7df3f6b6  #    3 pages  Differential Equations/Ergodic Theory/A Journey Through Ergodic Theorems - Eisner.pdf
+e5577c1d49a792d3  #    3 pages  Analysis/Functional Analysis/Functional Analysis Calculus of Variations and optimal Control - Clarke.pdf
+f1afb37c73c048d8  #    3 pages  Algebra/Boolean Algebra/Schaum s Outline of Boolean Algebra and Switching Circuits - Mendelson.pdf
+035ae7caa204657d  #    2 pages  Combinatorics and Graph Theory/Symmetric Functions A Beginners Course - Smirnov.pdf
+10fe1120f2b14ced  #    2 pages  Measure Theory/Stochastic Theory/Probability Theory and Stochastic Processes - Bremaud.pdf
+147e6ba363f71e0c  #    2 pages  Algebra/Universal Algebra/Universal Algebraic Logic - Andreka.pdf
+1c5fcf2305b96143  #    2 pages  Analysis/Functional Analysis/Functional Analysis - Hundertmark.pdf
+1fd328e42b2f0b14  #    2 pages  Measure Theory/Stochastic Theory/Stochastic Differential Equations for Science and Engineering - Thygesen - PREPRINT.pdf
+24c7b074d46d1c71  #    2 pages  Algebra/Module Theory/From Rings and Modules to Hopf Algebras - Broue.pdf
+2c7a98b8295cc275  #    2 pages  Applied/Introduction to Mathematical Methods in Population Theory - Banasiak.pdf
+2ca5c5d3980ffdf5  #    2 pages  Numerical Analysis/Perturbation Theory/Regular perturbation expansions - Wilson.pdf
+2eb5dc9e73704715  #    2 pages  History/Cauchys Calcul Infinitesimal - Cates.pdf
+3f5f0fa14deb13d9  #    2 pages  Measure Theory/Stochastic Theory/Introduction to Stochastic Calculus - Salez.pdf
+427e0fd315c5bec6  #    2 pages  Measure Theory/Probability Theory/Foundations of the Theory of Probability - Kolmogorov.pdf
+4a456b484feb5f19  #    2 pages  Computer Science/Discrete Structures - Klappenecker.pdf
+4e8663ac4dabe32e  #    2 pages  Differential Equations/Dynamical Systems/Dynamical Systems the Three Body Problem - Koon.pdf
+54e65f27cb7ea972  #    2 pages  Topology/Dimension Theory - Engelking.pdf
+6c229f027bb5a51f  #    2 pages  Number Theory/A Pythagorean Introduction to Number THeory - Takloo-Bighash.pdf
+8130c5595132e0f3  #    2 pages  Analysis/Functional Analysis/Hibert Space/A Hilbert Space Problem Book - Halmos.pdf
+8b48e814da4e1192  #    2 pages  Analysis/Differential Geometry/Differential Geometry From Elastic Curves to Willmore Surfaces - Pinkall.pdf
+95229bc4309915e4  #    2 pages  Applied/Optimization/Convex Sets and Their Applications - Lay.pdf
+988c6453fab9c9f2  #    2 pages  Analysis/Functional Analysis/Functional Analysis An Introduction to Metric Spaces Hilbert Spaces and Banach Algebras - Joseph Muscat.pdf
+af2d7d4d1775fca7  #    2 pages  Topology/Homotopy Theory - Introduction to Algebraic Topology - Gray.pdf
+af35168d8cba8c69  #    2 pages  Algebra/Galois/Galois Theories of Fields and Rings - Borceux.pdf
+b151bdc9e38b7397  #    2 pages  Geometry/A Course on Convex Geometry - Weil.pdf
+b1ae2d8e0f52156d  #    2 pages  Analysis/The Continuum - Weyl.pdf
+b76c5cc761006ceb  #    2 pages  Analysis/Functional Analysis/Functional Analysis and Operator Algebras - Davidson.pdf
+b7ab67f7c64d4a81  #    2 pages  Geometry/Trigonometry - Gelfand.pdf
+b9eb138936f572f7  #    2 pages  Algebra/Linear Algebra/Matrix Algebra theory computations and applications in statistics - Unknown.pdf
+c2dfaebb9dd3b18b  #    2 pages  Analysis/Differential Geometry/Differential Geometry and Riemannian Manifolds - Sauvigny.pdf
+c2ff14c78c7b86e9  #    2 pages  Measure Theory/Probability Theory/A FIRST COURSE IN PROBABILITY - Ross.pdf
+c395d0026fbec05c  #    2 pages  Measure Theory/Stochastic Theory/Probability Theory and Stochastic Processes with Applications - Knill.pdf
+d65d4058f6f6b644  #    2 pages  Analysis/Real Analysis/Complete Solution Guide to Principles of Mathematical Analysis - Yu.pdf
+db46c2ce9e4f4e58  #    2 pages  Topology/Topology - Munkres.pdf
+e14fb44db40fcfe0  #    2 pages  Topology/Elementary Point Set Topology - Yandl.pdf
+00fba27efa15a1ef  #    1 pages  Analysis/Real Analysis/Advanced Calculus - Sternburg.pdf
+091f2e3b7d458388  #    1 pages  Measure Theory/Stochastic Theory/Introduction to Stochastic Calculus Rough Lecture Notes - Unknown.pdf
+0db41bb050b92f78  #    1 pages  Computer Science/Curves and Surfaces for Computer Graphics - Salomon.pdf
+1d0449efaa0c4488  #    1 pages  Numerical Analysis/Exploring University Mathematics with Python - Chongchitnan.pdf
+2504b7a4db75d8b1  #    1 pages  Analysis/Real Analysis/Primer of Real Functions - Boas.pdf
+30190afb86b4e368  #    1 pages  Analysis/Orthogonal Polynomials and Special Functions - Castillo.pdf
+324dfb55197ca61b  #    1 pages  Analysis/Real Analysis/The Calculus Integral - Thomson.pdf
+34a7f205ae1de062  #    1 pages  Differential Equations/Partial Differential Equations/Introduction to Partial Differential Equations with Applications - Zachmanoglou.pdf
+42aca9215d387e36  #    1 pages  Differential Equations/Dynamical Systems/Engineering Mechanics Dynamics - Meriam.pdf
+48cd2223d63de287  #    1 pages  Topology/General Topology - Willard.epub
+4dc72210fd0d4c4c  #    1 pages  Analysis/Functional Analysis/Quantum Calculus and Functional Analysis With Applications - Hazarika.pdf
+4e78fa97866547d4  #    1 pages  Algebra/Linear Algebra/Linear Algebra Through Geometry - Banchoff.pdf
+5827ae44c9874c92  #    1 pages  Algebra/Matrix Algebra for Engineers - Chasnov.pdf
+58a8cb0d234b2ba0  #    1 pages  Algebra/Algebra Part 1 - Bourbaki.pdf
+64e617617ff79776  #    1 pages  Analysis/Differential Geometry/Introduction to Differential Geometry - Robbin.pdf
+72ba80e8297d669c  #    1 pages  Measure Theory/Integration/Measure And Intergration - Berberian.pdf
+7abcc4b610625b0c  #    1 pages  Analysis/Functional Analysis/Fourier Analysis/Fourier Analysis An Introduction - Stein.pdf
+8073fe20ac7d5495  #    1 pages  Measure Theory/Integration/Measure and Integration - Salamon.pdf
+8bc11bde3505f68c  #    1 pages  Analysis/Real Analysis/A Circle Line Study of Mathematical analysis - Secchi.pdf
+8fc0ca33e76c404a  #    1 pages  History/Mathematical Thought From Ancient to Modern Times Vol 3 - Kline.pdf
+af1f5d7ba84d3648  #    1 pages  Algebra/Abstract Algebra/A Book Of Abstract Algebra - Pinter.pdf
+bc35450f1747ee85  #    1 pages  Measure Theory/Probability Theory/Information Geometry and Its Applications - Gibilisco.pdf
+bd32cafb61e6acc9  #    1 pages  Number Theory/Elliptic Curves/Elliptic Curves Function THeory Geometry Arithmetic - McKean.pdf
+bfce92745ab20a78  #    1 pages  Topology/Topology of Metric Spaces - Kumareson.pdf
+cdaba670440703fa  #    1 pages  Measure Theory/Core/Borel Spaces - Berberian.pdf
+cfac37c5c8d01a13  #    1 pages  Topology/Geometry and Topology - Reid.pdf
+d862a941d12cbae4  #    1 pages  Algebra/Module Theory/An Introduction to Module Theory - Assem.pdf
+e8d9309cb18eb37a  #    1 pages  Differential Equations/Ergodic Theory/Ergodic Theory and Dynamical Systems in their Interactions with arithmetics and combinatorics - Ferenczi.pdf
+ea4e96a799ccb3b3  #    1 pages  Algebra/Linear Algebra/Vectors Pure and Applied A General Introduction to Linear Algebra - Korner.pdf
+ebdeed7dc813d6dd  #    1 pages  Topology/Introduction to topology by Mendelson Bert - 3rd Edition.pdf
+f2601e1452de127e  #    1 pages  Analysis/Complex Analysis/Complex Analysis - Bak.pdf
+f323a5684a7e135a  #    1 pages  Algebra/Group Theory/A Gentle Introduction to Group Theory - Subaiei.pdf
