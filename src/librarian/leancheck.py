@@ -35,7 +35,7 @@ _HEAD = re.compile(
     rf"^\s*[*_]{{0,2}}(?P<kind>{KINDS}|{KINDS.upper()}|De\w{{0,3}}inition|DE\w{{0,3}}INITION)"
     r"\b\s*(?P<num>[\dA-Z]+(?:\.\d+)*)?\s*[*_]{0,2}\s*[.,:]*\s*(?P<title>\([^)]{0,80}\))?\s*[.,:]?\s*(?P<rest>.*)$")
 _STOP = re.compile(r"^\s*[*_]{0,2}(Proof|PROOF|Remark|REMARK|Example|EXAMPLE|Exercise|EXERCISE|Note|NOTE)\b")
-MAX_LINES = 14
+MAX_LINES = 24
 MAX_CHARS = 1500
 # "Proposition 4.3.3 works just as well ..." is a reference, not a heading
 _REF = re.compile(r"^(?:is|are|was|works|shows|says|states|gives|implies|holds|and|or|of|in|we|can|will|above|below|again|then|that|has|have|also|tells|may|lets|allows)\b")
@@ -46,34 +46,60 @@ def kind_of(word: str) -> str:
     return "definition" if w.startswith("de") else w
 
 
-def extract(pages: dict[int, list[str]], book: str) -> list[dict]:
+_RUNNING_HEAD = re.compile(r"^\s*(\d{1,4}\s+\S.{0,70}|\S.{0,70}\s+\d{1,4})\s*$")
+_ITEM = re.compile(r"^\s*\(?([a-h]|i{1,3}|iv|v|vi{0,3}|\d)\)\s")   # (a) ... (iii) ... 1) ... parts follow
+_ENDS_SENTENCE = re.compile(r"[.!?)\]]\s*$")
+
+
+def _stream(pages: dict[int, list[str]]) -> list[tuple[int, int, str]]:
+    """All lines as (pdf_page, line_no, text), pages joined so a statement can run onto the next page.
+    Running heads/feet (a short line with a page number at either end) at page edges are dropped."""
     out = []
     for p in sorted(pages):
         lines = pages[p]
-        i = 0
-        while i < len(lines):
-            m = _HEAD.match(lines[i])
-            # a reference like "Definition 4.3.4." alone on a line is not a statement
-            if not m or (not m.group("rest") and not m.group("title") and i + 1 < len(lines)
-                         and not lines[i + 1].strip()) or _REF.match(m.group("rest") or ""):
-                i += 1
-                continue
-            block = [lines[i].strip()]
-            j = i + 1
-            while j < len(lines) and len(block) < MAX_LINES:
-                ln = lines[j]
-                if _STOP.match(ln) or _HEAD.match(ln):
+        keep = list(range(len(lines)))
+        for edge in (keep[:2], keep[-2:]):
+            for k in edge:
+                if _RUNNING_HEAD.match(lines[k]) and not _HEAD.match(lines[k]):
+                    keep.remove(k) if k in keep else None
+        out += [(p, k + 1, lines[k]) for k in keep]
+    return out
+
+
+def extract(pages: dict[int, list[str]], book: str) -> list[dict]:
+    out = []
+    stream = _stream(pages)
+    i = 0
+    while i < len(stream):
+        p, ln_no, line = stream[i]
+        m = _HEAD.match(line)
+        # a reference like "Definition 4.3.4." alone on a line is not a statement
+        if not m or (not m.group("rest") and not m.group("title") and i + 1 < len(stream)
+                     and not stream[i + 1][2].strip()) or _REF.match(m.group("rest") or ""):
+            i += 1
+            continue
+        block = [line.strip()]
+        j = i + 1
+        while j < len(stream) and len(block) < MAX_LINES:
+            ln = stream[j][2]
+            if _STOP.match(ln) or _HEAD.match(ln):
+                break
+            # a blank line ends the statement only after a finished sentence: displays follow "such that"
+            if not ln.strip():
+                nxt = next((t[2] for t in stream[j + 1:j + 4] if t[2].strip()), "")
+                if (len(" ".join(block)) > 60 and _ENDS_SENTENCE.search(block[-1])
+                        and not _ITEM.match(nxt)):
                     break
-                if not ln.strip() and len(" ".join(block)) > 60:
-                    break
-                block.append(ln.strip())
                 j += 1
-            text = re.sub(r"\s+", " ", " ".join(block)).strip()[:MAX_CHARS]
-            if len(text) >= 40:
-                label = f"{m.group('kind').capitalize()} {m.group('num') or ''}".strip()
-                out.append({"id": f"s{len(out) + 1:03d}", "kind": kind_of(m.group("kind")), "label": label,
-                            "pdf_page": p, "line": i + 1, "text": text, "book": book})
-            i = j
+                continue
+            block.append(ln.strip())
+            j += 1
+        text = re.sub(r"\s+", " ", " ".join(block)).strip()[:MAX_CHARS]
+        if len(text) >= 40:
+            label = f"{m.group('kind').capitalize()} {m.group('num') or ''}".strip()
+            out.append({"id": f"s{len(out) + 1:03d}", "kind": kind_of(m.group("kind")), "label": label,
+                        "pdf_page": p, "line": ln_no, "text": text, "book": book})
+        i = j
     return out
 
 
