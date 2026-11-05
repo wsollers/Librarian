@@ -1,0 +1,20 @@
+# Weaker copies kept in the library but processed last (older editions, scans of a book we also have
+# in better shape). Used by scripts/make_leancheck_list.py and for ordering OCR queues.
+Foundations/Logic/On Tarskis Axiomatic Foundation of the Calculus of Relations - Givant.pdf
+Foundations/Logic/Logic and Structure - Van Dalen.pdf
+Foundations/Category Theory/Categories for the working mathematician - Mac Lane.pdf
+Foundations/Logic/A Concise Introduction to Logic - Hurley.pdf
+Foundations/Logic/Mathematical Reasoning Writing and Proof - Sundstrom - 2.pdf
+Foundations/Type Theory/Homotopy Type Theory Univalent Foundations of Mathematics - The Univalent Foundations Program.pdf
+Foundations/Logic/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf
+Foundations/Proof Theory/Book of Proof - Hammack - 2.pdf
+Foundations/Logic/Mathematical Logic - Ebbinghaus.pdf
+Analysis/Functional Analysis/A First Course in Harmonic Analysis - Deitmar.pdf
+Measure Theory/Probability Theory/Explorations in Monte Carlo Methods - Shonkwiler.pdf
+Combinatorics and Graph Theory/Graph Theory - Diestel.pdf
+Measure Theory/Probability Theory/Markov Chains on Metric Spaces - Benaim.pdf
+Analysis/Real Analysis/An Introduction to Real Analysis - Hunter - 2.pdf
+Algebra/Linear Algebra/Linear Algebra - Hefferon - 2.pdf
+Topology/General Topology - Willard.epub
+Analysis/Real Analysis/Principles of Mathematical Analysis - Rudin - 2.pdf
+Analysis/Real Analysis/Elementary Real Analysis - Bruckner.pdf

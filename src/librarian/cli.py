@@ -103,6 +103,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--chunk-pages", type=int, default=8, help="section: at most N pages per Codex session")
     p.add_argument("--force", action="store_true", help="section: redo chunks that already have a result")
     p.add_argument("--all-pages", action="store_true", help="section: check every page, not only pages with statements")
+    p.add_argument("--budget", type=int, default=0,
+                   help="section next: keep taking whole books until about N PDF pages are done (never splits a book)")
     p = sub.add_parser("search", help="hybrid search")
     p.add_argument("query")
     p.add_argument("--mode", choices=["hybrid", "phrase", "fts", "semantic"], default="hybrid")
@@ -255,9 +257,24 @@ def lean_check(cfg, a) -> dict:
         if a.stage == "report":
             return leansection.report(work)
         con = connect(cfg.db_path)
-        if a.name == "next":                       # next unchecked book from config/leancheck-books.txt
-            a.select, a.name = _next_leancheck_book(cfg, con)
-            log.info("next book: %s -> %s", a.select, a.name)
+        if a.name == "next":                       # next unchecked book(s) from config/leancheck-books.txt
+            done, runs = 0, []
+            while True:
+                try:
+                    pat, name = _next_leancheck_book(cfg, con)
+                except SystemExit:
+                    break
+                b = select_books(con, pat)[0]
+                if runs and done + (b["pdf_pages"] or 0) > a.budget:
+                    break                          # whole books only: stop before going over budget
+                log.info("next book: %s -> %s (%d pages; %d done in this batch)", pat, name, b["pdf_pages"] or 0, done)
+                r = leansection.run(cfg, con, b, 1, b["pdf_pages"], name, max_pages=a.chunk_pages, force=a.force,
+                                    all_pages=a.all_pages)
+                runs.append({"book": b["title"], **{k: r[k] for k in ("statements", "high", "medium", "low", "corrections")}})
+                done += b["pdf_pages"] or 0
+                if done >= a.budget:
+                    break
+            return {"books_done": len(runs), "pdf_pages": done, "runs": runs}
         if not a.select:
             raise SystemExit("leancheck section needs --select <book> (and optionally --pages A-B), or the name 'next'")
         books = select_books(con, a.select)
