@@ -38,21 +38,20 @@ OCR text of those pages follows. Every line is prefixed "page:line|" (PDF page, 
 {ocr}
 >>>
 {context}
-Lean: the current directory is a Lean project with Mathlib. Write your Lean to {lean_file} (create or overwrite it).
+Lean: the current directory is a Lean project with Mathlib, but it is read-only for you: do not write files and do not run shell commands. Put the complete Lean file in the "lean" field of your reply; the harness saves it as {lean_file}, compiles it and sends you any errors to fix.
 Start it with these lines exactly:
 import Mathlib
 open Filter Topology
 noncomputable section
 and end it with a final line `end`.
-If you cannot write files here, check your Lean with the lean tool that runs a code snippet instead, and put the final file content in the "lean" field of your reply (always fill that field anyway).
 
 Task
 1. Find every Definition, Theorem, Lemma, Proposition, Corollary and Claim on these pages (numbered or not). A statement may continue onto the next page.
 2. Read each statement from the IMAGE; the image is authoritative. Compare it with the OCR lines and record every difference that matters for mathematics or search: a garbled or wrong symbol, letter, digit, operator, sub/superscript, a missing or extra word, a dropped line. Use kind "content" when the OCR changes or loses meaning, "layout" when it only obscures it (flattened sub/superscripts, hyphenation, spacing). Also record content errors you notice elsewhere on the pages (examples, proofs, displays) under other_issues.
 3. Formalize each statement as literally as the image allows: statement only, every proof `sorry`; a definition is a `def` (a `def ... : Prop` for a property) or `structure`. Name declarations like theorem_45, lemma_6_4_13, definition_p98_1. Use Mathlib notions where they match. Use only Lean 4 commands (theorem, lemma, def, structure, abbrev, instance, variable, open); never `proposition` or `corollary` as keywords.
-4. Check the Lean with the lean tools (diagnostics of {lean_file}); search Mathlib (local search / leanfinder / loogle) for names you are unsure of; fix until the file has no errors. Warnings and `sorry` are fine. If a statement cannot reasonably be formalized, skip it and say why; never invent content that is not on the page.
+4. Use the lean tools to look up Mathlib names you are unsure of (local search, leanfinder, loogle, hover) so the file compiles first time. Warnings and `sorry` are fine. If a statement cannot reasonably be formalized, skip it and say why; never invent content that is not on the page.
 5. Numbering: list the statement numbers printed on these pages, and any gaps or duplicates.
-Do not modify any file other than {lean_file}. Do not prove anything.
+Do not prove anything.
 
 Reply with JSON only, no code fences:
 {{"lean": "<full content of {lean_file}>",
@@ -143,7 +142,12 @@ def run_chunk(cfg, row, pdf: Path, work: Path, k: int, a: int, b: int, title: st
     cdir = work / f"c{k:02d}"
     res_file = cdir / "result.json"
     if res_file.is_file() and not force:
-        return json.loads(res_file.read_text(encoding="utf-8"))
+        res = json.loads(res_file.read_text(encoding="utf-8"))
+        if res.get("verify", {}).get("errors") and "repairs" not in res:
+            exe = shutil.which(os.environ.get("LIBRARIAN_CODEX", "codex"))
+            res = _repair_loop(res, exe, lean_project(cfg), res["lean_file"], cdir, k, timeout)
+            res_file.write_text(json.dumps(res, indent=1, ensure_ascii=False), encoding="utf-8")
+        return res
     cdir.mkdir(parents=True, exist_ok=True)
     obj = cfg.objects / row["sha256"]
     pages = list(range(a, b + 1))
@@ -165,7 +169,7 @@ def run_chunk(cfg, row, pdf: Path, work: Path, k: int, a: int, b: int, title: st
     if not exe:
         raise SystemExit("codex CLI not found")
     reply_file = cdir / "reply.txt"
-    cmd = [exe, "exec", "--skip-git-repo-check", "--sandbox", "workspace-write", "-C", str(project),
+    cmd = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "-C", str(project),
            "--output-last-message", str(reply_file)]
     for img in images:
         cmd += ["--image", str(img)]
@@ -184,15 +188,66 @@ def run_chunk(cfg, row, pdf: Path, work: Path, k: int, a: int, b: int, title: st
     res = _json(reply) or {"statements": [], "numbering": {}, "other_issues": [],
                            "summary": "no/invalid reply from Codex"}
     lean_text = res.pop("lean", "") or ""
-    if lean_text.strip() and not (project / rel).is_file():
+    if lean_text.strip():
         (project / rel).write_text(lean_text, encoding="utf-8")
     res.update({"chunk": k, "pdf_start": a, "pdf_end": b, "section": title, "lean_file": rel,
                 "codex_seconds": secs})
     res["verify"] = _verify(project, rel)
+    res = _repair_loop(res, exe, project, rel, cdir, k, timeout)
     res_file.write_text(json.dumps(res, indent=1, ensure_ascii=False), encoding="utf-8")
     n_iss = sum(len(s.get("issues", [])) for s in res["statements"]) + len(res.get("other_issues", []))
     log.info("  chunk %02d: %d statements, %d OCR issues, Lean errors %s, %.0fs",
              k, len(res["statements"]), n_iss, res["verify"].get("errors"), secs)
+    return res
+
+
+REPAIR_ROUNDS = 2
+REPAIR_PROMPT = """The Lean 4 + Mathlib file {lean_file} in the current directory (a Lean project with Mathlib; read-only for you, do not run shell commands) has these compile errors:
+{errors}
+
+Fix the errors without changing the mathematical meaning of any statement: correct Mathlib names, missing instances, syntax. Use the lean tools (diagnostics of {lean_file}, local search, leanfinder, loogle, hover) to find the right names. Keep every declaration name; proofs stay `sorry`. If a statement cannot be fixed, replace only that declaration with a comment saying why.
+
+Current file:
+<<<
+{source}
+>>>
+
+Reply with JSON only, no code fences: {{"lean": "<complete corrected file>", "changes": "<one sentence>"}}"""
+
+
+def _repair(exe: str, project: Path, rel: str, verify: dict, cdir: Path, rnd: int, timeout: int) -> Optional[str]:
+    errors = "\n".join(f"- in {decl}: {msg}" for decl, msgs in verify.get("by_decl", {}).items() for msg in msgs)
+    prompt = REPAIR_PROMPT.format(lean_file=rel, errors=errors,
+                                  source=(project / rel).read_text(encoding="utf-8", errors="replace"))
+    reply_file = cdir / f"repair{rnd}.txt"
+    cmd = [exe, "exec", "--skip-git-repo-check", "--sandbox", "read-only", "-C", str(project),
+           "--output-last-message", str(reply_file)]
+    if os.environ.get("LIBRARIAN_CODEX_MODEL"):
+        cmd += ["--model", os.environ["LIBRARIAN_CODEX_MODEL"]]
+    try:
+        subprocess.run(cmd + ["-"], input=prompt.encode("utf-8"), capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return None
+    j = _json(reply_file.read_text(encoding="utf-8", errors="replace") if reply_file.is_file() else None)
+    return (j or {}).get("lean") or None
+
+
+def _repair_loop(res: dict, exe: str, project: Path, rel: str, cdir: Path, k: int, timeout: int) -> dict:
+    """Feed the harness's compile errors back to Codex (read-only session) up to REPAIR_ROUNDS times."""
+    res["repairs"] = []
+    for rnd in range(1, REPAIR_ROUNDS + 1):
+        if not res["verify"].get("exists") or not res["verify"].get("errors"):
+            break
+        t = time.perf_counter()
+        fix = _repair(exe, project, rel, res["verify"], cdir, rnd, timeout)
+        res["codex_seconds"] = round(res.get("codex_seconds", 0) + time.perf_counter() - t, 1)
+        if not fix:
+            break
+        before = res["verify"]["errors"]
+        (project / rel).write_text(fix, encoding="utf-8")
+        res["verify"] = _verify(project, rel)
+        res["repairs"].append({"round": rnd, "errors_before": before, "errors_after": res["verify"]["errors"]})
+        log.info("  chunk %02d: repair round %d: Lean errors %d -> %d", k, rnd, before, res["verify"]["errors"])
     return res
 
 
@@ -211,7 +266,10 @@ def _numbers(results: list[dict]) -> dict:
     nums: dict[str, list[int]] = {}
     for r in results:
         for s in r.get("statements", []):
-            m = re.search(r"(\d+(?:\.\d+)*)\s*$", s.get("label", ""))
+            label = s.get("label", "")
+            if re.search(r"\b(proof|remark|after|in the|example)\b", label, re.I):
+                continue
+            m = re.search(r"(\d+(?:\.\d+)*)\s*$", label)
             if not m:
                 continue
             parts = m.group(1).split(".")
@@ -285,7 +343,8 @@ def report(work: Path, results: Optional[list[dict]] = None) -> dict:
                   f"{x['lean_errors']} | {x['issues'].replace('|', '/')[:300]} |")
     md += ["", "## Chunk summaries", ""]
     md += [f"- c{r['chunk']:02d} PDF {r['pdf_start']}-{r['pdf_end']} ({r.get('section', '')}): {r.get('summary', '')} "
-           f"[Lean errors after Codex: {r.get('verify', {}).get('errors')}, {r.get('codex_seconds', 0):.0f}s]"
+           f"[Lean errors: {' -> '.join(str(x) for x in [r['repairs'][0]['errors_before']] + [x['errors_after'] for x in r['repairs']]) if r.get('repairs') else r.get('verify', {}).get('errors')}, "
+           f"{r.get('codex_seconds', 0):.0f}s]"
            for r in results]
     (work / "report.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     with (work / "report.csv").open("w", newline="", encoding="utf-8") as fh:
