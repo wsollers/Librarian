@@ -84,7 +84,12 @@ function Remove-EmptyDirs([string[]]$relFiles) {
     foreach ($d in ($dirs | Sort-Object Length -Descending)) {
         while ($d -and $d.TrimEnd("\") -ne $root -and (Test-Path -LiteralPath $d) -and
                -not (Get-ChildItem -LiteralPath $d -Force)) {
-            Remove-Item -LiteralPath $d
+            # A folder still open somewhere (Explorer, a shell, a sync client) can't be removed: report
+            # it and carry on, so the summary and the list relink still run.
+            try { Remove-Item -LiteralPath $d -ErrorAction Stop } catch {
+                Write-Host "  could not remove empty folder (delete it by hand): $d" -ForegroundColor Yellow
+                break
+            }
             $d = Split-Path -Parent $d
         }
     }
