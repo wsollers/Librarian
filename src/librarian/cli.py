@@ -91,7 +91,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dpi", type=int, default=200)
     p.add_argument("--keep-djvu", action="store_true", help="leave the DjVu in Sources (default: retire it too)")
     p = sub.add_parser("leancheck", help="OCR confidence check: statements -> Lean 4 + Mathlib (sorry) -> compile + back-translation")
-    p.add_argument("stage", choices=["statements", "formalize", "backcheck", "compile", "report"])
+    p.add_argument("stage", choices=["section", "statements", "formalize", "backcheck", "compile", "report"],
+                   help="section: Codex + page images + Lean tools per chunk (recommended); the others are the older text-only pipeline")
     p.add_argument("name", help="work dir name under <data>/leancheck/")
     p.add_argument("--select", help="statements: the book (substring, as for run --select)")
     p.add_argument("--pages", help="statements: PDF page range A-B")
@@ -99,6 +100,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--workers", type=int, default=3)
     p.add_argument("--project", help="compile: Lean project with Mathlib (default $LIBRARIAN_LEAN_PROJECT)")
     p.add_argument("--no-plausible", action="store_true")
+    p.add_argument("--chunk-pages", type=int, default=8, help="section: at most N pages per Codex session")
+    p.add_argument("--force", action="store_true", help="section: redo chunks that already have a result")
     p = sub.add_parser("search", help="hybrid search")
     p.add_argument("query")
     p.add_argument("--mode", choices=["hybrid", "phrase", "fts", "semantic"], default="hybrid")
@@ -224,6 +227,19 @@ def lean_check(cfg, a) -> dict:
     from . import leancheck as lc
     work = cfg.data / "leancheck" / a.name
     work.mkdir(parents=True, exist_ok=True)
+    if a.stage == "section" or (a.stage == "report" and any(work.glob("c*/result.json"))):
+        from . import leansection
+        if a.stage == "report":
+            return leansection.report(work)
+        if not (a.select and a.pages):
+            raise SystemExit("leancheck section needs --select <book> and --pages A-B")
+        con = connect(cfg.db_path)
+        books = select_books(con, a.select)
+        if len(books) != 1:
+            raise SystemExit(f"--select matched {len(books)} books; make it specific: "
+                             + "; ".join(b["title"] for b in books[:8]))
+        lo, hi = _page_range(a.pages)
+        return leansection.run(cfg, con, books[0], lo, hi, a.name, max_pages=a.chunk_pages, force=a.force)
     if a.stage == "statements":
         lo, hi = _page_range(a.pages)
         pages: dict[int, list[str]] = {}
