@@ -87,6 +87,9 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("pagemap", help="printed page numbers (detection + pagemaps/ overrides), chapters and sections"); add_sel(p)
     p = sub.add_parser("index", help="FTS5 + embeddings"); add_sel(p); add_embed(p)
     p.add_argument("--reembed", action="store_true", help="drop all vectors (embedder changed)")
+    p = sub.add_parser("profiles", help="book profiles (TOC + preface/introduction), searchable; index refreshes them too")
+    p.add_argument("--select", default="all", help="'all' (default), 'priority', '@file', or a path substring / sha prefix")
+    p.add_argument("--dossiers", action="store_true", help="also write reports/dossiers.jsonl (input for subject classification)")
     p = sub.add_parser("run", help="inventory, extract, pagemap, index for a selection")
     add_sel(p); add_extract_opts(p); add_embed(p)
     p = sub.add_parser("djvu2pdf", help="DjVu -> PDF with the DjVu hidden text as a searchable text layer")
@@ -160,6 +163,16 @@ def main(argv: list[str] | None = None) -> int:
         summary.update(lean_check(cfg, a))
     elif a.cmd in ("extract", "pagemap", "index", "run"):
         summary.update(run_stages(cfg, a))
+    elif a.cmd == "profiles":
+        from . import profiles
+        con = connect(cfg.db_path)
+        indexed = {r[0] for r in con.execute("SELECT sha256 FROM index_state")}
+        shas = None if a.select == "all" else [b["sha256"] for b in select_books(con, a.select) if b["sha256"] in indexed]
+        summary.update(profiles.build_all(con, shas))
+        if a.dossiers:
+            out = cfg.reports / "dossiers.jsonl"
+            summary["dossiers"] = {"books": profiles.dossiers(con, out), "file": str(out)}
+        print(json.dumps(summary, indent=2))
     elif a.cmd == "search":
         import time as _t
         t_start = _t.perf_counter()
@@ -402,10 +415,19 @@ def run_stages(cfg, a) -> dict:
         for i, b in enumerate(books, 1):
             log.info("[%d/%d]", i, len(books))
             try:
-                index_book(cfg, con, b["sha256"], b["title"], emb, store, a.force)
+                res = index_book(cfg, con, b["sha256"], b["title"], emb, store, a.force)
             except Exception:  # noqa: BLE001
                 errors += 1
                 log.exception("index failed: %s", b["path"])
+                continue
+            if res.get("skipped") or res.get("error"):
+                continue
+            try:   # its profile reads the sections and the page text just indexed
+                from . import profiles
+                profiles.refresh(con, b["sha256"])
+                con.commit()
+            except Exception:  # noqa: BLE001
+                log.exception("profile failed: %s", b["path"])
     out["selected"] = len(books)
     out["errors"] = errors
     out["status"] = dict(con.execute("SELECT status, count(*) FROM books GROUP BY status").fetchall())

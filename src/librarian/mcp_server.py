@@ -346,6 +346,47 @@ def build(state_holder: dict):
         return await run(go)
 
     @app.tool()
+    async def find_books(query: str, subject: Optional[str] = None, k: int = 20) -> dict:
+        """Books about a topic, judged by their own title, table of contents and preface/introduction
+        (not by page text): "Fourier series", "stochastic differential equations", "Lebesgue integral".
+        Plain words must all appear; use OR between alternatives ("Hilbert OR Banach"). subject:
+        restrict to subject folders, as for search. Then use profile for one book, search for passages."""
+        def go(st: State):
+            from . import profiles
+            from .search import subject_books
+            shas = None
+            if subject and subject.strip():
+                shas, _, unknown = subject_books(st.con, subject)
+                if not shas:
+                    return {"books": [], "unknown_subjects": unknown,
+                            "note": "no subject folder matched: see the subjects tool for the names"}
+            try:
+                found = profiles.find(st.con, query, k, shas)
+            except sqlite3.OperationalError as e:
+                return {"error": f"no book profiles in the index yet (librarian profiles builds them): {e}"}
+            for b in found:
+                b["sha256"] = b["sha256"][:16]
+            return {"books": found}
+        return await run(go)
+
+    @app.tool()
+    async def profile(book: str) -> dict:
+        """One book's profile: its table of contents (chapters) and its preface or introduction text.
+        book: sha256 (prefix) or a title/author substring that names one book."""
+        def go(st: State):
+            from . import profiles
+            hit, rows = _resolve_book(st.con, book)
+            if hit is None:
+                return {"error": "no book matches" if not rows else "several books match; pass a sha256",
+                        "candidates": [{"title": r[1], "author": r[2], "sha256": r[0][:16]} for r in rows[:15]]}
+            try:
+                p = profiles.load(st.con, hit[0])
+            except sqlite3.OperationalError:
+                p = None
+            return p or {"error": f"no profile for {hit[1]!r} (not indexed, or librarian profiles not run)"}
+        return await run(go)
+
+    @app.tool()
     async def subjects() -> dict:
         """The library's subject folders (for the subject filter of search and list_books), with the number
         of indexed books in each, subfolders included."""
