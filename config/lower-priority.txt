@@ -9,10 +9,10 @@ Foundations/Type Theory/Homotopy Type Theory Univalent Foundations of Mathematic
 Foundations/Set Theory/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf
 Foundations/Proofs and Mathematical Reasoning/Book of Proof - Hammack - 2.pdf
 Foundations/Mathematical Logic/Mathematical Logic - Ebbinghaus.pdf
-Analysis/Harmonic Analysis/A First Course in Harmonic Analysis - Deitmar.pdf
-Applied and Computational/Numerical Analysis/Explorations in Monte Carlo Methods - Shonkwiler.pdf
+Analysis/Harmonic Analysis/A First Course in Harmonic Analysis - Deitmar - 1st ed.pdf
+Applied and Computational/Numerical Analysis/Explorations in Monte Carlo Methods - Shonkwiler - 1st ed.pdf
 Discrete Mathematics/Graph Theory/Graph Theory - Diestel.pdf
-Probability and Statistics/Stochastic Processes/Markov Chains on Metric Spaces - Benaim.pdf
+Probability and Statistics/Stochastic Processes/Markov Chains on Metric Spaces - Benaim - draft.pdf
 Analysis/Real Analysis/An Introduction to Real Analysis - Hunter - 2.pdf
 Algebra/Linear Algebra/Linear Algebra - Hefferon - 2.pdf
 Geometry and Topology/Point-Set Topology/General Topology - Willard.epub

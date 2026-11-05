@@ -129,7 +129,6 @@ ed6b85f0e33430dd  #    7 pages  Analysis/Metric Spaces/Set Theory and Metric Spa
 cb37c5985c131075  #    6 pages  Topology/Characteristic Classes - Milnor.pdf
 eba73bc3faf1bbcb  #    6 pages  Measure Theory/Integration/REAL ANALYSIS Theory of Measure and Integration - Yeh.pdf
 0e9beb641fe5b6a6  #    5 pages  Analysis/Real Analysis/Foundations of Analysis over Surreal Number Fields - Alling.pdf
-11e9b4fb0b497758  #    5 pages  Measure Theory/Probability Theory/Markov Chains on Metric Spaces - Benaim.pdf
 27085980e45856f4  #    5 pages  Algebra/Symmetry A Mathematical Exploration - Tapp.pdf
 273c33600a79bbd5  #    5 pages  Analysis/Calculus on Manifolds - Spivak.pdf
 355474fd2a6b7cd0  #    5 pages  Analysis/Differential Geometry/Introduction to Differential Geometry - Robbin - 2.pdf
@@ -177,8 +176,7 @@ f81fc060764be9d4  #    4 pages  Analysis/Real Analysis/Limits limits everywhere 
 a25b0c5cef4bacf8  #    3 pages  Measure Theory/Core/Probabilistic Metric Spaces - Schweizer.pdf
 a728706a955ad4aa  #    3 pages  Algebra/Abstract Algebra/Abstract Algebra - Lee.pdf
 a9487157adf3c29c  #    3 pages  Measure Theory/Stochastic Theory/Measure Theory Probability and Stochastic Processes - Gall.pdf
-a96b6079521f536c  #    3 pages  Analysis/Functional Analysis/Fourier Analysis/A First Course in Harmonic Analysis - Deitmar.pdf
-a9c9c144f8da45fb  #    3 pages  Analysis/Functional Analysis/A First Course in Harmonic Analysis - Deitmar.pdf
+a96b6079521f536c  #    3 pages  Analysis/Harmonic Analysis/A First Course in Harmonic Analysis - Deitmar.pdf
 b9fbb8249c069b64  #    3 pages  Analysis/Real Analysis/Theory of Functions of A Real Variable - Sternberg.pdf
 d9bd158e7df3f6b6  #    3 pages  Differential Equations/Ergodic Theory/A Journey Through Ergodic Theorems - Eisner.pdf
 e5577c1d49a792d3  #    3 pages  Analysis/Functional Analysis/Functional Analysis Calculus of Variations and optimal Control - Clarke.pdf
@@ -258,3 +256,5 @@ c7c368c910f32a4d  #  589 pages  Foundations/Logic/Mathematical Reasoning Writing
 d779f6b4ded9bb5c  #  222 pages  Foundations/Logic/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf
 2defaae8fa33db45  #  313 pages  Foundations/Proof Theory/Book of Proof - Hammack - 2.pdf
 42892b2d24cb8043  #  290 pages  Foundations/Logic/Mathematical Logic - Ebbinghaus.pdf
+11e9b4fb0b497758  #    5 pages  Probability and Statistics/Stochastic Processes/Markov Chains on Metric Spaces - Benaim - draft.pdf
+a9c9c144f8da45fb  #    3 pages  Analysis/Harmonic Analysis/A First Course in Harmonic Analysis - Deitmar - 1st ed.pdf

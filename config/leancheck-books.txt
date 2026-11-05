@@ -275,7 +275,7 @@ Analysis/Real Analysis/The Real Numbers and Real Analysis - Bloch.pdf  # repairs
 Analysis/Harmonic Analysis/Classical Fourier Analysis - Grafakos.pdf  # repairs 2, 647 pp
 Analysis/Real Analysis/Basic Real Analysis - Knapp.pdf  # repairs 2, 840 pp
 Analysis/Functional Analysis/Functional Analysis - Hundertmark.pdf  # repairs 3, 137 pp
-Analysis/Functional Analysis/Fourier Analysis/A First Course in Harmonic Analysis - Deitmar.pdf  # repairs 3, 188 pp
+Analysis/Harmonic Analysis/A First Course in Harmonic Analysis - Deitmar.pdf  # repairs 3, 188 pp
 Analysis/Analysis in Several Variables/Basic Analysis II - Lebl.pdf  # repairs 3, 217 pp
 Analysis/Vector and Tensor Analysis/Vector and Tensor Analysis With Applications - Borisenko.pdf  # repairs 3, 266 pp
 Analysis/Vector and Tensor Analysis/Introduction to Tensor Analysis and the Calculus of Moving Surfaces - Pavel Grinfeld.pdf  # repairs 3, 303 pp
@@ -494,7 +494,7 @@ Probability and Statistics/Stochastic Processes/A First Course in Stochastic Net
 Analysis/Measure and Integration/Borel Spaces - Berberian.pdf  # repairs 1, 84 pp
 Probability and Statistics/Stochastic Calculus and SDEs/Intuitive Introduction For Understanding and Solving Stochastic Differential Equations - Rackauckas.pdf  # repairs 1, 96 pp
 Probability and Statistics/Stochastic Calculus and SDEs/Introduction to Stochastic Calculus Rough Lecture Notes - Unknown.pdf  # repairs 1, 150 pp
-Measure Theory/Stochastic Theory/Markov Chains on Metric Spaces - Benaim.pdf  # repairs 1, 205 pp
+Probability and Statistics/Stochastic Processes/Markov Chains on Metric Spaces - Benaim.pdf  # repairs 1, 205 pp
 Analysis/Measure and Integration/Introduction to Measure and Integration Theory - Romero.pdf  # repairs 1, 259 pp
 Probability and Statistics/Probability Theory/Measure Theoretic Probability - Shum.pdf  # repairs 1, 262 pp
 Probability and Statistics/Stochastic Calculus and SDEs/Brownian Motion Martingales And Stochastic Calculus - Le Gall.pdf  # repairs 1, 282 pp
@@ -792,7 +792,7 @@ Applied and Computational/Numerical Analysis/Theoretical Numerical Analysis - At
 Applied and Computational/Numerical Analysis/Numerical Analysis A Graduate Course - Stewart.pdf  # repairs 0, 645 pp
 Applied and Computational/Numerical Analysis/C Programming and Numerical Analysis - Nomura.pdf  # repairs 1, 184 pp
 Applied and Computational/Numerical Analysis/Introduction to Numerical Methods in - Holmes.pdf  # repairs 1, 247 pp
-Numerical Analysis/Explorations in Monte Carlo Methods - Shonkwiler.pdf  # repairs 1, 290 pp
+Applied and Computational/Numerical Analysis/Explorations in Monte Carlo Methods - Shonkwiler.pdf  # repairs 1, 290 pp
 Differential Equations and Dynamics/Ordinary Differential Equations/Nonlineaar Ordinary Differential Equations Analytical Approximation and Numerical Methods - Hermann.pdf  # repairs 1, 320 pp
 Applied and Computational/Asymptotics and Perturbation Theory/Regular perturbation expansions - Wilson.pdf  # repairs 2, 29 pp
 Probability and Statistics/Statistics/Nonparametric Curve Estimation - Methods Theory and Applications - Efromovich.pdf  # repairs 2, 423 pp
@@ -908,7 +908,7 @@ Physics/Classical Mechanics/Classical Mechanics - Goldstein.pdf  # repairs 691, 
 ## Weaker copies of books listed above (18; config/lower-priority.txt)
 Foundations/Mathematical Logic/On Tarskis Axiomatic Foundation of the Calculus of Relations - Givant.pdf  # repairs 0, 29 pp
 Analysis/Real Analysis/An Introduction to Real Analysis - Hunter - 2.pdf  # repairs 0, 108 pp
-Applied and Computational/Numerical Analysis/Explorations in Monte Carlo Methods - Shonkwiler.pdf  # repairs 0, 248 pp
+Applied and Computational/Numerical Analysis/Explorations in Monte Carlo Methods - Shonkwiler - 1st ed.pdf  # repairs 0, 248 pp
 Foundations/Mathematical Logic/Mathematical Logic - Ebbinghaus.pdf  # repairs 0, 290 pp
 Discrete Mathematics/Graph Theory/Graph Theory - Diestel.pdf  # repairs 0, 322 pp
 Analysis/Real Analysis/Elementary Real Analysis - Bruckner.pdf  # repairs 0, 1013 pp
@@ -917,10 +917,10 @@ Foundations/Proofs and Mathematical Reasoning/Mathematical Reasoning Writing and
 Geometry and Topology/Point-Set Topology/General Topology - Willard.epub  # repairs 2, 0 pp
 Foundations/Mathematical Logic/Logic and Structure - Van Dalen.pdf  # repairs 2, 275 pp
 Foundations/Mathematical Logic/A Concise Introduction to Logic - Hurley.pdf  # repairs 2, 750 pp
-Analysis/Harmonic Analysis/A First Course in Harmonic Analysis - Deitmar.pdf  # repairs 3, 154 pp
+Analysis/Harmonic Analysis/A First Course in Harmonic Analysis - Deitmar - 1st ed.pdf  # repairs 3, 154 pp
 Foundations/Proofs and Mathematical Reasoning/Book of Proof - Hammack - 2.pdf  # repairs 5, 313 pp
 Analysis/Real Analysis/Principles of Mathematical Analysis - Rudin - 2.pdf  # repairs 6, 594 pp
-Probability and Statistics/Stochastic Processes/Markov Chains on Metric Spaces - Benaim.pdf  # repairs 7, 167 pp
+Probability and Statistics/Stochastic Processes/Markov Chains on Metric Spaces - Benaim - draft.pdf  # repairs 7, 167 pp
 Foundations/Set Theory/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf  # repairs 8, 222 pp
 Foundations/Type Theory/Homotopy Type Theory Univalent Foundations of Mathematics - The Univalent Foundations Program.pdf  # repairs 10, 490 pp
 Foundations/Category Theory/Categories for the working mathematician - Mac Lane.pdf  # repairs 315, 315 pp
