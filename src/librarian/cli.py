@@ -47,6 +47,10 @@ def _utf8_stdio() -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    args = sys.argv[1:] if argv is None else argv
+    if args[:1] == ["mcp"]:   # MCP server on stdio: nothing may be printed to stdout before it takes over
+        from .mcp_server import main as mcp_main
+        return mcp_main()
     _utf8_stdio()
     ap = argparse.ArgumentParser(prog="librarian", description=__doc__)
     ap.add_argument("--version", action="version", version=__version__)
@@ -110,12 +114,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--mode", choices=["hybrid", "phrase", "fts", "semantic"], default="hybrid")
     p.add_argument("-k", type=int, default=10)
     p.add_argument("--book", help="restrict to books whose title/author/path contains this")
+    p.add_argument("--author", help="restrict to books whose author contains this")
+    p.add_argument("--chapter", help="restrict to chapters with this number or title words, e.g. 5 or Compactness")
+    p.add_argument("--section", help="restrict to sections with this number or title words, e.g. 5.4 or 'Lipschitz'")
+    p.add_argument("--no-spell", action="store_true", help="do not correct misspelled words")
     p.add_argument("--json", action="store_true")
     p.add_argument("--timing", action="store_true", help="print time per phase (stderr)")
     p.add_argument("--explain", type=int, default=0, metavar="N", help="print the top N candidates before reranking (stderr)")
     p.add_argument("--expand", default=None, help="query expansion for descriptive queries: 'ollama[:model]' (default, $LIBRARIAN_EXPAND_MODEL or llama3.1:8b) or 'none'")
     p.add_argument("--rerank", default=None, help="cross-encoder model, or 'none' (default $LIBRARIAN_RERANK or BAAI/bge-reranker-v2-m3)")
     add_embed(p)
+    sub.add_parser("mcp", help="MCP server on stdio for the Claude desktop app (scripts\\install-mcp.ps1 registers it)")
 
     a = ap.parse_args(argv)
     if not in_venv() and not os.environ.get("LIBRARIAN_ALLOW_SYSTEM"):
@@ -162,10 +171,22 @@ def main(argv: list[str] | None = None) -> int:
         rr = embed.load_reranker(a.rerank) if a.mode in ("hybrid", "semantic") else None
         ex = embed.load_expander(a.expand) if a.mode in ("hybrid", "semantic") else None
         t_models = _t.perf_counter() - t_start
-        hits = search.search(cfg, con, a.query, emb, a.mode, a.k, a.book, rr, a.explain, ex)
+        speller = None
+        if not a.no_spell:
+            from .spell import Vocab
+            speller = Vocab(con, cfg.db_path, cfg.data / "cache")
+        info: dict = {}
+        hits = search.search(cfg, con, a.query, emb, a.mode, a.k, a.book, rr, a.explain, ex,
+                             author=a.author, chapter=a.chapter, section=a.section, speller=speller, info=info)
         if a.json:
             print(json.dumps([search.as_dict(h) for h in hits], indent=2, ensure_ascii=False))
         else:
+            if info.get("corrected"):
+                print(f"# searched for: {info['query']}  ({', '.join(f'{k} -> {v}' for k, v in info['corrected'].items())})")
+            if isinstance(info.get("expand"), str):
+                print(f"# expansion {info['expand']}")
+            if "scope" in info:
+                print(f"# scope: {info['scope']}")
             for i, h in enumerate(hits, 1):
                 print(f"{i:2d}. {search.format_hit(h)}")
         if a.timing:

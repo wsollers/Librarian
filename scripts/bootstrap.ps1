@@ -49,14 +49,21 @@ if ((Test-Path $Lock) -and -not $Relock) {
 } else {
     Step "Installing CUDA PyTorch ($Cuda)"
     & $Py -m pip install --quiet torch --index-url $TorchIndex
-    Step "Installing librarian[embed,dev]"
-    & $Py -m pip install --quiet -e ".[embed,dev]"
+    Step "Installing librarian[embed,dev,mcp]"
+    & $Py -m pip install --quiet -e ".[embed,dev,mcp]"
     Step "Freezing requirements.lock"
     $frozen = & $Py -m pip freeze --exclude-editable
     [IO.File]::WriteAllLines($Lock, $frozen, (New-Object Text.UTF8Encoding $false))  # no BOM
     Warn "commit requirements.lock so every machine gets the same environment"
 }
 if ($LASTEXITCODE -ne 0) { throw "pip failed" }
+# MCP server dependency (not in older locks): install if missing; -Relock pins it.
+& $Py -c "import mcp" 2>$null
+if ($LASTEXITCODE -ne 0) {
+    Step "Installing the MCP SDK (librarian[mcp])"
+    & $Py -m pip install --quiet "mcp>=1.2,<2"
+    if ($LASTEXITCODE -ne 0) { throw "pip failed (mcp)" }
+}
 
 Step "Checking tools"
 foreach ($t in "pdfinfo", "pdftotext", "pdftoppm", "pdfimages") {

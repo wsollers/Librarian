@@ -1,0 +1,342 @@
+"""librarian MCP server (stdio), started and stopped by the Claude desktop app.
+
+Lifecycle
+* start: answers `initialize` at once; a background thread opens the index read-only and loads
+  the embedder, the cross-encoder and the spelling word list (a tool call waits for it).
+* Ollama: untouched unless a search asks for expand=true (see ollama.OllamaManager).
+* stop (stdin closed by the app): unload the expansion model; stop Ollama if we started it.
+
+stdout is the protocol channel: everything else (print, progress bars, C libraries) is pointed
+at stderr before any model library is imported.
+"""
+
+from __future__ import annotations
+
+import atexit
+import io
+import os
+import sqlite3
+import sys
+import threading
+import time
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Optional
+
+REPO = Path(__file__).resolve().parents[2]
+
+INSTRUCTIONS = """Search William's mathematics library (~900 books, page-exact text with printed pages,
+chapters and sections). Workflow: search -> read_page on the best hits -> cite.
+* Rephrase descriptive questions into the terms a textbook would use and search with them (or run
+  a few searches); expand=true asks a slower local model to do this and is rarely needed.
+* Narrow with author / book / chapter / section when the question names them.
+* Never state what a book says from a snippet alone: read_page the cited lines first.
+* Cite as: Title — Author, chapter › section, p. <printed> (PDF <pdf>), lines a–b, with the pdf link."""
+
+
+def load_env(path: Path) -> None:
+    """The .env that scripts/run.ps1 loads; values already in the environment win."""
+    if path.is_file():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            v = v.strip().strip('"').strip("'")
+            if k.strip() and v:
+                os.environ.setdefault(k.strip(), v)
+    for k, v in (("PYTHONIOENCODING", "utf-8"), ("HF_HUB_OFFLINE", "1"), ("HF_HUB_DISABLE_PROGRESS_BARS", "1"),
+                 ("HF_HUB_VERBOSITY", "error"), ("TRANSFORMERS_VERBOSITY", "error"),
+                 ("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1"), ("TQDM_DISABLE", "1")):
+        os.environ.setdefault(k, v)
+
+
+class State:
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.con: Optional[sqlite3.Connection] = None
+        self.emb = self.rr = self.speller = None
+        self.lock = threading.Lock()
+        self.ready = threading.Event()
+        self.error: Optional[str] = None
+        self.warnings: list[str] = []
+        self.loaded_in: Optional[float] = None
+        self.device = "?"
+        from .ollama import OllamaManager
+        self.ollama = OllamaManager(log_dir=cfg.data / "logs")
+
+    def load(self) -> None:
+        from .log import log
+        t = time.perf_counter()
+        try:
+            from . import embed
+            from .index import has_vec
+            from .spell import Vocab
+            db = self.cfg.db_path
+            if not db.is_file():
+                raise FileNotFoundError(f"no index at {db}")
+            con = sqlite3.connect(db.resolve().as_uri() + "?mode=ro", uri=True, check_same_thread=False, timeout=30)
+            if not has_vec(con):
+                log.warning("sqlite-vec not loadable: semantic search falls back to BLOB vectors if present")
+            self.con = con
+            spec = (con.execute("SELECT value FROM meta WHERE key='embed_spec'").fetchone() or [None])[0]
+            try:   # without the models, search still works on keywords (FTS)
+                if spec:
+                    self.emb = embed.load(spec)
+                self.rr = embed.load_reranker(None)
+            except Exception as e:  # noqa: BLE001
+                self.warnings.append(f"models not loaded ({type(e).__name__}: {e}): keyword search only")
+                log.warning("mcp: %s", self.warnings[-1])
+            try:
+                import torch
+                self.device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu"
+            except ImportError:
+                self.device = "cpu (no torch)"
+            self.speller = Vocab(con, db, self.cfg.data / "cache")
+            self.loaded_in = round(time.perf_counter() - t, 1)
+            log.info("mcp: ready in %.1fs (embed=%s, rerank=%s, device=%s)", self.loaded_in, spec,
+                     getattr(self.rr, "model", None), self.device)
+        except Exception as e:  # noqa: BLE001
+            self.error = f"{type(e).__name__}: {e}"
+            log.exception("mcp: loading failed")
+        finally:
+            self.ready.set()
+
+    def close(self) -> None:
+        self.ollama.stop()
+        if self.con is not None:
+            self.con.close()
+            self.con = None
+
+
+def _resolve_book(con: sqlite3.Connection, book: str) -> tuple[Optional[tuple], list[tuple]]:
+    """(sha, title, author, path) for a sha256 (prefix) or a title/author/path substring."""
+    q = "SELECT sha256, title, author, path FROM books "
+    rows = con.execute(q + "WHERE sha256 LIKE ?", (f"{book.lower()}%",)).fetchall() if len(book) >= 8 else []
+    if not rows:
+        rows = con.execute(q + "WHERE title LIKE ? OR author LIKE ? OR path LIKE ? ORDER BY title",
+                           (f"%{book}%",) * 3).fetchall()
+    exact = [r for r in rows if (r[1] or "").lower() == book.lower()]
+    if len(exact) == 1:
+        return exact[0], rows
+    return (rows[0] if len(rows) == 1 else None), rows
+
+
+def _pdf_uri(cfg, path: str, page: int) -> Optional[str]:
+    src = cfg.sources / path
+    try:
+        return src.resolve().as_uri() + (f"#page={page}" if path.lower().endswith(".pdf") else "")
+    except ValueError:
+        return None
+
+
+def build(state_holder: dict):
+    from mcp.server.fastmcp import FastMCP
+    import anyio
+
+    @asynccontextmanager
+    async def lifespan(_server):
+        from . import config
+        from .log import log, setup
+        cfg = config.load(None)
+        setup(cfg.data, "mcp")
+        log.propagate = False                     # the MCP SDK configures the root logger too
+        st = State(cfg)
+        state_holder["state"] = st
+        atexit.register(st.ollama.stop)          # backup if the lifespan is cut short
+        threading.Thread(target=st.load, name="librarian-load", daemon=True).start()
+        try:
+            yield st
+        finally:
+            st.close()
+
+    app = FastMCP("librarian", instructions=INSTRUCTIONS, lifespan=lifespan)
+
+    async def run(fn):
+        st: State = state_holder["state"]
+        if not st.ready.is_set():
+            await anyio.to_thread.run_sync(st.ready.wait, 600)
+        if st.error:
+            return {"error": f"librarian failed to load: {st.error}"}
+
+        def locked():
+            with st.lock:
+                return fn(st)
+        return await anyio.to_thread.run_sync(locked)
+
+    @app.tool()
+    async def search(query: str, k: int = 10, author: Optional[str] = None, book: Optional[str] = None,
+                     chapter: Optional[str] = None, section: Optional[str] = None, mode: str = "hybrid",
+                     expand: bool = False, rerank: bool = True) -> dict:
+        """Search the library. Returns hits with book, chapter › section, printed and PDF page, line span,
+        snippet, sha256 (for read_page) and a pdf link.
+
+        query: words, a phrase in double quotes, or a description. Misspellings are corrected against the
+          library's own vocabulary (reported in `corrected`).
+        author / book: substring of the author, or of the title / file path (or a sha256 prefix).
+        chapter / section: a number ("5", "5.4") or title words ("Compactness"); with neither book nor
+          author this matches that chapter/section title in every book.
+        mode: hybrid (default), phrase (exact phrase), fts (keywords only), semantic (meaning only).
+        expand: ask the local Ollama model to add technical terms first (starts Ollama if needed; slow
+          on first use). Usually better: search again with the terms yourself.
+        rerank: false skips the cross-encoder (faster, worse ordering)."""
+        def go(st: State):
+            from . import embed, search as S
+            info: dict = {}
+            ex = None
+            if expand and mode in ("hybrid", "semantic"):
+                if st.ollama.ensure():
+                    ex = embed.Expander(st.ollama.model)
+                else:
+                    info["expand"] = f"unavailable ({st.ollama.error}): searched without it"
+            hits = S.search(st.cfg, st.con, query, st.emb if mode in ("hybrid", "semantic") else None, mode,
+                            max(1, min(k, 50)), book, st.rr if rerank and mode in ("hybrid", "semantic") else None,
+                            0, ex, author=author, chapter=chapter, section=section, speller=st.speller, info=info)
+            out = {"query": info.pop("query", query), **info, "timing_s": dict(S.LAST_TIMING), "hits": []}
+            if st.emb is None and mode in ("hybrid", "semantic"):
+                out["warning"] = "embedder not loaded: keyword (FTS) results only"
+            for h in hits:
+                out["hits"].append({
+                    "title": h.title, "author": h.author, "chapter": h.chapter, "section": h.section,
+                    "printed_page": h.printed_page, "pdf_page": h.pdf_page, "lines": [h.line_start, h.line_end],
+                    "snippet": h.snippet, "score": h.score, "via": h.via, "sha256": h.sha256, "pdf": h.pdf_uri})
+            return out
+        return await run(go)
+
+    @app.tool()
+    async def read_page(book: str, pdf_page: Optional[int] = None, printed_page: Optional[str] = None,
+                        line_start: Optional[int] = None, line_end: Optional[int] = None, context: int = 6) -> dict:
+        """Read a page of a book, lines numbered as in search hits. Do this before asserting what a book says.
+
+        book: sha256 (from a hit) or a title/author substring that names one book.
+        pdf_page or printed_page ("17", "xiv"): which page. line_start/line_end: focus on these lines,
+        with `context` lines either side (omit for the whole page). Pages next to it: call again with pdf_page±1."""
+        def go(st: State):
+            from .sections import locate
+            hit, rows = _resolve_book(st.con, book)
+            if hit is None:
+                return {"error": "no book matches" if not rows else "several books match; pass a sha256",
+                        "candidates": [{"title": r[1], "author": r[2], "sha256": r[0]} for r in rows[:15]]}
+            sha, title, author, path = hit
+            p, note = pdf_page, None
+            if p is None:
+                if printed_page is None:
+                    return {"error": "give pdf_page or printed_page"}
+                found = [r[0] for r in st.con.execute(
+                    "SELECT pdf_page FROM pages WHERE sha256=? AND lower(printed_page)=lower(?) ORDER BY pdf_page",
+                    (sha, str(printed_page)))]
+                if not found:
+                    return {"error": f"printed page {printed_page} not found in the page map", "title": title}
+                p = found[0]
+                if len(found) > 1:
+                    note = f"printed page {printed_page} occurs at PDF pages {found}; showing the first"
+            f = st.cfg.objects / sha / "pages" / f"{int(p):04d}.md"
+            if not f.is_file():
+                return {"error": f"PDF page {p} has no extracted text", "title": title}
+            lines = f.read_text(encoding="utf-8").split("\n")
+            a, b = 1, len(lines)
+            if line_start is not None:
+                a = max(1, line_start - max(0, context))
+                b = min(len(lines), (line_end or line_start) + max(0, context))
+            row = st.con.execute("SELECT printed_page, method, quality FROM pages WHERE sha256=? AND pdf_page=?",
+                                 (sha, p)).fetchone()
+            last = st.con.execute("SELECT max(pdf_page) FROM pages WHERE sha256=?", (sha,)).fetchone()[0]
+            loc = locate(st.con, sha, int(p))
+            out = {"title": title, "author": author, "sha256": sha, "pdf_page": p, "of_pdf_pages": last,
+                   "printed_page": row[0] if row else None, "chapter": loc.get("chapter"), "section": loc.get("section"),
+                   "text_source": row[1] if row else None, "quality": round(row[2], 2) if row and row[2] is not None else None,
+                   "lines": [a, b], "text": "\n".join(f"{i:3d}| {lines[i - 1]}" for i in range(a, b + 1)),
+                   "pdf": _pdf_uri(st.cfg, path, int(p))}
+            if note:
+                out["note"] = note
+            return out
+        return await run(go)
+
+    @app.tool()
+    async def list_books(filter: Optional[str] = None, author: Optional[str] = None, limit: int = 50) -> dict:
+        """List indexed books. filter: substring of title or file path (the path holds the subject folders,
+        e.g. "Analysis/Functional"); author: substring of the author."""
+        def go(st: State):
+            where, args = ["b.sha256 IN (SELECT sha256 FROM index_state)"], []
+            if filter:
+                where.append("(b.title LIKE ? OR b.path LIKE ?)")
+                args += [f"%{filter}%"] * 2
+            if author:
+                where.append("b.author LIKE ?")
+                args.append(f"%{author}%")
+            w = " AND ".join(where)
+            total = st.con.execute(f"SELECT count(*) FROM books b WHERE {w}", args).fetchone()[0]
+            rows = st.con.execute(f"SELECT b.title, b.author, b.path, b.pdf_pages, b.sha256 FROM books b WHERE {w} "
+                                  f"ORDER BY b.path LIMIT ?", args + [max(1, min(limit, 500))]).fetchall()
+            return {"total": total, "books": [{"title": r[0], "author": r[1], "folder": str(Path(r[2]).parent).replace("\\", "/"),
+                                                "pdf_pages": r[3], "sha256": r[4][:16]} for r in rows]}
+        return await run(go)
+
+    @app.tool()
+    async def contents(book: str, depth: int = 2) -> dict:
+        """Table of contents of one book: chapters (and sections down to `depth`: 1 chapters, 2 sections,
+        3 subsections) with printed and PDF page ranges. book: sha256 or a title/author substring."""
+        def go(st: State):
+            hit, rows = _resolve_book(st.con, book)
+            if hit is None:
+                return {"error": "no book matches" if not rows else "several books match; pass a sha256",
+                        "candidates": [{"title": r[1], "author": r[2], "sha256": r[0]} for r in rows[:15]]}
+            try:
+                secs = st.con.execute("SELECT level, number, title, printed_page, pdf_start, pdf_end FROM sections "
+                                      "WHERE sha256=? AND level<=? ORDER BY seq", (hit[0], depth)).fetchall()
+            except sqlite3.OperationalError:
+                secs = []
+            return {"title": hit[1], "author": hit[2], "sha256": hit[0],
+                    "contents": [{"level": s[0], "number": s[1], "title": s[2], "printed_page": s[3],
+                                  "pdf_pages": [s[4], s[5]]} for s in secs] or "no contents parsed for this book"}
+        return await run(go)
+
+    @app.tool()
+    async def status() -> dict:
+        """Index and server state: build date, books and pages indexed, models and GPU, Ollama."""
+        st: State = state_holder["state"]
+        base = {"ready": st.ready.is_set(), "error": st.error, "warnings": st.warnings, "loaded_in_s": st.loaded_in, "device": st.device,
+                "ollama": st.ollama.state()}
+        if not st.ready.is_set() or st.con is None:
+            return base
+
+        def go(st: State):
+            meta = dict(st.con.execute("SELECT key, value FROM meta").fetchall())
+            return {**base, "books_indexed": st.con.execute("SELECT count(*) FROM index_state").fetchone()[0],
+                    "pages": st.con.execute("SELECT count(*) FROM pages").fetchone()[0],
+                    "embedder": getattr(st.emb, "spec", None), "reranker": getattr(st.rr, "model", None),
+                    "spell_words": sum(len(v) for v in st.speller.by_key.values()) if st.speller else 0,
+                    "last_indexed": st.con.execute("SELECT max(indexed_at) FROM index_state").fetchone()[0],
+                    "index": {k: v for k, v in meta.items() if k in ("schema_version", "embed_spec", "inventory_at",
+                                                                     "vector_backend")}}
+        return await run(go)
+
+    return app
+
+
+def main() -> int:
+    os.chdir(REPO)
+    load_env(REPO / ".env")
+    # Keep the protocol channel to ourselves: fd 1 and sys.stdout now go to stderr.
+    proto_out = os.fdopen(os.dup(1), "wb")
+    os.dup2(2, 1)
+    sys.stdout = sys.stderr
+    import anyio
+    from mcp.server.stdio import stdio_server
+
+    holder: dict = {}
+    app = build(holder)
+
+    async def serve():
+        stdin = anyio.wrap_file(io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8"))
+        stdout = anyio.wrap_file(io.TextIOWrapper(proto_out, encoding="utf-8", newline="\n", write_through=True))
+        async with stdio_server(stdin, stdout) as (r, w):
+            server = app._mcp_server   # FastMCP's low-level server (carries the lifespan)
+            await server.run(r, w, server.create_initialization_options())
+
+    anyio.run(serve)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

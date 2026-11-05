@@ -90,7 +90,9 @@ Prefer one SQLite file over LanceDB for portability; revisit if too slow.
    * every hit carries printed page, PDF page, line span.
 3. Whole library; coverage report shows zero silent gaps.
 4. Search skill (proposed via the skill review card); AIM's `notes/CONVENTIONS.md`
-   §10 updated by the AIM hub to point at it.
+   §10 updated by the AIM hub to point at it. **Built (2026-11-04):** `librarian mcp` server
+   (README "MCP server"), author/chapter/section filters, spelling correction; skill text in
+   `skill/SKILL.md`.
 5. Retire the old source stack; make lra-* repos private (if not done).
 
 ## Open questions for William

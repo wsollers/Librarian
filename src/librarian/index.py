@@ -104,6 +104,25 @@ class VectorStore:
         top = np.argsort(-sims)[:k]
         return [(int(ids[i]), float(sims[i])) for i in top]
 
+    def knn_among(self, q: np.ndarray, ids: list[int], k: int) -> list[tuple[int, float]]:
+        """Exact nearest neighbours among the given chunk ids (a book, a chapter): no KNN recall loss."""
+        if not ids:
+            return []
+        q = q.astype(np.float32)
+        table, col, vcol = ("chunks_vec", "rowid", "embedding") if self.vec else ("chunks_blob", "id", "v")
+        got_ids, blobs = [], []
+        for i in range(0, len(ids), 900):
+            part = ids[i:i + 900]
+            for r in self.con.execute(f"SELECT {col}, {vcol} FROM {table} WHERE {col} IN ({','.join('?' * len(part))})", part):
+                got_ids.append(r[0])
+                blobs.append(r[1])
+        if not blobs:
+            return []
+        m = np.frombuffer(b"".join(blobs), dtype=np.float32).reshape(len(blobs), -1)
+        sims = m @ q
+        top = np.argsort(-sims)[:k]
+        return [(int(got_ids[i]), float(sims[i])) for i in top]
+
 
 def chunk_page(lines: list[str]) -> list[tuple[int, int, str]]:
     out = []

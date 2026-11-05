@@ -58,6 +58,37 @@ Every hit carries book, author, chapter › section, printed page, PDF page, lin
 `file:///…pdf#page=N` link. Line *n* of a citation is line *n* of `objects/<sha>/pages/NNNN.md`. `book.md` is the
 whole book with `<!-- page pdf=N printed=X -->` breaks.
 
+## Search filters
+
+```powershell
+scripts\run.ps1 search "compact" --author Kainth --chapter Compactness
+scripts\run.ps1 search "Lipschitz" --book "Analysis I" --section 5.4
+scripts\run.ps1 search "lipsctiz constant"     # -> searched for: lipschitz constant
+```
+
+`--author` / `--book` narrow to books, `--chapter` / `--section` (number or title words) to page
+ranges from the parsed contents; inside a scope vectors are compared exactly (no KNN recall loss).
+Misspelled words are corrected against the library's own vocabulary (`--no-spell` to turn off;
+word list cached in `<data>\cache\vocab.json`, rebuilt when the index changes).
+
+## MCP server (Claude desktop app)
+
+```powershell
+scripts\bootstrap.ps1        # installs the MCP SDK into .venv if missing
+scripts\install-mcp.ps1      # registers "librarian" in claude_desktop_config.json (backup kept)
+# then quit and restart the Claude desktop app
+```
+
+`librarian mcp` is a stdio server the desktop app starts and stops. It answers at once and loads
+the index (read-only), bge, the cross-encoder and the word list in the background; tools:
+`search` (query, author, book, chapter, section, mode, k, expand, rerank), `read_page`,
+`contents`, `list_books`, `status`. Cloud sessions linked to hal5000 reach it too.
+
+Ollama is **not** started with the server. Only `search(expand=true)` needs it: then the server
+uses a running Ollama, or starts `ollama serve` itself (in a Windows Job Object, so it dies with
+the server), and loads `LIBRARIAN_EXPAND_MODEL` with `keep_alive=-1`. On exit it unloads the
+model and stops Ollama only if it started it. Log: `<data>\logs\<stamp>-mcp.log`.
+
 ## Inventory / book statuses
 
 | status | meaning |

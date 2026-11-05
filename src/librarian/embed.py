@@ -87,6 +87,11 @@ def load_reranker(model: str | None = None):
         return None
 
 
+def ollama_url() -> str:
+    host = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/")
+    return host if "://" in host else "http://" + host
+
+
 EXPAND_PROMPT = """You help search a library of mathematics textbooks.
 A reader describes a concept, possibly without knowing its name:
 "{q}"
@@ -99,11 +104,16 @@ class Expander:
 
     def __init__(self, model: str | None = None):
         self.model = model or os.environ.get("LIBRARIAN_EXPAND_MODEL", "llama3.1:8b")
-        self.url = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/") + "/api/generate"
+        self.url = ollama_url() + "/api/generate"
+        self.keep_alive = os.environ.get("LIBRARIAN_EXPAND_KEEP_ALIVE")  # e.g. -1: the MCP server keeps it loaded
+        self.last_error: str | None = None
 
     def expand(self, q: str) -> dict | None:
+        self.last_error = None
         body = {"model": self.model, "prompt": EXPAND_PROMPT.format(q=q), "stream": False,
                 "format": "json", "options": {"temperature": 0}}
+        if self.keep_alive is not None:
+            body["keep_alive"] = int(self.keep_alive) if self.keep_alive.lstrip("-").isdigit() else self.keep_alive
         try:
             req = urllib.request.Request(self.url, data=json.dumps(body).encode(),
                                          headers={"Content-Type": "application/json"})
@@ -111,6 +121,7 @@ class Expander:
                 out = json.loads(json.load(r)["response"])
         except Exception as e:  # noqa: BLE001
             log.warning("query expansion failed (%s): %s", self.model, e)
+            self.last_error = f"{self.model}: {e}"
             return None
         terms = [str(t).strip() for t in out.get("terms", []) if str(t).strip()][:6]
         return {"terms": terms, "passage": str(out.get("passage", "")).strip()}
@@ -126,7 +137,7 @@ def load_expander(spec: str | None):
 
 class OllamaEmbedder(Embedder):
     def __init__(self, model: str):
-        self.url = os.environ.get("OLLAMA_HOST", "http://localhost:11434").rstrip("/") + "/api/embed"
+        self.url = ollama_url() + "/api/embed"
         self.model, self.spec = model, f"ollama:{model}"
         self.qprefix, self.dprefix = ("search_query: ", "search_document: ") if "nomic" in model else ("", "")
         self.dim = len(self._call(["probe"])[0])

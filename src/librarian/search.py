@@ -110,17 +110,105 @@ def _page_lines(cfg: Config, sha: str, p: int) -> list[str]:
     return f.read_text(encoding="utf-8").split("\n") if f.is_file() else []
 
 
+_SCOPE_WORD = re.compile(r"^\s*(chapter|chap\.?|ch\.?|section|sec\.?|§)\s*", re.I)
+SCOPED_EXACT = 80_000   # chunks in scope up to which vectors are compared exactly instead of via KNN
+
+
+def _scope_rows(con: sqlite3.Connection, shas: Optional[list[str]], term: str, levels: str) -> list[tuple]:
+    term = _SCOPE_WORD.sub("", term).strip().rstrip(".")
+    if not term:
+        return []
+    where = f"level {levels} AND (number = ? OR title LIKE ? OR (coalesce(number, '') || ' ' || title) LIKE ?)"
+    args: list = [term, f"%{term}%", f"%{term}%"]
+    if shas is not None:
+        where += f" AND sha256 IN ({','.join('?' * len(shas))})"
+        args += shas
+    try:
+        return con.execute(f"SELECT sha256, pdf_start, pdf_end FROM sections WHERE {where}", args).fetchall()
+    except sqlite3.OperationalError:   # no sections table yet
+        return []
+
+
+def scope(con: sqlite3.Connection, book: Optional[str] = None, author: Optional[str] = None,
+          chapter: Optional[str] = None, section: Optional[str] = None) -> Optional[dict]:
+    """Books (and page ranges inside them) a search is restricted to: {sha: [(a, b), ...] or None}.
+    None means the whole library; {} means nothing matched."""
+    if not any((book, author, chapter, section)):
+        return None
+    shas: Optional[list[str]] = None
+    if book or author:
+        where, args = [], []
+        if book:
+            where.append("(title LIKE ? OR author LIKE ? OR path LIKE ? OR sha256 LIKE ?)")
+            args += [f"%{book}%"] * 3 + [f"{book}%"]
+        if author:
+            where.append("author LIKE ?")
+            args.append(f"%{author}%")
+        shas = [r[0] for r in con.execute(f"SELECT sha256 FROM books WHERE {' AND '.join(where)}", args)]
+        if not shas:
+            return {}
+    if not (chapter or section):
+        return {sha: None for sha in shas}
+    ranges: dict[str, list[tuple[int, int]]] = {}
+    chap = _scope_rows(con, shas, chapter, "<= 1") if chapter else None
+    if chapter and not chap:
+        chap = _scope_rows(con, shas, chapter, ">= 0")
+    sect = None
+    if section:
+        sect = _scope_rows(con, shas, section, ">= 2") or _scope_rows(con, shas, section, ">= 0")
+    if chap is not None and sect is not None:      # sections inside the chapter
+        sect = [s for s in sect if any(c[0] == s[0] and c[1] <= s[1] and s[2] <= c[2] for c in chap)]
+    for sha, a, b in (sect if sect is not None else chap):
+        ranges.setdefault(sha, []).append((int(a), int(b)))
+    return ranges
+
+
+def in_scope(sc: Optional[dict], sha: str, page: int) -> bool:
+    if sc is None:
+        return True
+    if sha not in sc:
+        return False
+    rs = sc[sha]
+    return rs is None or any(a <= page <= b for a, b in rs)
+
+
+def _scoped_chunks(con: sqlite3.Connection, sc: dict) -> list[int]:
+    ids: list[int] = []
+    for sha, rs in sc.items():
+        if rs is None:
+            ids += [r[0] for r in con.execute("SELECT id FROM chunks WHERE sha256=?", (sha,))]
+        else:
+            for a, b in rs:
+                ids += [r[0] for r in con.execute(
+                    "SELECT id FROM chunks WHERE sha256=? AND pdf_page BETWEEN ? AND ?", (sha, a, b))]
+        if len(ids) > SCOPED_EXACT:
+            break
+    return sorted(set(ids))
+
+
 def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder], mode: str = "hybrid",
            k: int = 10, book: Optional[str] = None, reranker=None, explain: int = 0,
-           expander=None) -> list[Hit]:
+           expander=None, author: Optional[str] = None, chapter: Optional[str] = None,
+           section: Optional[str] = None, speller=None, info: Optional[dict] = None) -> list[Hit]:
+    """`speller`: a spell.Vocab (or None). `info`, if given, receives what was done to the query:
+    corrected words, expansion terms or why expansion failed, and the scope searched."""
     import time as _t
     T = {"t0": _t.perf_counter()}
     mark = lambda k: T.__setitem__(k, _t.perf_counter())
+    info = info if info is not None else {}
+    if speller is not None:
+        q, fixes = speller.correct(q, STOP)
+        if fixes:
+            info["corrected"] = fixes
+            info["query"] = q
     descriptive = mode in ("hybrid", "semantic") and is_descriptive(q)
     rq, fq, vq = q.strip('"'), q, q          # rerank / FTS / vector queries
     if expander is not None and descriptive:
         exp = expander.expand(rq)
+        if not exp:
+            info["expand"] = f"unavailable ({getattr(expander, 'last_error', None) or 'no answer'}): searched without it"
         if exp:
+            info["expand"] = {"terms": exp["terms"]}
             terms, passage = exp["terms"], exp["passage"]
             fq = " ".join(terms) or q
             vq = passage or q
@@ -129,22 +217,24 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
                 import sys
                 print(f"# expanded: terms={terms}\n#   passage={passage[:200]}", file=sys.stderr)
     cands: dict[tuple[str, int], Cand] = {}
-    bargs: list[str] = []
+    sc = scope(con, book, author, chapter, section)
+    bargs: list[str] = sorted(sc) if sc is not None else []
     bfilter = ""
-    if book:
-        bargs = [r[0] for r in con.execute(
-            "SELECT sha256 FROM books WHERE title LIKE ? OR author LIKE ? OR path LIKE ? OR sha256 LIKE ?",
-            (f"%{book}%",) * 3 + (f"{book}%",))]
-        if not bargs:
+    if sc is not None:
+        info["scope"] = {"books": len(sc), "page_ranges": sum(len(r) for r in sc.values() if r)}
+        if not sc:
+            info["scope"]["note"] = "no book/section matched the filters"
             return []
         bfilter = f" AND sha256 IN ({','.join('?' * len(bargs))})"
+    ranged = sc is not None and any(r is not None for r in sc.values())
 
     mark("expand")
     if mode in ("hybrid", "phrase", "fts"):
         fts_w = 0.5 if descriptive else 1.0
         rows = con.execute(
             f"SELECT sha256, pdf_page, text FROM pages_fts WHERE pages_fts MATCH ?{bfilter} "
-            f"ORDER BY bm25(pages_fts) LIMIT {FTS_K}", [fts_query(fq, mode)] + bargs).fetchall()
+            f"ORDER BY bm25(pages_fts) LIMIT {FTS_K * (10 if ranged else 1)}", [fts_query(fq, mode)] + bargs).fetchall()
+        rows = [r for r in rows if in_scope(sc, r[0], int(r[1]))][:FTS_K]
         for rank, (sha, p, text) in enumerate(rows):
             p = int(p)
             c = cands.setdefault((sha, p), Cand(sha, p, line_span(text.split("\n"), fq)))
@@ -154,14 +244,20 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
     mark("fts")
     if mode in ("hybrid", "semantic") and emb is not None:
         store = VectorStore(con, emb.dim, emb.spec, create=False)
+        qv = emb.query(vq)
+        ids = _scoped_chunks(con, sc) if sc is not None else []
+        if sc is not None and len(ids) <= SCOPED_EXACT:
+            near = store.knn_among(qv, ids, VEC_K)       # exact, inside the scope only
+        else:
+            near = store.knn(qv, VEC_K * (5 if sc is not None else 1))
         rank = 0
-        for cid, _sim in store.knn(emb.query(vq), VEC_K * (3 if book else 1)):
+        for cid, _sim in near:
             row = con.execute(
                 "SELECT sha256, pdf_page, line_start, line_end, text FROM chunks WHERE id=?", (cid,)).fetchone()
             if row is None:  # vector without its chunk (book removed while sqlite-vec was unavailable)
                 continue
             sha, p, a, b, text = row
-            if bargs and sha not in bargs:
+            if not in_scope(sc, sha, p):
                 continue
             c = cands.setdefault((sha, p), Cand(sha, p, (a, b)))
             if "vec" in c.via:
