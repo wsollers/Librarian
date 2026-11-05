@@ -31,7 +31,14 @@ chapters and sections). Workflow: search -> read_page on the best hits -> cite.
   a few searches); expand=true asks a slower local model to do this and is rarely needed.
 * Narrow with author / book / chapter / section when the question names them.
 * Never state what a book says from a snippet alone: read_page the cited lines first.
-* Cite as: Title — Author, chapter › section, p. <printed> (PDF <pdf>), lines a–b, with the pdf link."""
+* Cite as: Title — Author, chapter › section, p. <printed> (PDF <pdf>), lines a–b, with the pdf link.
+* Right after start-up the models take about a minute to load. A tool called before then answers
+  {"loading": true, ...} at once: call status (instant) until ready is true, then retry."""
+
+# How long a tool call waits for start-up before answering "still loading". It must stay well under
+# the client's request timeout: a timed-out call makes some clients restart the server, which then
+# has to load from scratch again.
+LOAD_WAIT_S = float(os.environ.get("LIBRARIAN_MCP_LOAD_WAIT", "15"))
 
 
 def load_env(path: Path) -> None:
@@ -61,6 +68,7 @@ class State:
         self.error: Optional[str] = None
         self.warnings: list[str] = []
         self.loaded_in: Optional[float] = None
+        self.started = time.perf_counter()
         self.device = "?"
         from .ollama import OllamaManager
         self.ollama = OllamaManager(log_dir=cfg.data / "logs")
@@ -130,6 +138,14 @@ def _pdf_uri(cfg, path: str, page: int) -> Optional[str]:
         return None
 
 
+def loading_reply(st: "State") -> dict:
+    """Answer for a tool call that arrives before start-up has finished."""
+    secs = round(time.perf_counter() - st.started, 1)
+    return {"loading": True, "loading_for_s": secs,
+            "message": f"librarian is still loading its index and models ({secs:.0f}s so far; usually about "
+                       "a minute). Call status until ready is true, then retry this call."}
+
+
 def build(state_holder: dict):
     from mcp.server.fastmcp import FastMCP
     import anyio
@@ -155,7 +171,9 @@ def build(state_holder: dict):
     async def run(fn):
         st: State = state_holder["state"]
         if not st.ready.is_set():
-            await anyio.to_thread.run_sync(st.ready.wait, 600)
+            await anyio.to_thread.run_sync(st.ready.wait, LOAD_WAIT_S)
+        if not st.ready.is_set():
+            return loading_reply(st)
         if st.error:
             return {"error": f"librarian failed to load: {st.error}"}
 
@@ -297,7 +315,9 @@ def build(state_holder: dict):
         st: State = state_holder["state"]
         base = {"ready": st.ready.is_set(), "error": st.error, "warnings": st.warnings, "loaded_in_s": st.loaded_in, "device": st.device,
                 "ollama": st.ollama.state()}
-        if not st.ready.is_set() or st.con is None:
+        if not st.ready.is_set():
+            return {**base, "loading_for_s": round(time.perf_counter() - st.started, 1)}
+        if st.con is None:
             return base
 
         def go(st: State):
