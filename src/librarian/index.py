@@ -58,6 +58,9 @@ def has_vec(con: sqlite3.Connection) -> bool:
         return False
 
 
+VEC_KNN_MAX = 4096   # sqlite-vec refuses a larger k in a KNN query
+
+
 class VectorStore:
     def __init__(self, con: sqlite3.Connection, dim: int, spec: str, create: bool = True):
         self.con, self.dim = con, dim
@@ -91,6 +94,7 @@ class VectorStore:
     def knn(self, q: np.ndarray, k: int) -> list[tuple[int, float]]:
         q = q.astype(np.float32)
         if self.vec:
+            k = min(k, VEC_KNN_MAX)
             rows = self.con.execute(
                 "SELECT rowid, distance FROM chunks_vec WHERE embedding MATCH ? AND k = ? ORDER BY distance",
                 (q.tobytes(), k)).fetchall()
