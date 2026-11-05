@@ -58,7 +58,7 @@ if ((Test-Path $Lock) -and -not $Relock) {
 }
 if ($LASTEXITCODE -ne 0) { throw "pip failed" }
 # MCP server dependency (not in older locks): install if missing; -Relock pins it.
-& $Py -c "import mcp" 2>$null
+& $Py -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('mcp') else 1)"
 if ($LASTEXITCODE -ne 0) {
     Step "Installing the MCP SDK (librarian[mcp])"
     & $Py -m pip install --quiet "mcp>=1.2,<2"

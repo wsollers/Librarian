@@ -14,7 +14,7 @@ $ErrorActionPreference = "Stop"
 $Repo = Split-Path -Parent $PSScriptRoot
 $Py = Join-Path $Repo ".venv\Scripts\python.exe"
 if (-not (Test-Path $Py)) { throw "No .venv: run scripts\bootstrap.ps1 first." }
-& $Py -c "import mcp" 2>$null
+& $Py -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('mcp') else 1)"
 if ($LASTEXITCODE -ne 0) { throw "The MCP SDK is not installed in .venv: run scripts\bootstrap.ps1 (it installs it)." }
 
 $Configs = @(Join-Path $env:APPDATA "Claude\claude_desktop_config.json")
