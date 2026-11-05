@@ -2,7 +2,7 @@
 
 Topic order (building undergraduate mathematics bottom-up):
   Type Theory, Logic, Set Theory, Number Systems, Analysis (Kaplansky first),
-  then the rest of Foundations, then the other folders, Calculus / Pre Calculus last; Physics is left out.
+  then the rest of Foundations, then the other folders, Calculus / Pre Calculus, Physics last.
 Inside a topic: fewest pages needing repair first (low-quality + damaged + old Tesseract pages, from
 reports/audit.csv), so a batch finishes as many books as possible. Weaker copies listed in
 config/lower-priority.txt go to the very end.
@@ -42,9 +42,10 @@ TOPICS = [
     ("Computer Science", ["Computer Science/"]),
     ("History", ["History/"]),
     ("Calculus and Pre Calculus", ["Calculus/", "Pre Calculus/"]),
+    ("Physics", ["Physics/"]),
 ]
 FIRST = ["Analysis/Metric Spaces/Set Theory and Metric Spaces - Kaplansky.pdf"]
-SKIP = ("Physics/",)
+SKIP = ()
 
 
 def topic_of(path: str) -> int | None:

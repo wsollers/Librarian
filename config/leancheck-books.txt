@@ -881,6 +881,30 @@ Calculus/Analytic Geometry and Calculus - Fuller.pdf  # repairs 622, 622 pp
 Pre Calculus/Elements Of Modern Mathematics - May.pdf  # repairs 625, 625 pp
 Calculus/Calculus - Apolstol.pdf  # repairs 686, 686 pp
 
+## Physics (22 books)
+Physics/General Relativity - Tong.pdf  # repairs 0, 289 pp
+Physics/Lagrangian and Hamiltonian Mechanics - Unknown.pdf  # repairs 1, 150 pp
+Physics/Intermediate Classical Mechanics - Thorn.pdf  # repairs 2, 56 pp
+Physics/Vol 1 - Landau Lifshitz - Mechanics 3rd ed 1976.pdf  # repairs 3, 197 pp
+Physics/Advanced Classical Mechanics - Stewart.pdf  # repairs 3, 199 pp
+Physics/Engineering Mechanics - Statics - Hibbler.pdf  # repairs 4, 655 pp
+Physics/Orbital Mechanics and Introduction - Rao.pdf  # repairs 6, 129 pp
+Physics/Fundamentals of Astrodynamics - Wakker.pdf  # repairs 9, 690 pp
+Physics/Entropy Order Parameters and Complexity - Sethna.pdf  # repairs 10, 494 pp
+Physics/Richard Feynman-Feynman Lectures on Physics Vol 1 Exercises-1964 Volume 1-Addison-Wesley 1964 - Unknown.pdf  # repairs 129, 129 pp
+Physics/Fundamentals of Astrodynamics - Bate.pdf  # repairs 165, 470 pp
+Physics/Engineering Mechanics Statics - Meriam.pdf  # repairs 249, 608 pp
+Physics/landau-l-d-lifshitz-e-m-course-of-theoretical-physics-vol-02-the-classical-theory-of-fields-3305 - Unknown.pdf  # repairs 269, 269 pp
+Physics/Introduction To Modern Statistical Mechanics - Chandler.pdf  # repairs 284, 286 pp
+Physics/Introduction to Mechanics - Kleppner.pdf  # repairs 306, 570 pp
+Physics/University Physics - Sears.pdf  # repairs 328, 328 pp
+Physics/The Classical Theory of Fields - Landau.pdf  # repairs 438, 438 pp
+Physics/Statistical Mechanics - Huang.pdf  # repairs 506, 506 pp
+Physics/Mathematical Methods Of Classical Mechanics - Arnold.pdf  # repairs 536, 536 pp
+Physics/Landau Lifshitz T5 - Unknown.pdf  # repairs 559, 562 pp
+Physics/LandauLifshitz-QuantumMechanics - Unknown.pdf  # repairs 632, 632 pp
+Physics/Classical Mechanics - Goldstein.pdf  # repairs 691, 691 pp
+
 ## Weaker copies of books listed above (18; config/lower-priority.txt)
 Foundations/Logic/On Tarskis Axiomatic Foundation of the Calculus of Relations - Givant.pdf  # repairs 0, 29 pp
 Analysis/Real Analysis/An Introduction to Real Analysis - Hunter - 2.pdf  # repairs 0, 108 pp
