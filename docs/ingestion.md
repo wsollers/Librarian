@@ -1,6 +1,6 @@
 # Ingesting new books (design)
 
-Status: proposal, 2026-11-05. Nothing here is built yet.
+Status: design agreed 2026-11-05 (decisions at the end). Nothing here is built yet.
 
 Goal: books that turn up anywhere (Google Drive, the Windows Downloads folder, later other
 folders) reach the library without duplicating what is already there, get OCR'd by Codex in the
@@ -10,9 +10,11 @@ asked only about the genuinely uncertain cases.
 
 ## Principles
 
-* **Originals are never touched.** Candidates are copied into a staging folder and the copy is
-  verified by SHA-256. Drive files are never moved (a move would sync as a deletion). Cleaning up
-  Downloads is a separate, explicit step.
+* **Every inbox file gets a disposition, then the original is deleted.** A duplicate is deleted
+  as soon as it is identified. Anything else is copied into staging (verified by SHA-256) and the
+  original is deleted only once the book is filed in the Readings tree, or rejected. Nothing is
+  deleted before the library holds a verified copy or the file is known to be unwanted. Deleting
+  on Drive goes to Drive's trash (kept 30 days), so a mistake there is recoverable for a month.
 * **SHA-256 is identity.** Everything downstream (pages, OCR cache, vectors, subjects, queues)
   is already keyed by it, so a candidate is tracked by its hash from the moment it is read.
 * **Every decision is remembered.** A file rejected once (not maths, a duplicate, "no") is never
@@ -37,9 +39,13 @@ discovered -> staged -> identified -> profiled -> classified -> [review] -> file
 `config/local.toml` gains inbox roots, e.g.
 
 ```toml
-inbox = ['C:\Users\william\Downloads', 'G:\My Drive\Books']
+inbox = ['C:\Users\william\Downloads',
+         'G:\My Drive\Saved from Chrome',        # where the phone's Chrome saves downloads
+         'G:\My Drive\Input']                    # anything from the phone that lands elsewhere
 inbox_exclude = ['G:\My Drive\Librarian']        # the published index
 ```
+
+(Folder names to confirm on hal5000 once `Input` exists.)
 
 * Files: `.pdf .epub .djvu .djv`. Skip partial downloads (`.crdownload`, `.part`, size changed
   between two looks a minute apart), files under 100 KB, and anything under Sources or the
@@ -47,10 +53,15 @@ inbox_exclude = ['G:\My Drive\Librarian']        # the published index
 * Drive for desktop keeps most files online-only; reading one downloads it. Discovery lists
   names and sizes only (no download); staging hydrates them in small batches.
 
-### 2. Stage
+### 2. Hash first, then stage
 
-Copy to `D:\Readings\Inbox\<sha256>.<ext>`, hash while copying, verify. Exact-hash hits against
-the library, an earlier candidate or the reject list stop here (state `duplicate`, no copy kept).
+Cheapest checks first:
+
+1. **Size + full SHA-256** of the original (one sequential read). A hash already in the library,
+   among earlier candidates or on the reject list is an exact duplicate: the original is
+   **deleted at once** (logged with its hash and path), nothing is staged.
+2. Otherwise copy to `D:\Readings\Inbox\<sha256>.<ext>`, verify the copy's hash, and continue
+   with the costlier checks below on the staged copy.
 
 ### 3. Identify: is it a book we already have?
 
@@ -72,8 +83,8 @@ Verdicts:
 
 * **new**: nothing matches.
 * **duplicate, worse**: same edition, our copy is better (text layer vs scan, OCR quality,
-  complete vs missing pages). Per the library rule, kept, but as a weaker copy: added to
-  `config/lower-priority.txt`, end of every queue.
+  complete vs missing pages). **Deleted** (staged copy and original). Incoming worse copies are
+  not added; the keep-both rule applies only to copies already in the library.
 * **duplicate, better**: same edition, the new copy is better (e.g. born-digital vs our scan).
   The new copy takes the plain file name; ours is renamed ` - 2` and goes to lower priority.
   Its Lean check reports and subject tags carry over (same work).
@@ -81,8 +92,11 @@ Verdicts:
   one is renamed ` - 1st ed` (as done for Deitmar and Shonkwiler) and goes to lower priority.
 * **uncertain**: conflicting signals (title matches but text does not, or ISBN missing and
   similarity in between). Goes to review.
-* **not a book**: a paper under ~30 pages, slides, a non-maths PDF (Downloads is full of
-  these). Decided in step 5 from the profile; remembered.
+* **paper**: arXiv-style or under ~30 pages. **Not ingested and not listed**: William goes
+  through many arXiv papers and adds the ones he wants by hand (a librarian MCP tool, below).
+  The original is left where it is and its hash remembered, so it is not looked at again.
+* **not maths**: slides, receipts, manuals and the rest of Downloads. Left alone, hash
+  remembered, not listed. (Only books are deleted from the inboxes.)
 
 ### 4. Profile: TOC and front matter
 
@@ -101,12 +115,23 @@ and the instructions used for the current tags, and returns the same record as
 `new_subject`), plus `is_math_book`. Low confidence or a `new_subject` goes to review; the rest
 is accepted.
 
-### 6. Review (only when needed)
+### 6. Summary, and corrections through the librarian MCP
 
-`reports/intake-review.csv`, one row per open question: the verdict or tag proposed, the
-evidence (matching book, similarity, ISBNs, editions), and an `answer` column (`ok`, `reject`,
-`new`, `dup`, or a corrected subject). `librarian intake apply` reads it back. With nothing
-uncertain there is no sheet.
+High-confidence results are accepted and filed without asking. Each run ends with a short
+summary (`reports/intake-summary.md`, and in chat when asked): books added with their subject
+folder, duplicates deleted, new editions, and the few items that need a decision (an uncertain
+duplicate, a low-confidence or new subject). Those are settled in conversation through new
+librarian MCP tools, so a book or two in the wrong place is a one-line fix:
+
+| Tool | Does |
+|---|---|
+| `intake_summary` | the last run's summary and anything still waiting for a decision |
+| `intake_decide(sha, verdict)` | settle an uncertain one: `new`, `duplicate` (deleted), `edition` |
+| `move_book(sha, subject)` | refile a book (any book, not only new ones): moves the file, updates its tag, logs the move, relinks the lists |
+| `tag_book(sha, primary, secondary)` | change subject tags without moving |
+| `add_paper(path_or_url)` | take in a paper by hand: staged, OCR'd, classified like a book (kind `paper`) |
+
+The MCP server is read-only today; these are its first write tools, each logged.
 
 ### 7. File
 
@@ -135,13 +160,11 @@ Lean check order (`scripts/make_leancheck_list.py`).
 ## Commands
 
 ```
-librarian intake scan            # discover + stage + identify + profile + classify; writes the review sheet
-librarian intake apply           # read answers from intake-review.csv
-librarian intake file            # move accepted books into Sources, tags, lower-priority, inventory
+librarian intake scan            # discover, hash (deleting exact duplicates), stage, identify, profile, classify
+librarian intake file            # move accepted books into Sources, tags, inventory; delete their originals
 librarian intake queue           # write config/ocr-queue-intake.txt in processing order
 scripts\ocr_batch.py --queue config/ocr-queue-intake.txt --all-pages
-librarian intake status          # counts by state; also reports/intake-status.md
-librarian intake cleanup         # optional: list (then delete, with confirmation) Downloads originals already filed
+librarian intake status          # counts by state; also reports/intake-summary.md
 ```
 
 `scan` is incremental: it only looks at files it has not seen (path + size + mtime), so it can run
@@ -154,12 +177,14 @@ as a nightly scheduled task ahead of the night OCR batch.
 * Classification: one Codex call per book.
 * Full OCR: as today (~500 pages/hour at 3 workers).
 
-## To decide
+## Decisions (2026-11-05)
 
-1. Which Drive folders are inboxes (all of My Drive, or specific folders)?
-2. After a book is filed, what happens to the Downloads original: leave it, or delete it after
-   `intake cleanup` confirms?
-3. Are papers (under ~30 pages) wanted in the library, or rejected as "not a book"?
-4. Auto-accept high-confidence classifications, or review every new book's subject once?
-5. Keep a duplicate that is worse in every respect, or reject it? (Current rule: keep, last in
-   the queues.)
+1. **Inboxes:** Downloads, Drive `Saved from Chrome` (phone downloads) and a new Drive `Input`
+   folder for anything from the phone that lands elsewhere.
+2. **Originals:** every inbox book is deleted after its disposition. Exact duplicates are found
+   with the cheap full-file hash first and deleted immediately; the costlier checks run only on
+   what is left. A new book's original is deleted once it is filed in the Readings tree.
+3. **Papers:** not ingested automatically; added by hand through the librarian MCP.
+4. **Review:** no sheet. A summary after each run; the odd misfiled book is corrected through
+   librarian MCP tools (to be added).
+5. **Incoming duplicates that are worse in every respect:** deleted.
