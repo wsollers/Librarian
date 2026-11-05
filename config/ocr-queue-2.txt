@@ -12,7 +12,6 @@ bf6dd3033719468c  #   22 pages  Foundations/An Infinite Descent into Pure Mathem
 f70e246277bd9c5f  #   12 pages  Foundations/Type Theory/Pogramming in Martin-Lofs Type Theory - Nordstrom.pdf
 656c35120853bb63  #   11 pages  Foundations/Lattice and Order Theory/General Lattice Theory - George Gr tzer.djvu
 9a4f8cc3f4a2bde9  #   11 pages  Foundations/Reference/All the Mathematics You Missed - Garrity.pdf
-208cc030cb5fa311  #   10 pages  Foundations/Type Theory/Homotopy Type Theory Univalent Foundations of Mathematics - The Univalent Foundations Program.pdf
 4d263a9472266efc  #   10 pages  Foundations/NumberSystems/The Foundations of Real Numbers An Axiomatic Approach - Suman.pdf
 f32402f6aba79927  #   10 pages  Foundations/Logic/Kenneth Rosen - Discrete Mathematics and Its Applications - 8th edition.pdf
 d29895a0083904dd  #    9 pages  Foundations/Set Theory/Introduction to Set Theory - Hrbacek.pdf
@@ -27,11 +26,9 @@ f330fcd8af23551a  #    6 pages  Foundations/Category Theory/Introduction to High
 c2000cdb104204e7  #    5 pages  Foundations/Logic/Introduction to Logic - Suppes.pdf
 cdd3444c3389c0a9  #    5 pages  Foundations/Logic/A Concise Introduction to Logic - Hurley - 2.pdf
 d2e5236457692284  #    5 pages  Foundations/Logic/A Philosophical Introduction to Higher Order Logics - Bacon.pdf
-d779f6b4ded9bb5c  #    5 pages  Foundations/Logic/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf
 fe385ee8ffef3fc9  #    5 pages  Foundations/Logic/A New Introduction to Modal Logic - Hughes.pdf
 551fa76a62607351  #    4 pages  Foundations/Logic/Logic As Algebra - Givant.djvu
 06d1e265ab23cc06  #    3 pages  Foundations/Logic/An Introduction to Theory of Computation An Algorithmic Exploration - Ogihara.pdf
-2defaae8fa33db45  #    3 pages  Foundations/Proof Theory/Book of Proof - Hammack - 2.pdf
 2f3f95340c28cc5a  #    3 pages  Foundations/Logic/The Art of Proof - Beck.pdf
 7210e78839224079  #    3 pages  Foundations/Type Theory/Basic Simple Type Theory - Hindley.pdf
 725ebe141f9a2003  #    3 pages  Foundations/Logic/Basics of Second-Order Predicate Logic - Unknown.pdf
@@ -41,7 +38,6 @@ c59642703ed16664  #    3 pages  Foundations/Logic/Calculus of Relations Axiomati
 e0e471ca794ddda7  #    3 pages  Foundations/Proof Theory/Book of Proof - Hammack.pdf
 f0304c6f6d037c7b  #    3 pages  Foundations/Logic/A Beginner s Guide to Mathematical Logic - Smullyan.pdf
 f7627839e877b758  #    3 pages  Foundations/Logic/Concise Introduction to Logic and Set Theory - Jebril.pdf
-0563e3586e7d56c7  #    2 pages  Foundations/Logic/Mathematical Logic On Number Sets Structures and Symmetry - Unknown.pdf
 0be1f1425dfd5f41  #    2 pages  Foundations/Logic/Mathematical Logic - Kossak.pdf
 4244b4039d2e5354  #    2 pages  Foundations/Logic/Non Classical Logic - Priest.pdf
 4e71fb2020537ff2  #    2 pages  Foundations/Lattice and Order Theory/Lattice Theory - Garrett Birkhoff.pdf
@@ -56,16 +52,15 @@ edaec50b03ae3164  #    2 pages  Foundations/Set Theory/Set Theory - Jech.pdf
 159604a2cd262e64  #    1 pages  Foundations/Logic/Introduction to Theory of Computation - Maheshwari.pdf
 25df3e8fa47587f6  #    1 pages  Foundations/Logic/Sets Models and Proofs - Oosten.pdf
 297f78eb6b6c0f19  #    1 pages  Foundations/Logic/Foundations of Mathematical Logic - Curry.pdf
-3b88214407fdc3c4  #    1 pages  Foundations/Logic/Logic and Structure - Van Dalen.pdf
 484a456c3773d481  #    1 pages  Foundations/Proof Theory/Compact Companion 3 Proof Theory - Jervell.pdf
 640125bc2382c20e  #    1 pages  Foundations/Logic/Higher Order Logic - Hetzl.pdf
 7b686279a000671a  #    1 pages  Foundations/Computability and Recursion Theory/Recursion Theory - Schoenfield.pdf
 c7b90d2b74bd5622  #    1 pages  Foundations/Logic/The Logic Book - Merrie Bergmann.pdf
 c87b83497598826e  #    1 pages  Foundations/Set Theory/Set Theory With an Introduction to Descriptive Set Theory - Unknown.pdf
-d3a4873fdddd37fb  #    1 pages  Foundations/Logic/Logic and Structure - van Dalen - 3.pdf
 e91462a85f8a9bd5  #    1 pages  Foundations/Proof Theory/Introduction to Proofs and Proof Strategies - Fuchs.pdf
 f1ac68d8a42dd457  #    1 pages  Foundations/Type Theory/Notes on Type Theory - Bauer.pdf
 f67726a93f3f5ac9  #    1 pages  Foundations/Reference/Princeton Companion To Mathematics - Unknown.pdf
+c3273f69df4d5241  #  195 pages  Foundations/Set Theory/Set Theory and Fuondations of Mathematics an Introduction to Mathematical Logic - Cenzer.pdf
 9e74c47d70b73368  #  488 pages  Analysis/Real Analysis/Basic Analysis I Functions of a Real Variable - Peterson.pdf
 9dc431136654e342  #  414 pages  Measure Theory/Stochastic Theory/A First Course in Stochastic Processes - Karlin.pdf
 5ca845be90e7dbcc  #  347 pages  Analysis/Functional Analysis/Applied Functional Analysis - Unknown.pdf
