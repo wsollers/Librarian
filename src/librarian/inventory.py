@@ -155,21 +155,31 @@ def run(cfg: Config, *, rehash: bool = False, verbose: bool = True) -> dict:
         row[0]: row[1:]
         for row in con.execute("SELECT path, sha256, size, mtime_ns FROM files")
     }
+    # A file moved to another folder keeps its name, size and mtime: reuse its hash instead of
+    # reading it again (scripts/move-to-subjects.ps1 moves hundreds of books at once).
+    by_name: dict[tuple[str, int, int], list[tuple[str, str]]] = {}
+    for p, (sha, size, mtime) in cached.items():
+        by_name.setdefault((p.rsplit("/", 1)[-1].lower(), size, mtime), []).append((p, sha))
     manifest = load_manifest(cfg.manifest)
     legacy_md = cfg.legacy / "library" / "markdown" if cfg.legacy else None
     legacy_obj = cfg.legacy / "objects" / "pdf" if cfg.legacy else None
 
     seen: set[str] = set()
     by_sha: dict[str, list[tuple[str, int, str]]] = {}
-    hashed = 0
+    hashed = reused = 0
     stamp = now()
     for i, path in enumerate(walk(root), 1):
         rel = path.relative_to(root).as_posix()
         st = path.stat()
         ext = path.suffix.lower().lstrip(".")
         prev = cached.get(rel)
+        moved = [] if prev or rehash else {
+            s for p, s in by_name.get((path.name.lower(), st.st_size, st.st_mtime_ns), ()) if not (root / p).exists()}
         if prev and not rehash and prev[1] == st.st_size and prev[2] == st.st_mtime_ns:
             sha = prev[0]
+        elif len(moved) == 1:   # same file under a new path (its old path is gone)
+            sha = next(iter(moved))
+            reused += 1
         else:
             sha = sha256_file(path)
             hashed += 1
@@ -253,7 +263,7 @@ def run(cfg: Config, *, rehash: bool = False, verbose: bool = True) -> dict:
     con.commit()
 
     summary = report(con, cfg)
-    summary.update(files=len(seen), hashed=hashed, removed=len(gone))
+    summary.update(files=len(seen), hashed=hashed, moved_reused_hash=reused, removed=len(gone))
     con.close()
     return summary
 

@@ -1,7 +1,9 @@
 """Spelling correction against the index's own vocabulary (FTS5 terms), no model.
 
-A query word is corrected only when the library barely knows it (in fewer than MIN_DOC pages)
-and a word within edit distance 1-2 is far more common there: "lipsctiz" -> "lipschitz".
+A query word is corrected when the library barely knows it (in fewer than MIN_DOC pages) and a
+word within edit distance 1-2 is far more common there ("lipsctiz" -> "lipschitz"), or when it is
+rare (fewer than RARE_DOC pages: misspellings in the books themselves) and a word one edit away is
+RARE_RATIO times more common ("wierstrass" -> "weierstrass").
 Words the books really use are never "corrected" into something more common.
 The word list (terms in >= MIN_DOC pages) is cached next to the index, keyed by its size and mtime.
 """
@@ -20,6 +22,8 @@ from .log import log
 
 MIN_DOC = 3          # a term in fewer pages is "unknown" (OCR junk lives here too)
 RATIO = 20           # a correction must be this many times more common than the typed word
+RARE_DOC = 20        # ... and a word in fewer pages than this is still a misspelling when a word one
+RARE_RATIO = 100     #     edit away is this many times more common ("wierstrass" 3 pages, "weierstrass" 3564)
 EDIT_COST = 3.0      # one more edit must be worth ~e^3 = 20x more pages ("lipschitz" beats the rarer "lipschiz")
 _WORD = re.compile(r"\w+", re.UNICODE)
 _ALPHA = re.compile(r"^[a-z]+$")
@@ -99,14 +103,16 @@ class Vocab:
         if len(w) < 4 or not _ALPHA.match(w):
             return None
         have = self.doc(w)
-        if have >= MIN_DOC:
+        if have >= RARE_DOC:
             return None
-        limit = 1 if len(w) <= 5 else 2
+        rare_known = have >= MIN_DOC    # a real but rare word: only a near, far more common one replaces it
+        limit = 1 if len(w) <= 5 or rare_known else 2
+        floor = RARE_RATIO * have if rare_known else max(MIN_DOC, RATIO * have)
         best: Optional[tuple[float, str]] = None   # (score, term): common and close wins
         for first in {w[0], w[1]}:   # also the first two letters swapped ("ilpschitz")
             for n in range(len(w) - limit, len(w) + limit + 1):
                 for t, d in self.by_key.get((first, n), ()):
-                    if d < max(MIN_DOC, RATIO * have):
+                    if d < floor:
                         continue
                     dist = osa(w, t, limit)
                     if dist <= limit:

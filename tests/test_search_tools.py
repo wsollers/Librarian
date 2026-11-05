@@ -79,3 +79,52 @@ def test_spell_prefers_the_common_word_over_a_closer_rare_one():
     v.by_key.setdefault(("l", 9), []).append(("lipschitz", 3753))    # as in the real library
     v.by_key.setdefault(("l", 8), []).append(("lipschiz", 4))
     assert v.suggest("lipsctiz") == "lipschitz"
+
+
+def test_spell_fixes_a_misspelling_the_books_share():
+    con = _db()
+    v = spell.Vocab(con)
+    v.doc = lambda t: {"wierstrass": 3, "lusin": 15}.get(t, 0)     # as in the real library
+    v.by_key.setdefault(("w", 11), []).append(("weierstrass", 3564))
+    v.by_key.setdefault(("l", 5), []).append(("lusin", 15))
+    v.by_key.setdefault(("l", 5), []).append(("luzin", 40))
+    assert v.suggest("wierstrass") == "weierstrass"
+    assert v.suggest("lusin") is None        # rare but real, and its neighbour isn't 100x more common
+
+
+def test_inventory_reuses_hash_of_moved_file(tmp_path, monkeypatch):
+    from librarian import config, inventory
+    src = tmp_path / "Sources"
+    (src / "Old").mkdir(parents=True)
+    (src / "Old" / "Book - Author.zip").write_bytes(b"some book")
+    cfg = config.load(None, sources=src, data=tmp_path / "data", legacy=tmp_path / "nolegacy",
+                      manifest=tmp_path / "none.yaml")
+    inventory.run(cfg, verbose=False)
+    (src / "New" / "Sub").mkdir(parents=True)
+    (src / "Old" / "Book - Author.zip").rename(src / "New" / "Sub" / "Book - Author.zip")
+    calls = []
+    real = inventory.sha256_file
+    monkeypatch.setattr(inventory, "sha256_file", lambda p: calls.append(p) or real(p))
+    s = inventory.run(cfg, verbose=False)
+    assert calls == [] and s["moved_reused_hash"] == 1 and s["books"] == 1
+    con = sqlite3.connect(cfg.db_path)
+    assert con.execute("SELECT path FROM books").fetchone()[0] == "New/Sub/Book - Author.zip"
+
+
+def test_relink_rewrites_folder_patterns(tmp_path):
+    from librarian import relink
+    lst = tmp_path / "queue.txt"
+    lst.write_bytes(b"# header\r\nAnalysis/Real Analysis/Elementary Real Analysis - Bruckner  # big\r\n"
+                    b"Hunter\r\nCalculus/Multivariable\r\nAnalysis/Real\r\nOther/Unmoved Book\r\n")
+    moves = [("Analysis/Real Analysis/Elementary Real Analysis - Bruckner.pdf",
+              "Analysis/Analysis on the Real Line/Elementary Real Analysis - Bruckner.pdf"),
+             ("Calculus/Multivariable Calculus - Shurman.pdf", "Analysis/Several Variables/Multivariable Calculus - Shurman.pdf")]
+    n, problems = relink.relink_file(lst, moves)
+    text = lst.read_bytes().decode()
+    assert n == 2 and "\r\n" in text
+    assert "Analysis/Several Variables/Multivariable\r\n" in text           # folder + start of a name
+    assert "Analysis/Analysis on the Real Line/Elementary Real Analysis - Bruckner  # big" in text
+    assert "Hunter\r\n" in text and "Other/Unmoved Book" in text
+    assert len(problems) == 1 and "'Analysis/Real'" in problems[0]         # a folder alone: left, reported
+    n, _ = relink.relink_file(lst, [(t, f) for f, t in moves])          # undo
+    assert n == 2 and "Calculus/Multivariable\r\n" in lst.read_bytes().decode() and "Analysis/Real Analysis/Elementary Real Analysis - Bruckner  # big" in lst.read_bytes().decode()
