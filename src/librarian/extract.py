@@ -240,7 +240,7 @@ def _escalate(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Optio
         from concurrent.futures import as_completed
         ocr_t, done, failed = Timer(), 0, 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            futs = {pool.submit(ocr.llm_ocr, src, pg): pg for pg in ocr_pages}
+            futs = {pool.submit(ocr.llm_ocr, src, pg, obj / "ocr-cache"): pg for pg in ocr_pages}
             for fut in as_completed(futs):
                 p = futs[fut]
                 done += 1

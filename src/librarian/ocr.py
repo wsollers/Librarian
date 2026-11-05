@@ -61,5 +61,18 @@ def codex_ocr(pdf: Path, page: int) -> Optional[str]:
     return text
 
 
-def llm_ocr(pdf: Path, page: int) -> tuple[Optional[str], str]:
-    return codex_ocr(pdf, page), "llm-ocr:codex"
+def llm_ocr(pdf: Path, page: int, cache_dir: Optional[Path] = None) -> tuple[Optional[str], str]:
+    """OCR one page. With cache_dir, each page is saved the moment Codex returns it
+    (<cache_dir>/NNNN.md) and reused next time, so a run that is stopped or killed part-way
+    through a book loses at most the pages in flight."""
+    cached = cache_dir / f"{page:04d}.md" if cache_dir else None
+    if cached and cached.is_file() and cached.stat().st_size:
+        log.debug("codex ocr cache hit %s p%d", pdf.name, page)
+        return cached.read_text(encoding="utf-8"), "llm-ocr:codex"
+    text = codex_ocr(pdf, page)
+    if cached and text is not None and text.strip():
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        tmp = cached.with_suffix(".tmp")
+        tmp.write_text(text, encoding="utf-8", newline="\n")
+        tmp.replace(cached)
+    return text, "llm-ocr:codex"
