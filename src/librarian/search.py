@@ -189,9 +189,11 @@ def _scoped_chunks(con: sqlite3.Connection, sc: dict) -> list[int]:
 def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder], mode: str = "hybrid",
            k: int = 10, book: Optional[str] = None, reranker=None, explain: int = 0,
            expander=None, author: Optional[str] = None, chapter: Optional[str] = None,
-           section: Optional[str] = None, speller=None, info: Optional[dict] = None) -> list[Hit]:
+           section: Optional[str] = None, speller=None, info: Optional[dict] = None,
+           vectors=None) -> list[Hit]:
     """`speller`: a spell.Vocab (or None). `info`, if given, receives what was done to the query:
-    corrected words, expansion terms or why expansion failed, and the scope searched."""
+    corrected words, expansion terms or why expansion failed, and the scope searched.
+    `vectors`: a memvec.MemIndex to search instead of the vectors in SQLite (much faster)."""
     import time as _t
     T = {"t0": _t.perf_counter()}
     mark = lambda k: T.__setitem__(k, _t.perf_counter())
@@ -243,7 +245,7 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
 
     mark("fts")
     if mode in ("hybrid", "semantic") and emb is not None:
-        store = VectorStore(con, emb.dim, emb.spec, create=False)
+        store = vectors if vectors is not None else VectorStore(con, emb.dim, emb.spec, create=False)
         qv = emb.query(vq)
         ids = _scoped_chunks(con, sc) if sc is not None else []
         if sc is not None and len(ids) <= SCOPED_EXACT:

@@ -22,6 +22,7 @@ class _LoadingState:
         self.warnings = []
         self.loaded_in = None
         self.device = "?"
+        self.vectors_state = "waiting for start-up"
         self.started = time.perf_counter()
         self.con = None
         self.ollama = _Ollama()

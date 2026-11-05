@@ -70,6 +70,8 @@ class State:
         self.loaded_in: Optional[float] = None
         self.started = time.perf_counter()
         self.device = "?"
+        self.vectors = None                       # memvec.MemIndex once loaded; until then SQLite's vectors
+        self.vectors_state = "waiting for start-up"
         from .ollama import OllamaManager
         self.ollama = OllamaManager(log_dir=cfg.data / "logs")
 
@@ -109,6 +111,33 @@ class State:
             log.exception("mcp: loading failed")
         finally:
             self.ready.set()
+
+    def load_vectors(self) -> None:
+        """After start-up: copy every chunk vector into memory (GPU if there is one) for fast vector
+        search. Searches meanwhile use the vectors in SQLite, so this never delays being ready."""
+        from .log import log
+        from . import memvec
+        if self.error or self.emb is None:
+            self.vectors_state = "off (no index or no embedder)"
+            return
+        device = memvec.wanted_device()
+        if device is None:
+            self.vectors_state = "off (LIBRARIAN_VEC_MEM=off)"
+            return
+        self.vectors_state = "loading"
+        try:
+            from .index import has_vec
+            # Its own connection: tool calls keep using self.con while this reads ~6 GB.
+            con = sqlite3.connect(self.cfg.db_path.resolve().as_uri() + "?mode=ro", uri=True, timeout=30)
+            try:
+                has_vec(con)
+                self.vectors = memvec.load(con, self.emb.dim, device)
+            finally:
+                con.close()
+            self.vectors_state = f"ready ({self.vectors.n} vectors on {self.vectors.device})"
+        except Exception as e:  # noqa: BLE001 (search keeps working on SQLite's vectors)
+            self.vectors_state = f"failed ({type(e).__name__}: {e}): using SQLite's vectors"
+            log.exception("memvec: loading failed")
 
     def close(self) -> None:
         self.ollama.stop()
@@ -160,7 +189,10 @@ def build(state_holder: dict):
         st = State(cfg)
         state_holder["state"] = st
         atexit.register(st.ollama.stop)          # backup if the lifespan is cut short
-        threading.Thread(target=st.load, name="librarian-load", daemon=True).start()
+        def load_all():
+            st.load()
+            st.load_vectors()
+        threading.Thread(target=load_all, name="librarian-load", daemon=True).start()
         try:
             yield st
         finally:
@@ -209,7 +241,8 @@ def build(state_holder: dict):
                     info["expand"] = f"unavailable ({st.ollama.error}): searched without it"
             hits = S.search(st.cfg, st.con, query, st.emb if mode in ("hybrid", "semantic") else None, mode,
                             max(1, min(k, 50)), book, st.rr if rerank and mode in ("hybrid", "semantic") else None,
-                            0, ex, author=author, chapter=chapter, section=section, speller=st.speller, info=info)
+                            0, ex, author=author, chapter=chapter, section=section, speller=st.speller, info=info,
+                            vectors=st.vectors)
             out = {"query": info.pop("query", query), **info, "timing_s": dict(S.LAST_TIMING), "hits": []}
             if st.emb is None and mode in ("hybrid", "semantic"):
                 out["warning"] = "embedder not loaded: keyword (FTS) results only"
@@ -314,7 +347,7 @@ def build(state_holder: dict):
         """Index and server state: build date, books and pages indexed, models and GPU, Ollama."""
         st: State = state_holder["state"]
         base = {"ready": st.ready.is_set(), "error": st.error, "warnings": st.warnings, "loaded_in_s": st.loaded_in, "device": st.device,
-                "ollama": st.ollama.state()}
+                "vectors_in_memory": st.vectors_state, "ollama": st.ollama.state()}
         if not st.ready.is_set():
             return {**base, "loading_for_s": round(time.perf_counter() - st.started, 1)}
         if st.con is None:
