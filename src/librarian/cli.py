@@ -90,6 +90,8 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("profiles", help="book profiles (TOC + preface/introduction), searchable; index refreshes them too")
     p.add_argument("--select", default="all", help="'all' (default), 'priority', '@file', or a path substring / sha prefix")
     p.add_argument("--dossiers", action="store_true", help="also write reports/dossiers.jsonl (input for subject classification)")
+    p = sub.add_parser("subjects", help="subject tags (config/subjects.yaml): review sheet and PDF move plan")
+    p.add_argument("--plan", action="store_true", help="write reports/move-plan.csv for scripts/move-to-subjects.ps1")
     p = sub.add_parser("run", help="inventory, extract, pagemap, index for a selection")
     add_sel(p); add_extract_opts(p); add_embed(p)
     p = sub.add_parser("djvu2pdf", help="DjVu -> PDF with the DjVu hidden text as a searchable text layer")
@@ -172,6 +174,24 @@ def main(argv: list[str] | None = None) -> int:
         if a.dossiers:
             out = cfg.reports / "dossiers.jsonl"
             summary["dossiers"] = {"books": profiles.dossiers(con, out), "file": str(out)}
+        print(json.dumps(summary, indent=2))
+    elif a.cmd == "subjects":
+        from . import subjects
+        con = connect(cfg.db_path)
+        entries = subjects.load()
+        folders = {sha[:16]: str(Path(p).parent).replace("\\", "/") for sha, p in con.execute("SELECT sha256, path FROM books")}
+        review = cfg.reports / "subject-review.csv"
+        summary.update({"tagged_books": len(entries), "review": str(review),
+                        "leave_their_folder": subjects.review_csv(entries, folders, review)})
+        bad = sorted({t for e in entries.values() for t in subjects.tags_of(e)} - subjects.valid_subjects())
+        if bad:
+            summary["not_in_taxonomy"] = bad
+        if a.plan:
+            rows = subjects.move_plan(con, entries)
+            plan = cfg.reports / "move-plan.csv"
+            subjects.write_plan(rows, plan)
+            summary["move_plan"] = {"file": str(plan), "moves": sum(r["status"] == "move" for r in rows),
+                                    "conflicts": sum(r["status"] == "conflict" for r in rows)}
         print(json.dumps(summary, indent=2))
     elif a.cmd == "search":
         import time as _t

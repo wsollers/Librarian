@@ -31,8 +31,25 @@ def _db():
     return con
 
 
-def shas(subject):
-    return search.subject_books(_db(), subject)[0]
+def shas(subject, tags=None):
+    return search.subject_books(_db(), subject, {} if tags is None else tags)[0]
+
+
+TAGS = {   # keyed by the first 16 characters of the sha, as in config/subjects.yaml
+    "r1": {"primary": "Analysis/Measure and Integration", "secondary": ["Analysis/Fourier Analysis"]},
+    "p1": {"primary": "Differential Equations and Dynamics/Partial Differential Equations", "secondary": []},
+}
+
+
+def test_tags_replace_the_folder_of_a_tagged_book():
+    assert shas("Real Analysis", TAGS) == {"r2"}                       # r1 is tagged measure theory now
+    assert shas("Measure and Integration", TAGS) == {"r1"}
+    assert shas("Fourier Analysis", TAGS) == {"r1"}                    # secondary subjects count too
+    assert shas("Analysis", TAGS) == {"r1", "r2", "m1", "c1", "a0", "g1"}
+    assert shas("Partial Differential Equations", TAGS) == {"p1"}
+    assert shas("Differential Equations", TAGS) == {"p1"}              # the area of the tag
+    got = {s["subject"]: s["books"] for s in search.subjects(_db(), TAGS)}
+    assert got["Analysis/Measure and Integration"] == 1 and got["Analysis/Real Analysis"] == 1
 
 
 def test_a_name_includes_its_subfolders_but_not_other_fields_with_that_word():

@@ -1,0 +1,130 @@
+# Subject taxonomy for the library: Area -> subjects. A book gets one primary subject and up to
+# three secondary ones, written "Area/Subject" (config/subjects.yaml). Loosely follows MSC 2020,
+# shaped to this collection. Edit freely: the subject filter reads subjects.yaml, and
+# scripts/move-to-subjects.ps1 files each PDF under its primary subject.
+
+Foundations:
+  - Mathematical Logic            # general / first courses in logic
+  - Set Theory
+  - Model Theory
+  - Proof Theory
+  - Computability and Recursion Theory
+  - Type Theory
+  - Lambda Calculus
+  - Category Theory
+  - Lattice and Order Theory
+  - Fuzzy Mathematics
+  - Number Systems                # constructions of N, Z, Q, R, C
+  - Proofs and Mathematical Reasoning   # intro-to-proof, transition courses
+  - Philosophy of Mathematics and Science
+
+Algebra:
+  - Linear Algebra
+  - Abstract Algebra              # general undergraduate algebra (groups, rings, fields together)
+  - Group Theory
+  - Ring Theory
+  - Field and Galois Theory
+  - Module Theory
+  - Commutative Algebra
+  - Homological Algebra
+  - Representation Theory
+  - Lie Groups and Lie Algebras
+  - Algebraic Geometry
+  - Universal Algebra
+  - Boolean Algebra
+  - Coding Theory
+
+Number Theory:
+  - Elementary Number Theory
+  - Algebraic Number Theory
+  - Analytic Number Theory
+  - Elliptic Curves and Arithmetic Geometry
+
+Analysis:
+  - Real Analysis                 # analysis on R: limits, continuity, differentiation, Riemann integral
+  - Analysis in Several Variables # multivariable analysis / advanced calculus, inverse & implicit functions
+  - Measure and Integration       # Lebesgue measure and integral, abstract measure theory
+  - Geometric Measure Theory
+  - Functional Analysis           # Banach, Hilbert, topological vector spaces, duality
+  - Operator Theory               # spectral theory, operator algebras
+  - Fourier Analysis              # Fourier series and transforms
+  - Harmonic Analysis             # singular integrals, abstract harmonic analysis
+  - Distributions and Sobolev Spaces
+  - Complex Analysis
+  - Several Complex Variables
+  - Metric Spaces
+  - Convex Analysis
+  - Calculus of Variations
+  - Approximation Theory
+  - Special Functions
+  - Potential Theory
+  - Inequalities                  # classical inequalities, means
+  - Sequences and Series
+  - Vector and Tensor Analysis
+
+Calculus:
+  - Precalculus
+  - Single-Variable Calculus
+  - Multivariable and Vector Calculus
+
+Geometry and Topology:
+  - Euclidean and Classical Geometry
+  - Projective Geometry
+  - Differential Geometry         # curves, surfaces, connections, curvature
+  - Riemannian Geometry
+  - Manifolds                     # smooth manifolds, forms, de Rham
+  - Point-Set Topology
+  - Algebraic Topology
+  - Differential Topology
+
+Differential Equations and Dynamics:
+  - Ordinary Differential Equations
+  - Partial Differential Equations
+  - Dynamical Systems
+  - Ergodic Theory
+  - Stability Theory
+  - Control Theory
+
+Probability and Statistics:
+  - Probability Theory            # measure-theoretic and elementary probability
+  - Stochastic Processes          # Markov chains, martingales, Brownian motion
+  - Stochastic Calculus and SDEs
+  - Statistics
+  - Information Theory
+
+Applied and Computational:
+  - Numerical Analysis
+  - Numerical Linear Algebra
+  - Optimization
+  - Operations Research
+  - Data Science and Machine Learning
+  - Game and Decision Theory
+  - Mathematical Finance
+  - Asymptotics and Perturbation Theory
+  - Mathematical Modeling
+  - Computer Aided Geometric Design   # splines, NURBS, curves and surfaces
+
+Discrete Mathematics:
+  - Combinatorics
+  - Graph Theory
+  - Discrete Mathematics          # general discrete-math courses
+
+Computer Science:
+  - Algorithms and Complexity
+  - Programming Languages and Semantics
+  - Programming                   # practical programming texts
+  - Formal Methods and Verification
+
+Physics:
+  - Classical Mechanics
+  - Electromagnetism and Field Theory
+  - Quantum Mechanics
+  - Statistical Mechanics
+  - Relativity
+  - Mathematical Physics
+
+General:
+  - History of Mathematics
+  - Popular and Recreational Mathematics
+  - Reference and Handbooks
+  - Problem Books and Solutions

@@ -157,28 +157,40 @@ def _folders(path: str) -> list[str]:
     return path.replace("\\", "/").split("/")[:-1]
 
 
-def subjects(con: sqlite3.Connection) -> list[dict]:
-    """Subject folders of the indexed books, with how many books each holds (subfolders included)."""
+def _subject_paths(con: sqlite3.Connection, tags: Optional[dict] = None) -> list[tuple[str, list[list[str]]]]:
+    """(sha, subject paths) per indexed book: its tags (config/subjects.yaml) when it has any, else its
+    folder. A path is a list of names: ['Analysis', 'Measure and Integration']."""
+    from . import subjects as subj
+    tags = subj.load() if tags is None else tags
+    out = []
+    for sha, path in con.execute("SELECT sha256, path FROM books WHERE sha256 IN (SELECT sha256 FROM index_state)"):
+        tagged = subj.book_tags(sha, tags)
+        out.append((sha, [t.split("/") for t in tagged] if tagged else [_folders(path)]))
+    return out
+
+
+def subjects(con: sqlite3.Connection, tags: Optional[dict] = None) -> list[dict]:
+    """Subjects of the indexed books (tags, or folders for untagged books), with how many books each
+    holds (subfolders included; a book counts once under each of its subjects)."""
     counts: dict[str, int] = {}
-    for (path,) in con.execute("SELECT path FROM books WHERE sha256 IN (SELECT sha256 FROM index_state)"):
-        parts = _folders(path)
-        for i in range(1, len(parts) + 1):
-            key = "/".join(parts[:i])
+    for _, paths in _subject_paths(con, tags):
+        keys = {"/".join(parts[:i]) for parts in paths for i in range(1, len(parts) + 1)}
+        for key in keys:
             counts[key] = counts.get(key, 0) + 1
     return [{"subject": k, "books": v} for k, v in sorted(counts.items())]
 
 
-def subject_books(con: sqlite3.Connection, subject: str) -> tuple[set[str], list[str], list[str]]:
-    """Books under the subject folders named in `subject`: (sha256s, folders matched, terms unmatched).
+def subject_books(con: sqlite3.Connection, subject: str,
+                  tags: Optional[dict] = None) -> tuple[set[str], list[str], list[str]]:
+    """Books under the subjects named in `subject`: (sha256s, subjects matched, terms unmatched).
 
-    `subject` is one or more folder names separated by commas, e.g. "Real Analysis, Metric Spaces".
-    A name selects every folder with that name, and everything below it: "Analysis" is the whole
-    Analysis tree (Real, Complex, Functional, Metric Spaces, ...) but not "Numerical Analysis". A path
-    ("Analysis/Real Analysis") selects that folder. A name that is no folder's exact name matches
-    folders that contain it ("Differential" -> the Differential Equations and Differential Geometry
-    folders)."""
-    books = [(sha, _folders(path)) for sha, path in con.execute(
-        "SELECT sha256, path FROM books WHERE sha256 IN (SELECT sha256 FROM index_state)")]
+    A book's subjects are its tags in config/subjects.yaml (primary and secondary), or its folder when
+    it has none. `subject` is one or more names separated by commas, e.g. "Real Analysis, Metric
+    Spaces". A name selects every subject with that name and everything below it: "Analysis" is the
+    whole Analysis area but not "Numerical Analysis". A path ("Analysis/Real Analysis") selects that
+    one. A name that is no subject's exact name matches the ones that contain it ("Differential" ->
+    Differential Equations, Differential Geometry, ...)."""
+    books = _subject_paths(con, tags)
     shas: set[str] = set()
     matched: set[str] = set()
     unmatched: list[str] = []
@@ -189,12 +201,12 @@ def subject_books(con: sqlite3.Connection, subject: str) -> tuple[set[str], list
         def under(test) -> list[tuple[str, str]]:
             """(sha, matched folder path) for books with some folder for which test(name, path) holds."""
             out = []
-            for sha, parts in books:
-                for i, name in enumerate(parts):
-                    folder = "/".join(parts[:i + 1])
-                    if test(name.lower(), folder.lower()):
-                        out.append((sha, folder))
-                        break
+            for sha, paths in books:
+                for parts in paths:
+                    hit = next(("/".join(parts[:i + 1]) for i, name in enumerate(parts)
+                                if test(name.lower(), "/".join(parts[:i + 1]).lower())), None)
+                    if hit:
+                        out.append((sha, hit))
             return out
 
         if "/" in term:
