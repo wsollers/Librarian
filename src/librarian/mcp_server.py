@@ -415,6 +415,16 @@ def build(state_holder: dict):
         return await run(go)
 
     @app.tool()
+    async def intake_check(run: bool = False) -> dict:
+        """New books waiting in the inbox folders (Downloads, Drive 'Saved from Chrome' and 'Input'):
+        the last check's counts (new, duplicate of a library book, possible other edition, paper, ...),
+        the new books, and whether a check is running. run=true starts a fresh check in the
+        background (a few minutes; hashing downloads online-only Drive files) and returns at once:
+        call again later for the result. This tool never deletes anything."""
+        st: State = state_holder["state"]
+        return await anyio.to_thread.run_sync(lambda: _intake_check(st.cfg, run))
+
+    @app.tool()
     async def status() -> dict:
         """Index and server state: build date, books and pages indexed, models and GPU, Ollama."""
         st: State = state_holder["state"]
@@ -437,6 +447,54 @@ def build(state_holder: dict):
         return await run(go)
 
     return app
+
+
+def _intake_running(pidfile: Path) -> Optional[dict]:
+    """The background check started by intake_check(run=true), if it is still running."""
+    import json as _json
+    import subprocess
+    try:
+        info = _json.loads(pidfile.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    pid = int(info.get("pid", 0))
+    if os.name == "nt":   # os.kill(pid, 0) would terminate the process on Windows
+        out = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True).stdout
+        alive = str(pid) in out
+    else:
+        try:
+            os.kill(pid, 0)
+            alive = True
+        except OSError:
+            alive = False
+    return info if alive else None
+
+
+def _intake_check(cfg, run: bool) -> dict:
+    import json as _json
+    import subprocess
+    rep = cfg.reports
+    pidfile, summary_file, md = rep / "intake-check.pid", rep / "intake-check.json", rep / "intake-check.md"
+    out: dict = {}
+    running = _intake_running(pidfile)
+    if run and not running:
+        rep.mkdir(parents=True, exist_ok=True)
+        logf = open(cfg.data / "logs" / f"{time.strftime('%Y%m%d-%H%M%S')}-intake-check.out", "w", encoding="utf-8")
+        flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        p = subprocess.Popen([sys.executable, "-m", "librarian", "intake", "check"], cwd=REPO, stdin=subprocess.DEVNULL,
+                             stdout=logf, stderr=subprocess.STDOUT, creationflags=flags)
+        running = {"pid": p.pid, "started": time.strftime("%Y-%m-%d %H:%M:%S")}
+        pidfile.write_text(_json.dumps(running), encoding="utf-8")
+        out["started"] = True
+    if running:
+        out["running"] = running
+    if summary_file.is_file():
+        out["last_check"] = _json.loads(summary_file.read_text(encoding="utf-8"))
+        if md.is_file():
+            out["report"] = md.read_text(encoding="utf-8")[:12000]
+    elif not running:
+        out["note"] = "no check has run yet: call intake_check(run=true)"
+    return out
 
 
 def main() -> int:

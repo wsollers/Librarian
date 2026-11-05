@@ -6,7 +6,7 @@ description: Search William's mathematics book library (Librarian MCP server) an
 # Librarian
 
 William's library (~900 mathematics books under `D:\Readings\Sources`) is indexed page by page on
-hal5000. The `librarian` MCP server (tools `search`, `read_page`, `contents`, `list_books`,
+hal5000. The `librarian` MCP server (tools `search`, `read_page`, `contents`, `list_books`, `intake_check`,
 `status`) answers from that index. Every hit has book, author, chapter › section, printed page,
 PDF page, a line span and a `file:///…pdf#page=N` link.
 
@@ -25,6 +25,14 @@ restarted. Fallback: `scripts\run.ps1 search "<terms>" --json` in that repo, if 
 * `/librarian contents <book>` → `contents` (depth 2), shown as an outline with printed pages.
 * `/librarian books [subject or author]` → `list_books`.
 * `/librarian read <book> p. <printed>` (or `PDF <n>`) → `read_page`.
+* `/librarian check ingest` → `intake_check(run=true)`: starts a fresh check of the inbox folders
+  (Downloads, Drive `Saved from Chrome` and `Input`) in the background and returns the last result.
+  Say it has started, then summarise the last result if there is one: counts by verdict, the new
+  books (title, author, pages, scan or text), and possible duplicates or other editions with the
+  library book they resemble. Call `intake_check()` again (no `run`) when asked for the result or
+  after a few minutes; while `running` is present it is not finished. Papers and exact duplicates
+  are counts only; never list them unless asked. The check never deletes; exact duplicates are
+  deleted only by `scripts\run.ps1 intake check --delete-exact` on hal5000.
 
 ## Search workflow
 

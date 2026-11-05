@@ -92,6 +92,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dossiers", action="store_true", help="also write reports/dossiers.jsonl (input for subject classification)")
     p = sub.add_parser("subjects", help="subject tags (config/subjects.yaml): review sheet and PDF move plan")
     p.add_argument("--plan", action="store_true", help="write reports/move-plan.csv for scripts/move-to-subjects.ps1")
+    p = sub.add_parser("intake", help="new books in the inbox folders (docs/ingestion.md)")
+    p.add_argument("action", choices=["check"], help="check: what is waiting and what the library already has")
+    p.add_argument("--root", action="append", help="look in this folder instead of the configured inboxes (repeatable)")
+    p.add_argument("--delete-exact", action="store_true",
+                   help="delete inbox files byte-identical to a library file or to another inbox file")
     p = sub.add_parser("run", help="inventory, extract, pagemap, index for a selection")
     add_sel(p); add_extract_opts(p); add_embed(p)
     p = sub.add_parser("djvu2pdf", help="DjVu -> PDF with the DjVu hidden text as a searchable text layer")
@@ -175,6 +180,11 @@ def main(argv: list[str] | None = None) -> int:
             out = cfg.reports / "dossiers.jsonl"
             summary["dossiers"] = {"books": profiles.dossiers(con, out), "file": str(out)}
         print(json.dumps(summary, indent=2))
+    elif a.cmd == "intake":
+        from . import intake
+        roots = [Path(os.path.expanduser(r)) for r in a.root] if a.root else None
+        summary.update(intake.check(cfg, connect(cfg.db_path), roots=roots, delete_exact=a.delete_exact))
+        print(f"report: {summary['report']}", file=sys.stderr)
     elif a.cmd == "subjects":
         from . import subjects
         con = connect(cfg.db_path)
