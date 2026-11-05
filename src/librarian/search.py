@@ -152,11 +152,70 @@ def _scope_rows(con: sqlite3.Connection, shas: Optional[list[str]], term: str, l
         return []
 
 
+def _folders(path: str) -> list[str]:
+    """Subject folders of a book's path: 'Analysis/Real Analysis/Rudin.pdf' -> ['Analysis', 'Real Analysis']."""
+    return path.replace("\\", "/").split("/")[:-1]
+
+
+def subjects(con: sqlite3.Connection) -> list[dict]:
+    """Subject folders of the indexed books, with how many books each holds (subfolders included)."""
+    counts: dict[str, int] = {}
+    for (path,) in con.execute("SELECT path FROM books WHERE sha256 IN (SELECT sha256 FROM index_state)"):
+        parts = _folders(path)
+        for i in range(1, len(parts) + 1):
+            key = "/".join(parts[:i])
+            counts[key] = counts.get(key, 0) + 1
+    return [{"subject": k, "books": v} for k, v in sorted(counts.items())]
+
+
+def subject_books(con: sqlite3.Connection, subject: str) -> tuple[set[str], list[str], list[str]]:
+    """Books under the subject folders named in `subject`: (sha256s, folders matched, terms unmatched).
+
+    `subject` is one or more folder names separated by commas, e.g. "Real Analysis, Metric Spaces".
+    A name selects every folder with that name, and everything below it: "Analysis" is the whole
+    Analysis tree (Real, Complex, Functional, Metric Spaces, ...) but not "Numerical Analysis". A path
+    ("Analysis/Real Analysis") selects that folder. A name that is no folder's exact name matches
+    folders that contain it ("Differential" -> the Differential Equations and Differential Geometry
+    folders)."""
+    books = [(sha, _folders(path)) for sha, path in con.execute(
+        "SELECT sha256, path FROM books WHERE sha256 IN (SELECT sha256 FROM index_state)")]
+    shas: set[str] = set()
+    matched: set[str] = set()
+    unmatched: list[str] = []
+    for term in [t.strip().strip("/").lower() for t in re.split(r"[,;|]", subject)]:
+        if not term:
+            continue
+
+        def under(test) -> list[tuple[str, str]]:
+            """(sha, matched folder path) for books with some folder for which test(name, path) holds."""
+            out = []
+            for sha, parts in books:
+                for i, name in enumerate(parts):
+                    folder = "/".join(parts[:i + 1])
+                    if test(name.lower(), folder.lower()):
+                        out.append((sha, folder))
+                        break
+            return out
+
+        if "/" in term:
+            found = under(lambda n, f: f == term or f.endswith("/" + term))
+        else:
+            found = under(lambda n, f: n == term) or under(lambda n, f: term in n)
+        if not found:
+            unmatched.append(term)
+        for sha, folder in found:
+            shas.add(sha)
+            matched.add(folder)
+    return shas, sorted(matched), unmatched
+
+
 def scope(con: sqlite3.Connection, book: Optional[str] = None, author: Optional[str] = None,
-          chapter: Optional[str] = None, section: Optional[str] = None) -> Optional[dict]:
+          chapter: Optional[str] = None, section: Optional[str] = None,
+          subject_shas: Optional[set[str]] = None) -> Optional[dict]:
     """Books (and page ranges inside them) a search is restricted to: {sha: [(a, b), ...] or None}.
-    None means the whole library; {} means nothing matched."""
-    if not any((book, author, chapter, section)):
+    None means the whole library; {} means nothing matched. `subject_shas`: only these books
+    (from subject_books)."""
+    if not any((book, author, chapter, section)) and subject_shas is None:
         return None
     shas: Optional[list[str]] = None
     if book or author:
@@ -168,8 +227,10 @@ def scope(con: sqlite3.Connection, book: Optional[str] = None, author: Optional[
             where.append("author LIKE ?")
             args.append(f"%{author}%")
         shas = [r[0] for r in con.execute(f"SELECT sha256 FROM books WHERE {' AND '.join(where)}", args)]
-        if not shas:
-            return {}
+    if subject_shas is not None:
+        shas = sorted(subject_shas) if shas is None else [s for s in shas if s in subject_shas]
+    if shas is not None and not shas:
+        return {}
     if not (chapter or section):
         return {sha: None for sha in shas}
     ranges: dict[str, list[tuple[int, int]]] = {}
@@ -195,7 +256,8 @@ def in_scope(sc: Optional[dict], sha: str, page: int) -> bool:
     return rs is None or any(a <= page <= b for a, b in rs)
 
 
-def _scoped_chunks(con: sqlite3.Connection, sc: dict) -> list[int]:
+def _scoped_chunks(con: sqlite3.Connection, sc: dict, limit: Optional[int] = SCOPED_EXACT) -> list[int]:
+    """Chunk ids inside the scope; stops early once there are more than `limit` (None: no limit)."""
     ids: list[int] = []
     for sha, rs in sc.items():
         if rs is None:
@@ -204,7 +266,7 @@ def _scoped_chunks(con: sqlite3.Connection, sc: dict) -> list[int]:
             for a, b in rs:
                 ids += [r[0] for r in con.execute(
                     "SELECT id FROM chunks WHERE sha256=? AND pdf_page BETWEEN ? AND ?", (sha, a, b))]
-        if len(ids) > SCOPED_EXACT:
+        if limit is not None and len(ids) > limit:
             break
     return sorted(set(ids))
 
@@ -213,9 +275,10 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
            k: int = 10, book: Optional[str] = None, reranker=None, explain: int = 0,
            expander=None, author: Optional[str] = None, chapter: Optional[str] = None,
            section: Optional[str] = None, speller=None, info: Optional[dict] = None,
-           vectors=None, pages: Optional[PageText] = None) -> list[Hit]:
+           vectors=None, pages: Optional[PageText] = None, subject: Optional[str] = None) -> list[Hit]:
     """`speller`: a spell.Vocab (or None). `info`, if given, receives what was done to the query:
     corrected words, expansion terms or why expansion failed, and the scope searched.
+    `subject`: subject folders to search in, e.g. "Real Analysis, Metric Spaces" (see subject_books).
     `vectors`: a memvec.MemIndex to search instead of the vectors in SQLite (much faster).
     `pages`: a PageText to read page lines from the index instead of the page files (much faster)."""
     import time as _t
@@ -243,13 +306,22 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
                 import sys
                 print(f"# expanded: terms={terms}\n#   passage={passage[:200]}", file=sys.stderr)
     cands: dict[tuple[str, int], Cand] = {}
-    sc = scope(con, book, author, chapter, section)
+    subj_shas, subj_matched, subj_unmatched = (subject_books(con, subject) if subject and subject.strip()
+                                               else (None, [], []))
+    sc = scope(con, book, author, chapter, section, subj_shas)
     bargs: list[str] = sorted(sc) if sc is not None else []
     bfilter = ""
     if sc is not None:
         info["scope"] = {"books": len(sc), "page_ranges": sum(len(r) for r in sc.values() if r)}
+        if subj_shas is not None:
+            info["scope"]["subjects"] = subj_matched
+            if subj_unmatched:
+                info["scope"]["unknown_subjects"] = subj_unmatched
         if not sc:
-            info["scope"]["note"] = "no book/section matched the filters"
+            info["scope"]["note"] = ("no subject folder matched: see the subjects tool for the names"
+                                     if subj_shas is not None and not subj_shas
+                                     else "no book/section matched the filters")
+            LAST_TIMING.clear()                  # nothing was searched: don't report the last search's
             return []
         bfilter = f" AND sha256 IN ({','.join('?' * len(bargs))})"
     ranged = sc is not None and any(r is not None for r in sc.values())
@@ -271,8 +343,10 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
     if mode in ("hybrid", "semantic") and emb is not None:
         store = vectors if vectors is not None else VectorStore(con, emb.dim, emb.spec, create=False)
         qv = emb.query(vq)
-        ids = _scoped_chunks(con, sc) if sc is not None else []
-        if sc is not None and len(ids) <= SCOPED_EXACT:
+        # Vectors in memory search any scope exactly; SQLite's only up to SCOPED_EXACT chunks.
+        limit = None if vectors is not None else SCOPED_EXACT
+        ids = _scoped_chunks(con, sc, limit) if sc is not None else []
+        if sc is not None and (limit is None or len(ids) <= limit):
             near = store.knn_among(qv, ids, VEC_K)       # exact, inside the scope only
         else:
             near = store.knn(qv, VEC_K * (5 if sc is not None else 1))

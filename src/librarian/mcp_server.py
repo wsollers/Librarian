@@ -29,7 +29,8 @@ INSTRUCTIONS = """Search William's mathematics library (~900 books, page-exact t
 chapters and sections). Workflow: search -> read_page on the best hits -> cite.
 * Rephrase descriptive questions into the terms a textbook would use and search with them (or run
   a few searches); expand=true asks a slower local model to do this and is rarely needed.
-* Narrow with author / book / chapter / section when the question names them.
+* Narrow with author / book / chapter / section when the question names them, and with subject
+  ("Real Analysis", "Metric Spaces, Topology") to keep a result in its field; subjects lists them.
 * Never state what a book says from a snippet alone: read_page the cited lines first.
 * Cite as: Title — Author, chapter › section, p. <printed> (PDF <pdf>), lines a–b, with the pdf link.
 * Right after start-up the models take about a minute to load. A tool called before then answers
@@ -224,12 +225,16 @@ def build(state_holder: dict):
     @app.tool()
     async def search(query: str, k: int = 10, author: Optional[str] = None, book: Optional[str] = None,
                      chapter: Optional[str] = None, section: Optional[str] = None, mode: str = "hybrid",
-                     expand: bool = False, rerank: bool = True) -> dict:
+                     expand: bool = False, rerank: bool = True, subject: Optional[str] = None) -> dict:
         """Search the library. Returns hits with book, chapter › section, printed and PDF page, line span,
         snippet, sha256 (for read_page) and a pdf link.
 
         query: words, a phrase in double quotes, or a description. Misspellings are corrected against the
           library's own vocabulary (reported in `corrected`).
+        subject: subject folders to search in, comma-separated: "Real Analysis", "Metric Spaces, Topology".
+          A name includes its subfolders ("Analysis" = real, complex, functional, metric spaces, ...;
+          not "Numerical Analysis"); a path ("Analysis/Real Analysis") picks one folder. The subjects
+          tool lists the names. The scope in the reply shows which folders matched.
         author / book: substring of the author, or of the title / file path (or a sha256 prefix).
         chapter / section: a number ("5", "5.4") or title words ("Compactness"); with neither book nor
           author this matches that chapter/section title in every book.
@@ -249,7 +254,7 @@ def build(state_holder: dict):
             hits = S.search(st.cfg, st.con, query, st.emb if mode in ("hybrid", "semantic") else None, mode,
                             max(1, min(k, 50)), book, st.rr if rerank and mode in ("hybrid", "semantic") else None,
                             0, ex, author=author, chapter=chapter, section=section, speller=st.speller, info=info,
-                            vectors=st.vectors, pages=st.pages)
+                            vectors=st.vectors, pages=st.pages, subject=subject)
             out = {"query": info.pop("query", query), **info, "timing_s": dict(S.LAST_TIMING), "hits": []}
             if st.emb is None and mode in ("hybrid", "semantic"):
                 out["warning"] = "embedder not loaded: keyword (FTS) results only"
@@ -311,11 +316,21 @@ def build(state_holder: dict):
         return await run(go)
 
     @app.tool()
-    async def list_books(filter: Optional[str] = None, author: Optional[str] = None, limit: int = 50) -> dict:
+    async def list_books(filter: Optional[str] = None, author: Optional[str] = None, limit: int = 50,
+                         subject: Optional[str] = None) -> dict:
         """List indexed books. filter: substring of title or file path (the path holds the subject folders,
-        e.g. "Analysis/Functional"); author: substring of the author."""
+        e.g. "Analysis/Functional"); author: substring of the author; subject: subject folders, as for
+        search ("Metric Spaces, Topology")."""
         def go(st: State):
+            from .search import subject_books
             where, args = ["b.sha256 IN (SELECT sha256 FROM index_state)"], []
+            if subject and subject.strip():
+                shas, _, unknown = subject_books(st.con, subject)
+                if not shas:
+                    return {"total": 0, "books": [], "unknown_subjects": unknown,
+                            "note": "no subject folder matched: see the subjects tool for the names"}
+                where.append(f"b.sha256 IN ({','.join('?' * len(shas))})")
+                args += sorted(shas)
             if filter:
                 where.append("(b.title LIKE ? OR b.path LIKE ?)")
                 args += [f"%{filter}%"] * 2
@@ -328,6 +343,15 @@ def build(state_holder: dict):
                                   f"ORDER BY b.path LIMIT ?", args + [max(1, min(limit, 500))]).fetchall()
             return {"total": total, "books": [{"title": r[0], "author": r[1], "folder": str(Path(r[2]).parent).replace("\\", "/"),
                                                 "pdf_pages": r[3], "sha256": r[4][:16]} for r in rows]}
+        return await run(go)
+
+    @app.tool()
+    async def subjects() -> dict:
+        """The library's subject folders (for the subject filter of search and list_books), with the number
+        of indexed books in each, subfolders included."""
+        def go(st: State):
+            from .search import subjects as all_subjects
+            return {"subjects": all_subjects(st.con)}
         return await run(go)
 
     @app.tool()

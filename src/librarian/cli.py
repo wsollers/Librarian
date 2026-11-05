@@ -115,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("-k", type=int, default=10)
     p.add_argument("--book", help="restrict to books whose title/author/path contains this")
     p.add_argument("--author", help="restrict to books whose author contains this")
+    p.add_argument("--subject", help="restrict to subject folders, comma-separated, e.g. 'Real Analysis, Topology'")
     p.add_argument("--chapter", help="restrict to chapters with this number or title words, e.g. 5 or Compactness")
     p.add_argument("--section", help="restrict to sections with this number or title words, e.g. 5.4 or 'Lipschitz'")
     p.add_argument("--no-spell", action="store_true", help="do not correct misspelled words")
@@ -177,7 +178,8 @@ def main(argv: list[str] | None = None) -> int:
             speller = Vocab(con, cfg.db_path, cfg.data / "cache")
         info: dict = {}
         hits = search.search(cfg, con, a.query, emb, a.mode, a.k, a.book, rr, a.explain, ex,
-                             author=a.author, chapter=a.chapter, section=a.section, speller=speller, info=info)
+                             author=a.author, chapter=a.chapter, section=a.section, speller=speller, info=info,
+                             subject=a.subject)
         if a.json:
             print(json.dumps([search.as_dict(h) for h in hits], indent=2, ensure_ascii=False))
         else:
