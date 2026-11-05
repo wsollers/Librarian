@@ -29,7 +29,7 @@ Each candidate moves through these states, stored in a new `intake` table in lib
 (sha256, first path seen, every path seen, size, state, verdict, reasons, timestamps):
 
 ```
-discovered -> staged -> identified -> profiled -> classified -> [review] -> filed -> ocr -> indexed
+discovered -> staged -> identified -> profiled -> classified -> filed -> ocr -> indexed
                            |                                        |
                            +-> duplicate / not-a-book / rejected    +-> rejected (remembered)
 ```
@@ -91,7 +91,7 @@ Verdicts:
 * **new edition**: same work, other edition. The newer edition is the primary copy, the older
   one is renamed ` - 1st ed` (as done for Deitmar and Shonkwiler) and goes to lower priority.
 * **uncertain**: conflicting signals (title matches but text does not, or ISBN missing and
-  similarity in between). Goes to review.
+  similarity in between). Held in staging and listed in the run summary until decided.
 * **paper**: arXiv-style or under ~30 pages. **Not ingested and not listed**: William goes
   through many arXiv papers and adds the ones he wants by hand (a librarian MCP tool, below).
   The original is left where it is and its hash remembered, so it is not looked at again.
@@ -112,8 +112,8 @@ Verdicts:
 Codex gets the dossier (title, author, TOC, preface, a few body lines) plus `config/taxonomy.yaml`
 and the instructions used for the current tags, and returns the same record as
 `config/subjects.yaml` (primary, up to 3 secondary, level, kind, confidence, note, optional
-`new_subject`), plus `is_math_book`. Low confidence or a `new_subject` goes to review; the rest
-is accepted.
+`new_subject`), plus `is_math_book`. Low confidence or a `new_subject` is filed under the best
+existing subject and flagged in the summary; the rest is accepted.
 
 ### 6. Summary, and corrections through the librarian MCP
 
