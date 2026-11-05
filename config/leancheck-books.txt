@@ -124,3 +124,12 @@ Foundations/Transition to Higher Mathematics Structure and Proof - Dumas.pdf  # 
 
 ## Recursion theory
 Foundations/Computability and Recursion Theory/Recursion Theory - Schoenfield.pdf  # 89 pp, 67 statement-ish
+
+## Lower-priority editions / weaker copies (last; the better copy is listed above)
+Foundations/Logic/On Tarskis Axiomatic Foundation of the Calculus of Relations - Givant.pdf  # 29 pp
+Foundations/Logic/Logic and Structure - Van Dalen.pdf  # 275 pp
+Foundations/Logic/A Concise Introduction to Logic - Hurley.pdf  # 750 pp
+Foundations/Logic/Mathematical Reasoning Writing and Proof - Sundstrom - 2.pdf  # 589 pp
+Foundations/Type Theory/Homotopy Type Theory Univalent Foundations of Mathematics - The Univalent Foundations Program.pdf  # 490 pp
+Foundations/Logic/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf  # 222 pp
+Foundations/Logic/Mathematical Logic - Ebbinghaus.pdf  # 290 pp

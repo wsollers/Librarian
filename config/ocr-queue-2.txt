@@ -247,3 +247,14 @@ ea4e96a799ccb3b3  #    1 pages  Algebra/Linear Algebra/Vectors Pure and Applied 
 ebdeed7dc813d6dd  #    1 pages  Topology/Introduction to topology by Mendelson Bert - 3rd Edition.pdf
 f2601e1452de127e  #    1 pages  Analysis/Complex Analysis/Complex Analysis - Bak.pdf
 f323a5684a7e135a  #    1 pages  Algebra/Group Theory/A Gentle Introduction to Group Theory - Subaiei.pdf
+
+# Lower-priority editions / weaker copies of books kept above: processed last.
+d42ed607d018333b  #   29 pages  Foundations/Logic/On Tarskis Axiomatic Foundation of the Calculus of Relations - Givant.pdf
+3b88214407fdc3c4  #  275 pages  Foundations/Logic/Logic and Structure - Van Dalen.pdf
+1488250de6c55a8c  #  315 pages  Foundations/Category Theory/Categories for the working mathematician - Mac Lane.pdf
+ddf49d716a58b00d  #  750 pages  Foundations/Logic/A Concise Introduction to Logic - Hurley.pdf
+c7c368c910f32a4d  #  589 pages  Foundations/Logic/Mathematical Reasoning Writing and Proof - Sundstrom - 2.pdf
+208cc030cb5fa311  #  490 pages  Foundations/Type Theory/Homotopy Type Theory Univalent Foundations of Mathematics - The Univalent Foundations Program.pdf
+d779f6b4ded9bb5c  #  222 pages  Foundations/Logic/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf
+2defaae8fa33db45  #  313 pages  Foundations/Proof Theory/Book of Proof - Hammack - 2.pdf
+42892b2d24cb8043  #  290 pages  Foundations/Logic/Mathematical Logic - Ebbinghaus.pdf
