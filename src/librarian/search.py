@@ -110,6 +110,29 @@ def _page_lines(cfg: Config, sha: str, p: int) -> list[str]:
     return f.read_text(encoding="utf-8").split("\n") if f.is_file() else []
 
 
+class PageText:
+    """Page lines from the index (pages_fts) instead of the page files.
+
+    A search reads ~300 candidate pages; opening that many small files costs ~1.3 s on Windows when
+    they are not cached, against ~10 ms for the same rows from SQLite. The (book, page) -> row map
+    is built once (~0.6 s for the whole library). A row that no longer matches (the index was
+    rebuilt while this ran) or a page that is not in the index falls back to its file.
+    """
+
+    def __init__(self, con: sqlite3.Connection):
+        self.con = con
+        self.rows = {(sha, p): r for r, sha, p in con.execute("SELECT id, c1, c2 FROM pages_fts_content")}
+
+    def lines(self, cfg: Config, sha: str, p: int) -> list[str]:
+        r = self.rows.get((sha, p))
+        if r is not None:
+            row = self.con.execute("SELECT c0, c1, c2 FROM pages_fts_content WHERE id=?", (r,)).fetchone()
+            if row is not None and row[1] == sha and row[2] == p:
+                # The index holds the file's lines without the empty string after its final newline.
+                return row[0].split("\n") + [""]
+        return _page_lines(cfg, sha, p)
+
+
 _SCOPE_WORD = re.compile(r"^\s*(chapter|chap\.?|ch\.?|section|sec\.?|§)\s*", re.I)
 SCOPED_EXACT = 80_000   # chunks in scope up to which vectors are compared exactly instead of via KNN
 
@@ -190,10 +213,11 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
            k: int = 10, book: Optional[str] = None, reranker=None, explain: int = 0,
            expander=None, author: Optional[str] = None, chapter: Optional[str] = None,
            section: Optional[str] = None, speller=None, info: Optional[dict] = None,
-           vectors=None) -> list[Hit]:
+           vectors=None, pages: Optional[PageText] = None) -> list[Hit]:
     """`speller`: a spell.Vocab (or None). `info`, if given, receives what was done to the query:
     corrected words, expansion terms or why expansion failed, and the scope searched.
-    `vectors`: a memvec.MemIndex to search instead of the vectors in SQLite (much faster)."""
+    `vectors`: a memvec.MemIndex to search instead of the vectors in SQLite (much faster).
+    `pages`: a PageText to read page lines from the index instead of the page files (much faster)."""
     import time as _t
     T = {"t0": _t.perf_counter()}
     mark = lambda k: T.__setitem__(k, _t.perf_counter())
@@ -280,8 +304,14 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
             print(f"#  {i:3d} {c.rrf:.4f} {'+'.join(sorted(c.via)):8s} {t[:40]:40s} PDF {c.page}", file=sys.stderr)
     pool = ordered[:RERANK_N] if reranker else ordered
     lines_cache: dict[tuple[str, int], list[str]] = {}
+
+    def page_lines(sha: str, p: int) -> list[str]:
+        if (sha, p) not in lines_cache:
+            lines_cache[sha, p] = pages.lines(cfg, sha, p) if pages is not None else _page_lines(cfg, sha, p)
+        return lines_cache[sha, p]
+
     for c in pool:
-        lines = lines_cache.setdefault((c.sha, c.page), _page_lines(cfg, c.sha, c.page))
+        lines = page_lines(c.sha, c.page)
         a, b = c.span
         c.region = (max(1, a - CONTEXT), min(len(lines), b + CONTEXT)) if lines else (a, b)
         c.passage = "\n".join(lines[c.region[0] - 1:c.region[1]]) or c.passage
@@ -315,7 +345,7 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
     for c in pool:
         if len(hits) >= k:
             break
-        lines = lines_cache.get((c.sha, c.page)) or _page_lines(cfg, c.sha, c.page)
+        lines = page_lines(c.sha, c.page)
         key = (c.page, "\n".join(lines))  # same page text in two files (duplicate copies): show once
         if key in seen:
             continue

@@ -70,6 +70,7 @@ class State:
         self.loaded_in: Optional[float] = None
         self.started = time.perf_counter()
         self.device = "?"
+        self.pages = None                         # search.PageText: page lines from SQLite, not files
         self.vectors = None                       # memvec.MemIndex once loaded; until then SQLite's vectors
         self.vectors_state = "waiting for start-up"
         from .ollama import OllamaManager
@@ -89,7 +90,13 @@ class State:
             if not has_vec(con):
                 log.warning("sqlite-vec not loadable: semantic search falls back to BLOB vectors if present")
             self.con = con
-            spec = (con.execute("SELECT value FROM meta WHERE key='embed_spec'").fetchone() or [None])[0]
+            try:
+                from .search import PageText
+                self.pages = PageText(con)
+            except sqlite3.Error as e:   # searches then read the page files, as before
+                self.warnings.append(f"page text not read from the index ({e}): using page files")
+                log.warning("mcp: %s", self.warnings[-1])
+            spec =(con.execute("SELECT value FROM meta WHERE key='embed_spec'").fetchone() or [None])[0]
             try:   # without the models, search still works on keywords (FTS)
                 if spec:
                     self.emb = embed.load(spec)
@@ -242,7 +249,7 @@ def build(state_holder: dict):
             hits = S.search(st.cfg, st.con, query, st.emb if mode in ("hybrid", "semantic") else None, mode,
                             max(1, min(k, 50)), book, st.rr if rerank and mode in ("hybrid", "semantic") else None,
                             0, ex, author=author, chapter=chapter, section=section, speller=st.speller, info=info,
-                            vectors=st.vectors)
+                            vectors=st.vectors, pages=st.pages)
             out = {"query": info.pop("query", query), **info, "timing_s": dict(S.LAST_TIMING), "hits": []}
             if st.emb is None and mode in ("hybrid", "semantic"):
                 out["warning"] = "embedder not loaded: keyword (FTS) results only"
