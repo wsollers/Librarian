@@ -102,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-plausible", action="store_true")
     p.add_argument("--chunk-pages", type=int, default=8, help="section: at most N pages per Codex session")
     p.add_argument("--force", action="store_true", help="section: redo chunks that already have a result")
+    p.add_argument("--all-pages", action="store_true", help="section: check every page, not only pages with statements")
     p = sub.add_parser("search", help="hybrid search")
     p.add_argument("query")
     p.add_argument("--mode", choices=["hybrid", "phrase", "fts", "semantic"], default="hybrid")
@@ -222,6 +223,28 @@ def _page_range(spec: str | None) -> tuple[int, int]:
     return int(a_), int(b_ or a_)
 
 
+def _slug(text: str) -> str:
+    import re as _re
+    return _re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:60]
+
+
+def _next_leancheck_book(cfg, con) -> tuple[str, str]:
+    lst = REPO / "config" / "leancheck-books.txt"
+    for ln in lst.read_text(encoding="utf-8").splitlines():
+        pat = ln.split("#", 1)[0].strip()
+        if not pat:
+            continue
+        books = select_books(con, pat)
+        if len(books) != 1:
+            log.warning("leancheck-books.txt: '%s' matches %d books, skipped", pat, len(books))
+            continue
+        b = books[0]
+        name = _slug(f'{b["title"]}-{b["author"] or ""}')
+        if not (cfg.data / "leancheck" / name / "report.md").is_file():
+            return pat, name
+    raise SystemExit("every book in config/leancheck-books.txt has been checked")
+
+
 def lean_check(cfg, a) -> dict:
     import re as _re
     from . import leancheck as lc
@@ -231,15 +254,19 @@ def lean_check(cfg, a) -> dict:
         from . import leansection
         if a.stage == "report":
             return leansection.report(work)
-        if not (a.select and a.pages):
-            raise SystemExit("leancheck section needs --select <book> and --pages A-B")
         con = connect(cfg.db_path)
+        if a.name == "next":                       # next unchecked book from config/leancheck-books.txt
+            a.select, a.name = _next_leancheck_book(cfg, con)
+            log.info("next book: %s -> %s", a.select, a.name)
+        if not a.select:
+            raise SystemExit("leancheck section needs --select <book> (and optionally --pages A-B), or the name 'next'")
         books = select_books(con, a.select)
         if len(books) != 1:
             raise SystemExit(f"--select matched {len(books)} books; make it specific: "
                              + "; ".join(b["title"] for b in books[:8]))
-        lo, hi = _page_range(a.pages)
-        return leansection.run(cfg, con, books[0], lo, hi, a.name, max_pages=a.chunk_pages, force=a.force)
+        lo, hi = _page_range(a.pages) if a.pages else (1, books[0]["pdf_pages"])
+        return leansection.run(cfg, con, books[0], lo, hi, a.name, max_pages=a.chunk_pages, force=a.force,
+                               all_pages=a.all_pages)
     if a.stage == "statements":
         lo, hi = _page_range(a.pages)
         pages: dict[int, list[str]] = {}

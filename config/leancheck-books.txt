@@ -1,0 +1,126 @@
+# Lean check order for `scripts\run.ps1 leancheck section next` (one book per run, top to bottom).
+# Reorder or delete lines freely; a book is done once leancheck/<book>/report.md exists.
+# Deprioritized (not listed): NumberSystems, Category Theory, Model Theory, Proof Theory, Lattice and Order Theory,
+# Computability (except Shoenfield), Fuzzy logic, Reference.
+# Columns after #: PDF pages, pages mentioning a statement (the check reads ~40% of these plus continuations).
+
+## Kaplansky (Analysis/Metric Spaces)
+Analysis/Metric Spaces/Set Theory and Metric Spaces - Kaplansky.pdf  # 154 pp, 102 statement-ish
+
+## Set Theory
+Foundations/Set Theory/A Course on Borel Sets - S M Srivastava.pdf  # 274 pp, 228 statement-ish
+Foundations/Set Theory/A Gentle Introduction to the Axiom of Choice - Blass Kulshreshtha.pdf  # 12 pp, 10 statement-ish
+Foundations/Set Theory/Classic set theory for guided independent study - Goldrei.pdf  # 296 pp, 242 statement-ish
+Foundations/Set Theory/Classical Set Theory - Theory of Sets and Classes - Banakh.pdf  # 189 pp, 166 statement-ish
+Foundations/Set Theory/Elements Of Mathematics Theory of Sets - Bourbaki.pdf  # 418 pp, 249 statement-ish
+Foundations/Set Theory/Elements of Set Theory - Enderton.pdf  # 289 pp, 217 statement-ish
+Foundations/Set Theory/INTRODUCTION TO SET THEORY AND TOPOLOGY - KURATOWSKI.pdf  # 341 pp, 264 statement-ish
+Foundations/Set Theory/Introduction to Set Theory - Hrbacek.pdf  # 312 pp, 236 statement-ish
+Foundations/Set Theory/Naive Set Theory - Halmos.pdf  # 112 pp, 71 statement-ish
+Foundations/Set Theory/Notes on Set Theory - Moschovakis.pdf  # 291 pp, 235 statement-ish
+Foundations/Set Theory/Notes on logic and set theory - Johnstone.pdf  # 122 pp, 85 statement-ish
+Foundations/Set Theory/Numbers sets and axioms - Hamilton.pdf  # 265 pp, 206 statement-ish
+Foundations/Set Theory/Set Theory - Hardegree.pdf  # 288 pp, 138 statement-ish
+Foundations/Set Theory/Set Theory - Jech.pdf  # 753 pp, 657 statement-ish
+Foundations/Set Theory/Set Theory With an Introduction to Descriptive Set Theory - Unknown.pdf  # 526 pp, 426 statement-ish
+Foundations/Set Theory/Set Theory a First Course - Cunningham.pdf  # 265 pp, 228 statement-ish
+Foundations/Set Theory/Set Theory and Fuondations of Mathematics an Introduction to Mathematical Logic - Cenzer.pdf  # 195 pp, 157 statement-ish
+Foundations/Set Theory/Set Theory for Category Theory - Shulman.pdf  # 39 pp, 26 statement-ish
+Foundations/Set Theory/Sets for Mathematics - Rosebrugh.pdf  # 276 pp, 142 statement-ish
+Foundations/Set Theory/The Axiom of Choice - Halbeisen.pdf  # 41 pp, 31 statement-ish
+Foundations/Set Theory/Zermelo-Fraenkel Set Theory - Doets.pdf  # 120 pp, 110 statement-ish
+Foundations/Set Theory/set theory - quine.pdf  # 381 pp, 179 statement-ish
+
+## Logic
+Foundations/Logic/A Beginner s Guide to Mathematical Logic - Smullyan.pdf  # 198 pp, 122 statement-ish
+Foundations/Logic/A Concise Introduction to Logic - Delancey.pdf  # 276 pp, 50 statement-ish
+Foundations/Logic/A Concise Introduction to Logic - Hurley - 2.pdf  # 658 pp, 134 statement-ish
+Foundations/Logic/A Course in Logic for Mathematicians - Manin.pdf  # 389 pp, 297 statement-ish
+Foundations/Logic/A First Journey Through Logic - Hils.pdf  # 201 pp, 166 statement-ish
+Foundations/Logic/A Gentle Introduction to the Art of Mathematics - Fields.pdf  # 438 pp, 152 statement-ish
+Foundations/Logic/A Mathematical Introduction to Logic - Enderton.pdf  # 330 pp, 235 statement-ish
+Foundations/Logic/A Mathematical Introduction to Mathematical Logic - Mileti.pdf  # 332 pp, 293 statement-ish
+Foundations/Logic/A New Introduction to Modal Logic - Hughes.pdf  # 431 pp, 252 statement-ish
+Foundations/Logic/A Philosophical Introduction to Higher Order Logics - Bacon.pdf  # 728 pp, 479 statement-ish
+Foundations/Logic/A Second Order Logic Primer - Trueman.pdf  # 23 pp, 5 statement-ish
+Foundations/Logic/An Introduction to Mathematical Logic - Hodel.pdf  # 520 pp, 448 statement-ish
+Foundations/Logic/An Introduction to Theory of Computation An Algorithmic Exploration - Ogihara.pdf  # 535 pp, 299 statement-ish
+Foundations/Logic/An Introduction to the Philosophy of Logic - Cohnitz.pdf  # 273 pp, 50 statement-ish
+Foundations/Logic/An introduction to Logical Relations - Skorstengaard.pdf  # 42 pp, 28 statement-ish
+Foundations/Logic/An introduction to mathematical logic - Robison.pdf  # 113 pp, 78 statement-ish
+Foundations/Logic/Basics of Second-Order Predicate Logic - Unknown.pdf  # 14 pp, 1 statement-ish
+Foundations/Logic/Calculus of Relations Axiomatisation and Algorithms - Llopez.pdf  # 40 pp, 12 statement-ish
+Foundations/Logic/Concise Introduction to Logic and Set Theory - Jebril.pdf  # 171 pp, 122 statement-ish
+Foundations/Logic/Crash Course on Higher Order Logic - Sider.pdf  # 68 pp, 26 statement-ish
+Foundations/Logic/Discrete Mathematics A Consice Introduction - Unknown.pdf  # 266 pp, 180 statement-ish
+Foundations/Logic/Discrete Structures With Contemprorary Applications - Stanoyevitch.pdf  # 1016 pp, 536 statement-ish
+Foundations/Logic/Extensions of First Order Logic - Manzano.pdf  # 414 pp, 289 statement-ish
+Foundations/Logic/First course in mathematical logic - Suppes.pdf  # 292 pp, 26 statement-ish
+Foundations/Logic/First e2 - Fitting.pdf  # 464 pp, 294 statement-ish
+Foundations/Logic/Foundations of Mathematical Logic - Curry.pdf  # 417 pp, 294 statement-ish
+Foundations/Logic/Higher Order Logic - Hetzl.pdf  # 43 pp, 35 statement-ish
+Foundations/Logic/How to Prove It A Structured Approach - Velleman.pdf  # 569 pp, 338 statement-ish
+Foundations/Logic/Introduction to Discrete Mathematics via Logic and Proof - Jongsma.pdf  # 496 pp, 310 statement-ish
+Foundations/Logic/Introduction to Logic - Suppes.pdf  # 334 pp, 153 statement-ish
+Foundations/Logic/Introduction to Logic and the Methodology of Deductive Science - Tarski.pdf  # 254 pp, 91 statement-ish
+Foundations/Logic/Introduction to Mathematical Logic - 6th - Mendelson.pdf  # 499 pp, 354 statement-ish
+Foundations/Logic/Introduction to Mathematical Logic - Buss.pdf  # 302 pp, 252 statement-ish
+Foundations/Logic/Introduction to Theory of Computation - Maheshwari.pdf  # 252 pp, 147 statement-ish
+Foundations/Logic/Kenneth Rosen - Discrete Mathematics and Its Applications - 8th edition.pdf  # 1118 pp, 605 statement-ish
+Foundations/Logic/Logic a Brief Course - Mundici.pdf  # 143 pp, 72 statement-ish
+Foundations/Logic/Logic and Structure - van Dalen - 2.pdf  # 266 pp, 227 statement-ish
+Foundations/Logic/Maintaining knowledge about temporal intervals - Allen.pdf  # 12 pp, 1 statement-ish
+Foundations/Logic/Mathematical Logic - Ebbinghaus - 2.pdf  # 305 pp, 246 statement-ish
+Foundations/Logic/Mathematical Logic - Kossak.pdf  # 188 pp, 124 statement-ish
+Foundations/Logic/Mathematical Logic An Introduction - De Gruyter.pdf  # 271 pp, 234 statement-ish
+Foundations/Logic/Mathematical Reasoning Writing and Proof - Sundstrom.pdf  # 612 pp, 386 statement-ish
+Foundations/Logic/Non Classical Logic - Priest.pdf  # 647 pp, 183 statement-ish
+Foundations/Logic/On Tarskis Axiomatic Foundations of the Calculus of Relations - Andreka.pdf  # 31 pp, 22 statement-ish
+Foundations/Logic/PLP An Introduction to Mathematical Proof - Demirbas.pdf  # 540 pp, 280 statement-ish
+Foundations/Logic/Part 2 Logic and Set Theory - Leader.pdf  # 70 pp, 68 statement-ish
+Foundations/Logic/Proofs from THE BOOK e4 - Aigner.pdf  # 265 pp, 178 statement-ish
+Foundations/Logic/Reverse Mathematics Proofs From the Inside Out - Stillwell.pdf  # 198 pp, 140 statement-ish
+Foundations/Logic/Second Order Logic - Unknown.pdf  # 22 pp, 17 statement-ish
+Foundations/Logic/Second Order Logic or How I Learned to Stop Worrying and Love the Incompleteness Theorem - Jerzak.pdf  # 22 pp, 14 statement-ish
+Foundations/Logic/Sets Models and Proofs - Oosten.pdf  # 128 pp, 93 statement-ish
+Foundations/Logic/Statistical Inference - Casella.pdf  # 686 pp, 405 statement-ish
+Foundations/Logic/Subsystems of Second Order Arithmetic - Simpson.pdf  # 93 pp, 79 statement-ish
+Foundations/Logic/Syllogistic Logic and Mathematical Proof - Mancuso.pdf  # 238 pp, 101 statement-ish
+Foundations/Logic/Temporal Logic - Goranko.pdf  # 112 pp, 19 statement-ish
+Foundations/Logic/The Algebra of Logic - Couturat.pdf  # 124 pp, 53 statement-ish
+Foundations/Logic/The Art of Proof - Beck.pdf  # 202 pp, 128 statement-ish
+Foundations/Logic/The Logic Book - Merrie Bergmann.pdf  # 643 pp, 128 statement-ish
+Foundations/Logic/The Origin of Relation Algebras in the Development and Axiomatization of the Calculus of Relations - Maddux.pdf  # 36 pp, 16 statement-ish
+Foundations/Logic/The Prehistory of the Subsystems of Second-Order Arithmetic - Dean.pdf  # 50 pp, 32 statement-ish
+Foundations/Logic/The Time Ontology of Allen s Interval Algebra - Gruninger.pdf  # 16 pp, 14 statement-ish
+Foundations/Logic/dokumen pub models-and-idealizations-in-science-artifactual-and-fictional-approaches-logic-epistemology-and-the-unity-of-science-50-3030658015-9783030658014 - Unknown.pdf  # 276 pp, 20 statement-ish
+
+## Type Theory
+Foundations/Type Theory/Basic Simple Type Theory - Hindley.pdf  # 199 pp, 158 statement-ish
+Foundations/Type Theory/Homotopy Type Theory - UFP.pdf  # 622 pp, 492 statement-ish
+Foundations/Type Theory/Notes on Type Theory - Bauer.pdf  # 56 pp, 37 statement-ish
+Foundations/Type Theory/Pogramming in Martin-Lofs Type Theory - Nordstrom.pdf  # 211 pp, 87 statement-ish
+Foundations/Type Theory/Principles of Dependent Type Theory - Angiuli.pdf  # 348 pp, 224 statement-ish
+Foundations/Type Theory/Proofs And Types - Girard.pdf  # 183 pp, 84 statement-ish
+Foundations/Type Theory/Simple Type Theory - Farmer.pdf  # 345 pp, 227 statement-ish
+Foundations/Type Theory/Temporal Type Theory - Spivak.pdf  # 237 pp, 201 statement-ish
+Foundations/Type Theory/Type Theory and Formal Proof - Nederpelt.pdf  # 465 pp, 322 statement-ish
+Foundations/Type Theory/Type Theory and Functional Programming - Thompson.pdf  # 379 pp, 216 statement-ish
+Foundations/Type Theory/Typed Lambda Calculus Calculus of Constructions - Brandl.pdf  # 107 pp, 94 statement-ish
+Foundations/Type Theory/Univalent Functions - Thomas.pdf  # 268 pp, 236 statement-ish
+
+## Lambda Calculus
+Foundations/Lambda Calculus/Lambda Calculus With Types - Barendregt.pdf  # 855 pp, 715 statement-ish
+Foundations/Lambda Calculus/The Lambda Calculus Its Syntax Semantics - Barendregt.pdf  # 321 pp, 302 statement-ish
+
+## Foundations (top level)
+Foundations/An Infinite Descent into Pure Mathematics - Newstead.pdf  # 586 pp, 470 statement-ish
+Foundations/Introduction to Mathematical Structures and Proofs - Gerstein.pdf  # 409 pp, 289 statement-ish
+Foundations/Intuitive Dyadic Calculus The Basics - Lerner.pdf  # 53 pp, 31 statement-ish
+Foundations/Logic and Proof - Avigad.pdf  # 228 pp, 118 statement-ish
+Foundations/Mathematical Analysis of the Concept equality - Burgin.pdf  # 8 pp, 7 statement-ish
+Foundations/The Tools of Mathematical Reasoning - Lakins.pdf  # 233 pp, 181 statement-ish
+Foundations/Transition to Higher Mathematics Structure and Proof - Dumas.pdf  # 290 pp, 194 statement-ish
+
+## Recursion theory
+Foundations/Computability and Recursion Theory/Recursion Theory - Schoenfield.pdf  # 89 pp, 67 statement-ish

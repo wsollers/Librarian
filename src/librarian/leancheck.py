@@ -222,18 +222,23 @@ def _strip_imports(code: str) -> str:
     return "\n".join(l for l in code.splitlines() if not l.strip().startswith("import "))
 
 
+# Every statement is compiled under this preamble (Codex writes `𝓝`, `atTop`, noncomputable defs freely).
+PREAMBLE = ["import Mathlib", "set_option maxHeartbeats 400000", "open Filter Topology", "noncomputable section", ""]
+
+
 def compile_all(work: Path, project: Path, plausible: bool = True) -> None:
     """One file per run: each statement in its own namespace; errors mapped back by line range."""
     formal = [f for f in _read(work / "formal.jsonl") if f["lean"].strip()]
-    parts, ranges, line = ["import Mathlib", "set_option maxHeartbeats 400000", ""], {}, 3
+    parts, ranges, line = list(PREAMBLE), {}, len(PREAMBLE)
     for f in formal:
         body = _strip_imports(f["lean"])
         block = [f"namespace LC_{f['id']}", body, f"end LC_{f['id']}", ""]
-        ranges[f["id"]] = (line + 1, line + len("\n".join(block).splitlines()))
+        n_lines = sum(b.count("\n") + 1 for b in block)   # lines this block occupies in "\n".join(parts)
+        ranges[f["id"]] = (line + 1, line + n_lines)
         parts += block
-        line += len("\n".join(block).splitlines())
+        line += n_lines
     src = work / "check.lean"
-    src.write_text("\n".join(parts) + "\n", encoding="utf-8")
+    src.write_text("\n".join(parts + ["end"]) + "\n", encoding="utf-8")
     r = subprocess.run(["lake", "env", "lean", str(src)], cwd=project, capture_output=True, text=True, timeout=1800)
     errors: dict[str, list[str]] = {}
     for ln in (r.stdout + r.stderr).splitlines():
@@ -253,25 +258,26 @@ def compile_all(work: Path, project: Path, plausible: bool = True) -> None:
              sum(r["ok"] for r in rows), sum(not r["ok"] for r in rows), sum(bool(r["counterexample"]) for r in rows))
 
 
-_THM = re.compile(r"(?ms)^(theorem|lemma)\s+(\S+)(.*?):=\s*by\s+sorry")
+_THM = re.compile(r"(?ms)^(theorem|lemma)\s+(\S+)(.*?):=\s*(?:by\s+)?sorry")
 
 
 def _plausible(work, project, formal, errors) -> dict[str, str]:
     """Replace `sorry` by `plausible` in compiling theorems; a found counterexample means the statement is false."""
-    parts, ranges, line = ["import Mathlib", ""], {}, 2
+    parts, ranges, line = list(PREAMBLE), {}, len(PREAMBLE)
     for f in formal:
         if f["id"] in errors or not _THM.search(f["lean"]):
             continue
         body = _THM.sub(lambda m: f"{m.group(1)} {m.group(2)}{m.group(3)}:= by\n  plausible (config := {{ numInst := 200 }})",
                         _strip_imports(f["lean"]))
         block = [f"namespace LP_{f['id']}", body, f"end LP_{f['id']}", ""]
-        ranges[f["id"]] = (line + 1, line + len("\n".join(block).splitlines()))
+        n_lines = sum(b.count("\n") + 1 for b in block)   # lines this block occupies in "\n".join(parts)
+        ranges[f["id"]] = (line + 1, line + n_lines)
         parts += block
-        line += len("\n".join(block).splitlines())
+        line += n_lines
     if not ranges:
         return {}
     src = work / "plausible.lean"
-    src.write_text("\n".join(parts) + "\n", encoding="utf-8")
+    src.write_text("\n".join(parts + ["end"]) + "\n", encoding="utf-8")
     r = subprocess.run(["lake", "env", "lean", str(src)], cwd=project, capture_output=True, text=True, timeout=1800)
     # An error line is followed by its message; plausible's reads "Found a counter-example!" then the values.
     found, cur, in_ce = {}, None, False

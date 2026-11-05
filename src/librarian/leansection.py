@@ -68,8 +68,24 @@ def lean_project(cfg) -> Path:
     return Path(os.environ.get("LIBRARIAN_LEAN_PROJECT", str(cfg.data / "lean")))
 
 
-def plan_chunks(con: sqlite3.Connection, sha: str, lo: int, hi: int, max_pages: int) -> list[tuple[int, int, str]]:
-    """Split [lo, hi] at section starts (deepest level known), then into pieces of at most max_pages."""
+def statement_pages(obj: Path, lo: int, hi: int) -> list[int]:
+    """Pages with a Definition/Theorem/... heading at the start of a line, plus the page after each
+    (a statement may continue there)."""
+    from .leancheck import _HEAD, _REF
+    hit = set()
+    for p in range(lo, hi + 1):
+        for ln in _page_lines(obj, p):
+            m = _HEAD.match(ln)
+            if m and not _REF.match(m.group("rest") or ""):
+                hit.update({p, p + 1})
+                break
+    return sorted(x for x in hit if lo <= x <= hi)
+
+
+def plan_chunks(con: sqlite3.Connection, sha: str, lo: int, hi: int, max_pages: int,
+                only: Optional[list[int]] = None) -> list[tuple[list[int], str]]:
+    """Split [lo, hi] at section starts (deepest level known), keep only the pages in `only` (all if None),
+    then split each section's pages into even groups of at most max_pages."""
     rows = con.execute("SELECT level, number, title, pdf_start, pdf_end FROM sections WHERE sha256=? "
                        "AND pdf_end >= ? AND pdf_start <= ? ORDER BY pdf_start, level", (sha, lo, hi)).fetchall()
     starts = {lo: "pages %d-%d" % (lo, hi)}
@@ -77,6 +93,7 @@ def plan_chunks(con: sqlite3.Connection, sha: str, lo: int, hi: int, max_pages: 
         if lo <= a <= hi:
             starts[a] = f"{number or ''} {title}".strip()
     cuts = sorted(starts)
+    keep = set(only) if only is not None else None
     out = []
     for i, a in enumerate(cuts):
         b = (cuts[i + 1] - 1) if i + 1 < len(cuts) else hi
@@ -86,11 +103,13 @@ def plan_chunks(con: sqlite3.Connection, sha: str, lo: int, hi: int, max_pages: 
             if enclosing:
                 r = max(enclosing, key=lambda r: r[0])
                 title = f"{r[1] or ''} {r[2]}".strip()
-        n = b - a + 1
-        pieces = -(-n // max_pages)
-        size = -(-n // pieces)                       # even pieces: 22 pages at max 8 -> 8, 7, 7
-        for s in range(a, b + 1, size):
-            out.append((s, min(b, s + size - 1), title))
+        pages = [p for p in range(a, b + 1) if keep is None or p in keep]
+        if not pages:
+            continue
+        pieces = -(-len(pages) // max_pages)
+        size = -(-len(pages) // pieces)              # even pieces: 22 pages at max 8 -> 8, 7, 7
+        for s0 in range(0, len(pages), size):
+            out.append((pages[s0:s0 + size], title))
     return out
 
 
@@ -136,13 +155,17 @@ def _verify(project: Path, rel: str) -> dict:
             "seconds": round(time.perf_counter() - t, 1)}
 
 
-def run_chunk(cfg, row, pdf: Path, work: Path, k: int, a: int, b: int, title: str, name: str,
+def run_chunk(cfg, row, pdf: Path, work: Path, k: int, pages: list[int], title: str, name: str,
               context: str, dpi: int, timeout: int, force: bool) -> dict:
+    a, b = pages[0], pages[-1]
     from .ocr import render_page
     cdir = work / f"c{k:02d}"
     res_file = cdir / "result.json"
-    if res_file.is_file() and not force:
-        res = json.loads(res_file.read_text(encoding="utf-8"))
+    old = json.loads(res_file.read_text(encoding="utf-8")) if res_file.is_file() else None
+    if old and old.get("pages", list(range(old.get("pdf_start", 0), old.get("pdf_end", -1) + 1))) != pages:
+        old = None                           # chunk plan changed since that run: redo
+    if old and not force:
+        res = old
         if res.get("verify", {}).get("errors") and "repairs" not in res:
             exe = shutil.which(os.environ.get("LIBRARIAN_CODEX", "codex"))
             res = _repair_loop(res, exe, lean_project(cfg), res["lean_file"], cdir, k, timeout)
@@ -150,7 +173,6 @@ def run_chunk(cfg, row, pdf: Path, work: Path, k: int, a: int, b: int, title: st
         return res
     cdir.mkdir(parents=True, exist_ok=True)
     obj = cfg.objects / row["sha256"]
-    pages = list(range(a, b + 1))
     ocr = []
     for p in pages:
         ocr.append(f"=== PDF page {p} ===")
@@ -176,7 +198,7 @@ def run_chunk(cfg, row, pdf: Path, work: Path, k: int, a: int, b: int, title: st
     if os.environ.get("LIBRARIAN_CODEX_MODEL"):
         cmd += ["--model", os.environ["LIBRARIAN_CODEX_MODEL"]]
     cmd.append("-")
-    log.info("  chunk %02d: PDF %d-%d (%s)", k, a, b, title)
+    log.info("  chunk %02d: PDF %s (%s)", k, _span(pages), title)
     t = time.perf_counter()
     try:
         r = subprocess.run(cmd, input=prompt.encode("utf-8"), capture_output=True, timeout=timeout)
@@ -190,7 +212,7 @@ def run_chunk(cfg, row, pdf: Path, work: Path, k: int, a: int, b: int, title: st
     lean_text = res.pop("lean", "") or ""
     if lean_text.strip():
         (project / rel).write_text(lean_text, encoding="utf-8")
-    res.update({"chunk": k, "pdf_start": a, "pdf_end": b, "section": title, "lean_file": rel,
+    res.update({"chunk": k, "pdf_start": a, "pdf_end": b, "pages": pages, "section": title, "lean_file": rel,
                 "codex_seconds": secs})
     res["verify"] = _verify(project, rel)
     res = _repair_loop(res, exe, project, rel, cdir, k, timeout)
@@ -284,17 +306,47 @@ def _numbers(results: list[dict]) -> dict:
     return {"gaps": gaps, "duplicates": dups}
 
 
+def _span(pages: list[int]) -> str:
+    out, i = [], 0
+    while i < len(pages):
+        j = i
+        while j + 1 < len(pages) and pages[j + 1] == pages[j] + 1:
+            j += 1
+        out.append(str(pages[i]) if i == j else f"{pages[i]}-{pages[j]}")
+        i = j + 1
+    return ",".join(out)
+
+
 def run(cfg, con: sqlite3.Connection, row, lo: int, hi: int, name: str, max_pages: int = 8, dpi: int = 150,
-        timeout: int = 1800, force: bool = False) -> dict:
+        timeout: int = 1800, force: bool = False, all_pages: bool = False) -> dict:
     work = cfg.data / "leancheck" / name
     work.mkdir(parents=True, exist_ok=True)
     pdf = cfg.sources / row["path"]
-    chunks = plan_chunks(con, row["sha256"], lo, hi, max_pages)
-    log.info("leancheck section %s: %s, PDF %d-%d, %d chunk(s)", name, row["title"], lo, hi, len(chunks))
+    only = None if all_pages else statement_pages(cfg.objects / row["sha256"], lo, hi)
+    chunks = plan_chunks(con, row["sha256"], lo, hi, max_pages, only)
+    n_pages = sum(len(p) for p, _ in chunks)
+    log.info("leancheck section %s: %s, PDF %d-%d, %d of %d pages with statements, %d chunk(s)",
+             name, row["title"], lo, hi, n_pages, hi - lo + 1, len(chunks))
     results = []
-    for k, (a, b, title) in enumerate(chunks, 1):
-        results.append(run_chunk(cfg, row, pdf, work, k, a, b, title, name, _context(results), dpi, timeout, force))
-    return report(work, results)
+    for k, (pages, title) in enumerate(chunks, 1):
+        results.append(run_chunk(cfg, row, pdf, work, k, pages, title, name, _context(results), dpi, timeout, force))
+    out = report(work, results)
+    _log_line(cfg, row, name, lo, hi, n_pages, out)
+    return out
+
+
+def _log_line(cfg, row, name: str, lo: int, hi: int, n_pages: int, out: dict) -> None:
+    """One line per run in <data>/leancheck/log.md (the reading/checking log)."""
+    import datetime
+    f = cfg.data / "leancheck" / "log.md"
+    if not f.is_file():
+        f.write_text("# Lean check log\n\n| date | book | run | PDF pages | checked | statements | high / medium / low "
+                     "| OCR fixes | numbering gaps | Codex min |\n|---|---|---|---|---:|---:|---|---:|---|---:|\n",
+                     encoding="utf-8")
+    with f.open("a", encoding="utf-8") as fh:
+        fh.write(f"| {datetime.date.today()} | {row['title']} - {row['author'] or 'Unknown'} | {name} | {lo}-{hi} | "
+                 f"{n_pages} | {out['statements']} | {out['high']} / {out['medium']} / {out['low']} | "
+                 f"{out['corrections']} | {', '.join(map(str, out['numbering_gaps'])) or '-'} | {out['codex_minutes']} |\n")
 
 
 def report(work: Path, results: Optional[list[dict]] = None) -> dict:
@@ -342,7 +394,7 @@ def report(work: Path, results: Optional[list[dict]] = None) -> dict:
         md.append(f"| {x['chunk']} | {x['label']} | {x['pdf_page']} | {x['line']} | {x['confidence']} | "
                   f"{x['lean_errors']} | {x['issues'].replace('|', '/')[:300]} |")
     md += ["", "## Chunk summaries", ""]
-    md += [f"- c{r['chunk']:02d} PDF {r['pdf_start']}-{r['pdf_end']} ({r.get('section', '')}): {r.get('summary', '')} "
+    md += [f"- c{r['chunk']:02d} PDF {_span(r['pages']) if r.get('pages') else str(r['pdf_start']) + '-' + str(r['pdf_end'])} ({r.get('section', '')}): {r.get('summary', '')} "
            f"[Lean errors: {' -> '.join(str(x) for x in [r['repairs'][0]['errors_before']] + [x['errors_after'] for x in r['repairs']]) if r.get('repairs') else r.get('verify', {}).get('errors')}, "
            f"{r.get('codex_seconds', 0):.0f}s]"
            for r in results]
