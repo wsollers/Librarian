@@ -172,7 +172,7 @@ class Batch:
                                 stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace",
                                 creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
         self.proc = proc
-        res = {"ocr_pages": 0, "done": 0, "failed": 0, "skipped": False}
+        res = {"ocr_pages": 0, "done": 0, "failed": 0, "skipped": False, "db_locked": False}
 
         def reader():
             for line in proc.stdout:
@@ -189,6 +189,8 @@ class Batch:
                     self.last_progress = line.split("INFO", 1)[-1].strip()
                 elif RE_SKIP.search(line):
                     res["skipped"] = True
+                elif "database is locked" in line:
+                    res["db_locked"] = True
         th = threading.Thread(target=reader, daemon=True)
         th.start()
         cache = self.cfg.objects / sha / "ocr-cache"
@@ -251,7 +253,9 @@ class Batch:
         rec = {"path": q["path"], "finished": datetime.now().isoformat(timespec="seconds"),
                "seconds": round(time.time() - self.current["t0"]), "ocr_pages": r["ocr_pages"],
                "ocr_done": r["done"], "ocr_failed": r["failed"]}
-        if r.get("stalled"):
+        if r["db_locked"] and r["done"] == 0:
+            rec["status"] = "db-locked"
+        elif r.get("stalled"):
             rec["status"], rec["why"] = "stalled", r["stalled"]
         elif r["exit"] != 0:
             rec["status"] = "failed"
@@ -320,6 +324,14 @@ class Batch:
                 cooldowns = 0
                 while True:
                     st = self.do_book(q)
+                    if st == "db-locked":
+                        # another program holds the index open (a stuck librarian MCP server, a search):
+                        # nothing was spent, so wait and retry the same book rather than fail the queue
+                        self.log("index is locked by another program: retrying this book in 5 min "
+                                 "(close whatever has F:\\Readings\\librarian\\librarian.sqlite open)")
+                        if not self.wait(5, "waiting: index locked by another program"):
+                            break
+                        continue
                     if st != "codex-failing":
                         break
                     cooldowns += 1
