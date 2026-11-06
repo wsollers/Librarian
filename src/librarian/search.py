@@ -413,6 +413,7 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
         top = pool[0].rrf if pool else 1
         for c in pool:
             c.rerank = c.rrf / top
+    body_cache: dict = {}
     for c in pool:
         lines = lines_cache.get((c.sha, c.page), [])
         if lines and c.span[1] <= len(lines):
@@ -420,6 +421,13 @@ def search(cfg: Config, con: sqlite3.Connection, q: str, emb: Optional[Embedder]
         if is_toc_page(lines):
             c.via.add("toc")
             c.rerank -= TOC_PENALTY
+        if c.sha not in body_cache:
+            from .sections import parts_of
+            body_cache[c.sha] = parts_of(con, c.sha)
+        body = body_cache[c.sha]
+        if body and not (body[0] <= c.page <= body[1]):   # front matter, bibliography, index
+            c.via.add("front" if c.page < body[0] else "back")
+            c.rerank -= MATTER_PENALTY
         a, b = c.span
         if _DEF_CUE.search(" ".join(lines[max(0, a - 2):b])):  # the cited lines (and the one before)
             c.via.add("def")
@@ -458,6 +466,7 @@ _END = re.compile(r"[.!?:;)\]]\s*$|^\s*$")
 # dot leaders (with or without the number), bare page-number lines, index entries "term, 12, 47"
 _LEADER = re.compile(r"(\.\s?){4,}\s*\d*\s*$|^\s*[\dxvil]{1,4}\s*$|\s\d{1,4}(,\s*\d{1,4})+\s*$", re.I)
 TOC_PENALTY = 0.15
+MATTER_PENALTY = 0.08   # a hit outside the body (preface, bibliography, index) ranks below a body hit
 MAX_EXTEND = 3
 
 

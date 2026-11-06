@@ -36,6 +36,12 @@ CREATE TABLE IF NOT EXISTS sections (
     PRIMARY KEY (sha256, seq)
 );
 CREATE INDEX IF NOT EXISTS sections_page ON sections(sha256, pdf_start, pdf_end);
+CREATE TABLE IF NOT EXISTS book_parts (   -- where the body is: before it front matter, after it back matter
+    sha256      TEXT PRIMARY KEY,
+    body_start  INTEGER NOT NULL,          -- PDF page
+    body_end    INTEGER NOT NULL,          -- PDF page
+    source      TEXT NOT NULL              -- toc | heads | numbering
+);
 """
 
 _WORDNUM = {w: i for i, w in enumerate(
@@ -272,10 +278,45 @@ def build(cfg: Config, con: sqlite3.Connection, sha: str, title: str, path: str)
                      int(e.verified)))
     con.execute("DELETE FROM sections WHERE sha256=?", (sha,))
     con.executemany("INSERT INTO sections VALUES(?,?,?,?,?,?,?,?,?,?)", rows)
+    parts = body_range(rows, mapping, n, source)
+    con.execute("DELETE FROM book_parts WHERE sha256=?", (sha,))
+    if parts:
+        con.execute("INSERT INTO book_parts VALUES(?,?,?,?)", (sha, *parts))
     con.commit()
     v = sum(r[9] for r in rows)
     log.info("sections: %s — %d entries from %s, %d verified on page", title, len(rows), source, v)
     return {"sha256": sha, "sections": len(rows), "source": source, "verified": v}
+
+
+_BACK = re.compile(r"^(bibliography|references|index|subject index|name index|author index|index of (symbols|notation|names)"
+                   r"|glossary|list of symbols|further reading|selected bibliography)\b", re.I)
+_CHAPTER_NO = re.compile(r"^\d+$|^[IVXLC]+$")
+
+
+def body_range(rows: list[tuple], mapping: dict, n: int, source: str) -> Optional[tuple[int, int, str]]:
+    """(first, last PDF page of the body, how it was found). The body starts at the first numbered
+    chapter and ends before the first unnumbered back-matter entry after the last numbered one
+    (bibliography, index, ...); appendices count as body. Without numbered chapters: where the
+    printed numbering switches from roman to arabic 1."""
+    chapters = [r for r in rows if r[2] <= 2 and r[3] and _CHAPTER_NO.match(str(r[3]).split(".")[0])]
+    if chapters:
+        start = min(r[6] for r in chapters)
+        last = max(r[6] for r in chapters)
+        back = [r[6] for r in rows if r[6] > last and not r[3] and r[2] <= 1 and _BACK.match(r[4].strip())]
+        end = (min(back) - 1) if back else n
+        return start, max(start, end), source
+    arabic = sorted(p for p, v in mapping.items() if v and str(v).isdigit() and int(v) <= 3)
+    if arabic:
+        return arabic[0], n, "numbering"
+    return None
+
+
+def parts_of(con: sqlite3.Connection, sha: str) -> Optional[tuple[int, int]]:
+    try:
+        r = con.execute("SELECT body_start, body_end FROM book_parts WHERE sha256=?", (sha,)).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    return (r[0], r[1]) if r else None
 
 
 def locate(con: sqlite3.Connection, sha: str, pdf_page: int) -> dict:
