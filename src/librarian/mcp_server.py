@@ -80,25 +80,40 @@ class State:
     def load(self) -> None:
         from .log import log
         t = time.perf_counter()
+        # Start-up has hung twice (5:41 pm, 8:54 pm on Nov 5) with nothing in the log, holding the index
+        # open so that every writer got "database is locked". Log each step, and if loading is not done
+        # after LOAD_DUMP_S, write every thread's stack to the log so the hang can be located.
+        import faulthandler
+        dump = None
+        for h in log.handlers:
+            if getattr(h, "stream", None) is not None and getattr(h, "baseFilename", None):
+                dump = h.stream
+        if dump is not None:
+            faulthandler.dump_traceback_later(float(os.environ.get("LIBRARIAN_MCP_LOAD_DUMP", "120")), file=dump)
+        step = lambda what: log.info("mcp: load: %s (%.1fs)", what, time.perf_counter() - t)  # noqa: E731
         try:
+            step("importing models code")
             from . import embed
             from .index import has_vec
             from .spell import Vocab
             db = self.cfg.db_path
             if not db.is_file():
                 raise FileNotFoundError(f"no index at {db}")
+            step("opening the index")
             con = sqlite3.connect(db.resolve().as_uri() + "?mode=ro", uri=True, check_same_thread=False, timeout=30)
             if not has_vec(con):
                 log.warning("sqlite-vec not loadable: semantic search falls back to BLOB vectors if present")
             self.con = con
             try:
                 from .search import PageText
+                step("page map")
                 self.pages = PageText(con)
             except sqlite3.Error as e:   # searches then read the page files, as before
                 self.warnings.append(f"page text not read from the index ({e}): using page files")
                 log.warning("mcp: %s", self.warnings[-1])
             spec =(con.execute("SELECT value FROM meta WHERE key='embed_spec'").fetchone() or [None])[0]
             try:   # without the models, search still works on keywords (FTS)
+                step("embedder and reranker")
                 if spec:
                     self.emb = embed.load(spec)
                 self.rr = embed.load_reranker(None)
@@ -110,6 +125,7 @@ class State:
                 self.device = torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu"
             except ImportError:
                 self.device = "cpu (no torch)"
+            step("spelling vocabulary")
             self.speller = Vocab(con, db, self.cfg.data / "cache")
             self.loaded_in = round(time.perf_counter() - t, 1)
             log.info("mcp: ready in %.1fs (embed=%s, rerank=%s, device=%s)", self.loaded_in, spec,
@@ -118,6 +134,7 @@ class State:
             self.error = f"{type(e).__name__}: {e}"
             log.exception("mcp: loading failed")
         finally:
+            faulthandler.cancel_dump_traceback_later()
             self.ready.set()
 
     def load_vectors(self) -> None:
