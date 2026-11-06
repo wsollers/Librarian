@@ -1209,13 +1209,16 @@ a86fa23b603a7395:
   confidence: high
   note: Course notes on normed and Banach spaces, function spaces, calculus on them.
 5ca845be90e7dbcc:
-  title: Applied Functional Analysis
+  title: Applied Functional Analysis (2nd ed, Balakrishnan)
   primary: Analysis/Functional Analysis
-  secondary: []
-  level: general
-  kind: other
-  confidence: low
-  note: 'Title only: Applied Functional Analysis, no text.'
+  secondary:
+  - Analysis/Operator Theory
+  - Differential Equations and Dynamics/Control Theory
+  - Probability and Statistics/Stochastic Processes
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Balakrishnan, Springer Applications of Mathematics 3, 2nd ed 1981 (ISBN 0-387-90527-8): Hilbert spaces, convex programming, operators, semigroups, optimal control, stochastic optimization.'
 3627552f08cdf159:
   title: Applied functional analysis
   primary: Analysis/Functional Analysis

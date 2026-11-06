@@ -123,7 +123,7 @@ ee02351abff9172f  #   140 pages  Analysis/Complex Analysis/Complex Analysis - Ho
 68243f930c43f0aa  #   207 pages  Analysis/Analysis in Several Variables/An Introduction to Analysis in Several Variables - Taylor.pdf
 706e846e1f1ccf25  #   232 pages  Analysis/Real Analysis/Introduction to Real Analysis 4th - Bartle.pdf
 45e98fb3ae5a477f  #   288 pages  Analysis/Measure and Integration/The Essentials of Measure Theory - Kubrusly.pdf
-5ca845be90e7dbcc  #   347 pages  Analysis/Functional Analysis/Applied Functional Analysis - Unknown.pdf
+5ca845be90e7dbcc  #   347 pages  Analysis/Functional Analysis/Applied Functional Analysis - 2nd ed - Balakrishnan.pdf
 6443c2bacd59e247  #   411 pages  Analysis/Measure and Integration/Real Analysis - Royden.pdf
 9e74c47d70b73368  #   480 pages  Analysis/Real Analysis/Basic Analysis I Functions of a Real Variable - Peterson.pdf
 70603b5ad90bf1f8  #   692 pages  Analysis/Fourier Analysis/A Course in Analysis Vol IV - Jacob.pdf

@@ -353,7 +353,7 @@ Analysis/Real Analysis/Introduction to Real Analysis 4th - Bartle.pdf  # repairs
 Analysis/Vector and Tensor Analysis/Fundamentals of Vector and Tensor Analysis - Zhaksybekova.pdf  # repairs 275, 148 pp
 Foundations/Number Systems/Number Systems and the Foundation of Analysis - Mendelson.pdf  # repairs 364, 364 pp
 Geometry and Topology/Differential Geometry/Lectures on Differential Geometry - Chern.pdf  # repairs 376, 376 pp
-Analysis/Functional Analysis/Applied Functional Analysis - Unknown.pdf  # repairs 384, 385 pp
+Analysis/Functional Analysis/Applied Functional Analysis - 2nd ed - Balakrishnan.pdf  # repairs 384, 385 pp
 Analysis/Real Analysis/Real Analysis - Bartle.pdf  # repairs 399, 400 pp
 Analysis/Real Analysis/Functions of Real Variables - Osgood.pdf  # repairs 418, 418 pp
 Analysis/Measure and Integration/Real Analysis - Royden.pdf  # repairs 457, 457 pp
