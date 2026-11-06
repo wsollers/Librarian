@@ -347,6 +347,7 @@ def check(cfg, con: sqlite3.Connection, roots: Optional[list[Path]] = None, dele
                     "verdict=excluded.verdict, detail=excluded.detail",
                     (key, st.st_size, st.st_mtime_ns, sha, first_seen, now, verdict, json.dumps(detail)))
         rows.append({"path": key, "sha256": sha, "size": st.st_size, "verdict": verdict, "detail": detail, "evidence": ev})
+        con.commit()   # one short write per file: never hold the index's write lock while hashing the next one
     # files gone from the inboxes since the last check
     seen = {r["path"] for r in rows}
     gone = [p for p in cached if p not in seen and any(p.lower().startswith(str(r).lower()) for r in roots)]
