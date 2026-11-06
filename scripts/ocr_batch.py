@@ -224,8 +224,13 @@ class Batch:
             pats.append(p)
             m = re.search(r"#\s*(\d+)\s+pages", line)
             est[p.lower()] = int(m.group(1)) if m else 0
+        # Read the queue and close: an open connection here would keep the index locked against the
+        # librarian commands this script starts (it did: every book failed with "database is locked").
         con = connect(self.cfg.db_path)
-        rows = select_books(con, "@" + str(qfile))
+        try:
+            rows = select_books(con, "@" + str(qfile))
+        finally:
+            con.close()
         found = set()
         for r in rows:
             key = next(p for p in est if r["sha256"].startswith(p) or p in r["path"].lower())

@@ -64,11 +64,17 @@ def connect(path: Path) -> sqlite3.Connection:
     con.execute("PRAGMA journal_mode=DELETE")
     con.execute("PRAGMA foreign_keys=ON")
     con.executescript(SCHEMA)
-    con.execute(
-        "INSERT INTO meta(key, value) VALUES('schema_version', ?) "
-        "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
-        (str(SCHEMA_VERSION),),
-    )
+    # Write the schema version only when it changes, and commit at once: Python's sqlite3 otherwise
+    # leaves this INSERT in an open transaction, and the connection then holds the write lock
+    # until it commits, blocking every other process (the OCR batch's own children included).
+    row = con.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()
+    if not row or row[0] != str(SCHEMA_VERSION):
+        con.execute(
+            "INSERT INTO meta(key, value) VALUES('schema_version', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (str(SCHEMA_VERSION),),
+        )
+    con.commit()
     return con
 
 
