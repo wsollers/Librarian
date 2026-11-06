@@ -98,6 +98,27 @@ def main(argv: list[str] | None = None) -> int:
                         "sort: check, then delete exact duplicates and move papers to the papers folder")
     p.add_argument("--root", action="append", help="look in this folder instead of the configured inboxes (repeatable)")
     p.add_argument("--apply", action="store_true", help="sort: really do it (default: dry run, report only)")
+    p = sub.add_parser("ingest", help="sort the inboxes and triage new books with Codex; writes reports/ingest.md")
+    p.add_argument("action", nargs="?", default="run", choices=["run", "set", "show"],
+                   help="run (default): sort + triage + plan; set N: adjust item N; show: re-render the report")
+    p.add_argument("n", nargs="?", type=int, help="set: the item number in reports/ingest.md")
+    p.add_argument("--root", action="append", help="run: only these inbox folders (repeatable)")
+    p.add_argument("--no-sort", action="store_true", help="run: skip the inbox check (duplicates/papers)")
+    p.add_argument("--retriage", action="store_true", help="run: ask Codex again for books already triaged")
+    p.add_argument("--workers", type=int, default=2, help="run: Codex calls at a time (default 2)")
+    p.add_argument("--subject", help="set: primary subject Area/Subject")
+    p.add_argument("--secondary", action="append", help="set: secondary subject (repeatable; replaces the list)")
+    p.add_argument("--title")
+    p.add_argument("--author", help="set: author as shown")
+    p.add_argument("--surnames", help="set: author surname(s) used in the file name")
+    p.add_argument("--edition", help="set: edition (e.g. 2nd); used in the file name")
+    for act in ("library", "edition-copy", "hold", "delete"):
+        p.add_argument(f"--{act}", dest="set_action", action="store_const",
+                       const="edition" if act == "edition-copy" else act,
+                       help=f"set: action {'edition (other edition, processed last)' if act == 'edition-copy' else act}")
+    p = sub.add_parser("store", help="carry out reports/ingest-plan.yaml: file, tag, queue OCR (dry run unless --apply)")
+    p.add_argument("--apply", action="store_true")
+    p.add_argument("--no-ocr", action="store_true", help="file and queue, but do not start or hand over OCR")
     p = sub.add_parser("run", help="inventory, extract, pagemap, index for a selection")
     add_sel(p); add_extract_opts(p); add_embed(p)
     p = sub.add_parser("djvu2pdf", help="DjVu -> PDF with the DjVu hidden text as a searchable text layer")
@@ -188,6 +209,25 @@ def main(argv: list[str] | None = None) -> int:
         if a.action == "sort" and not a.apply:
             print("dry run: nothing deleted or moved; run 'intake sort --apply' to do it", file=sys.stderr)
         print(f"report: {summary['report']}", file=sys.stderr)
+    elif a.cmd == "ingest":
+        from . import ingest
+        con = connect(cfg.db_path)
+        if a.action == "run":
+            roots = [Path(os.path.expanduser(r)) for r in a.root] if a.root else None
+            summary.update(ingest.run(cfg, con, roots=roots, sort=not a.no_sort, workers=a.workers,
+                                      retriage=a.retriage))
+        elif a.action == "set":
+            if not a.n:
+                raise SystemExit("ingest set N ...: give the item number")
+            summary.update(ingest.set_item(cfg, con, a.n, action=a.set_action, primary=a.subject,
+                                           secondary=a.secondary, title=a.title, author=a.author,
+                                           surnames=a.surnames, edition=a.edition))
+        else:
+            summary["report"] = ingest.render(cfg, ingest.load_plan(cfg))
+        print(f"report: {summary.get('report')}", file=sys.stderr)
+    elif a.cmd == "store":
+        from . import ingest
+        summary.update(ingest.store(cfg, connect(cfg.db_path), apply=a.apply, start_ocr=not a.no_ocr))
     elif a.cmd == "subjects":
         from . import subjects
         con = connect(cfg.db_path)

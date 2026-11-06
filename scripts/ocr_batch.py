@@ -213,8 +213,8 @@ class Batch:
         return res
 
     # ---- the queue ---------------------------------------------------------------------------
-    def load_queue(self) -> None:
-        qfile = REPO / self.a.queue if not Path(self.a.queue).is_absolute() else Path(self.a.queue)
+    def read_queue(self, queue: str, all_pages: bool) -> list[dict]:
+        qfile = REPO / queue if not Path(queue).is_absolute() else Path(queue)
         est = {}
         pats = []
         for line in qfile.read_text(encoding="utf-8").splitlines():
@@ -231,14 +231,18 @@ class Batch:
             rows = select_books(con, "@" + str(qfile))
         finally:
             con.close()
-        found = set()
+        found, out = set(), []
         for r in rows:
             key = next(p for p in est if r["sha256"].startswith(p) or p in r["path"].lower())
             found.add(key)
-            self.queue.append({"sha": r["sha256"], "path": r["path"], "est": est[key]})
+            out.append({"sha": r["sha256"], "path": r["path"], "est": est[key], "all_pages": all_pages})
         for p in pats:
             if p.lower() not in found:
                 self.log(f"not in the index, skipped: {p}")
+        return out
+
+    def load_queue(self) -> None:
+        self.queue = self.read_queue(self.a.queue, self.a.all_pages)
         if self.a.limit:
             todo = [q for q in self.queue if self.state["books"].get(q["sha"], {}).get("status") != "done"]
             keep = {q["sha"] for q in todo[: self.a.limit]}
@@ -253,7 +257,7 @@ class Batch:
         self.phase = "OCR"
         self.write_status()
         self.log(f"[{q['i']}/{len(self.queue)}] {q['path']}")
-        ex = ["extract", "--select", sha[:16], "--llm-ocr"] + ([] if self.a.all_pages else ["--body-only"])
+        ex = ["extract", "--select", sha[:16], "--llm-ocr"] + ([] if q.get("all_pages", self.a.all_pages) else ["--body-only"])
         r = self.librarian(ex, sha, watch_cache=True, hard_limit_min=self.a.book_hours * 60)
         rec = {"path": q["path"], "finished": datetime.now().isoformat(timespec="seconds"),
                "seconds": round(time.time() - self.current["t0"]), "ocr_pages": r["ocr_pages"],
@@ -282,6 +286,30 @@ class Batch:
         self.save_state()
         self.log(f"  -> {rec['status']}: {r['done']}/{r['ocr_pages']} OCR pages, {r['failed']} failed, {fmt_dur(rec['seconds'])}")
         return rec["status"]
+
+    def take_inserted(self, pending) -> None:
+        """`librarian store` hands newly filed books over in reports/ocr-batch.insert: do them next."""
+        f = self.reports / "ocr-batch.insert"
+        if not f.is_file():
+            return
+        try:
+            spec = json.loads(f.read_text(encoding="utf-8"))
+            f.unlink()
+            items = self.read_queue(spec["queue"], bool(spec.get("all_pages")))
+        except (OSError, ValueError, KeyError) as e:
+            self.log(f"could not read {f}: {e}")
+            return
+        books = self.state["books"]
+        queued = {q["sha"] for q in pending}
+        items = [q for q in items if books.get(q["sha"], {}).get("status") != "done" and q["sha"] not in queued]
+        if not items:
+            return
+        known = {q["sha"] for q in self.queue}
+        self.queue = [q for q in items if q["sha"] not in known] + self.queue
+        for i, q in enumerate(self.queue, 1):
+            q["i"] = i
+        pending.extendleft(reversed(items))
+        self.log(f"{len(items)} newly filed book(s) from {spec['queue']}: doing them next")
 
     def stop_requested(self) -> bool:
         if self.stop_path.exists():
@@ -319,11 +347,20 @@ class Batch:
             else:
                 self.state["audited"] = datetime.now().isoformat(timespec="seconds")
                 self.save_state()
-        retry = []
-        for pass_no, batch in ((1, todo), (2, retry)):
-            if pass_no == 2 and batch:
-                self.log(f"retrying {len(batch)} stalled book(s)")
-            for q in batch:
+        from collections import deque
+        pending, retry, retried = deque(todo), [], False
+        while True:
+            self.take_inserted(pending)
+            if not pending:
+                if retry and not retried:
+                    self.log(f"retrying {len(retry)} stalled book(s)")
+                    pending.extend(retry)
+                    retried = True
+                    continue
+                break
+            q = pending.popleft()
+            pass_no = 2 if retried else 1
+            if True:
                 if self.stop_requested():
                     break
                 cooldowns = 0
@@ -357,8 +394,6 @@ class Batch:
                     break
                 if books.get(q["sha"], {}).get("used_codex") and not self.wait(self.a.pause / 60, "pause between books"):
                     break
-            if self.phase == "stopped":
-                break
         self.current = {}
         if self.phase != "stopped":
             self.phase = "finished"

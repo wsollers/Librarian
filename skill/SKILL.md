@@ -6,7 +6,7 @@ description: Search William's mathematics book library (Librarian MCP server) an
 # Librarian
 
 William's library (~900 mathematics books under `D:\Readings\Sources`) is indexed page by page on
-hal5000. The `librarian` MCP server (tools `search`, `read_page`, `contents`, `list_books`, `intake_check`,
+hal5000. The `librarian` MCP server (tools `search`, `read_page`, `contents`, `list_books`, `intake_check`, `ingest`, `ingest_set`, `store`,
 `status`) answers from that index. Every hit has book, author, chapter › section, printed page,
 PDF page, a line span and a `file:///…pdf#page=N` link.
 
@@ -25,6 +25,16 @@ restarted. Fallback: `scripts\run.ps1 search "<terms>" --json` in that repo, if 
 * `/librarian contents <book>` → `contents` (depth 2), shown as an outline with printed pages.
 * `/librarian books [subject or author]` → `list_books`.
 * `/librarian read <book> p. <printed>` (or `PDF <n>`) → `read_page`.
+* `/librarian ingest` → `ingest(run=true)`: sorts the inboxes and triages each new book with Codex in
+  the background (about half a minute per book). Say it has started; on later calls (`ingest()`) show
+  `progress` while `running` is present. When done, show the `report` Markdown as it is (numbered items,
+  grouped by destination, with links), lead with the "Needs a look" items, and ask what to change.
+* Changes ("put 7 in Set Theory", "14 is not maths", "12 is the same book, delete it") →
+  `ingest_set(item, subject=..., action=...)`; subjects exactly as the `subjects` tool lists them.
+  Item numbers can shift after a change of action: re-read the report before the next change.
+* `/librarian store` → `store()` first (dry run: say what will happen), then on confirmation
+  `store(apply=true)`; call `store()` again for the result (books filed, held, deleted, and whether the
+  OCR was handed to the running batch or started in a new window).
 * `/librarian check ingest` → `intake_check(run=true)`: starts a fresh check of the inbox folders
   (Downloads, Drive `Saved from Chrome` and `Input`) in the background and returns the last result.
   Say it has started, then summarise the last result if there is one: counts by verdict, the new

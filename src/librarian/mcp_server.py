@@ -442,6 +442,64 @@ def build(state_holder: dict):
         return await anyio.to_thread.run_sync(lambda: _intake_check(st.cfg, run))
 
     @app.tool()
+    async def ingest(run: bool = False) -> dict:
+        """New books from the inbox folders. run=true starts `librarian ingest` in the background:
+        exact duplicates deleted, papers moved to the papers folder, then each remaining book triaged
+        by Codex (library subject or the hold folder, other editions, worse copies). It takes about
+        half a minute per book; call again (run=false) for progress and the result: the plan as
+        Markdown with numbered items and links. Nothing is filed until store(apply=true)."""
+        st: State = state_holder["state"]
+        return await anyio.to_thread.run_sync(lambda: _background(st.cfg, "ingest", ["ingest"], run, "ingest.md"))
+
+    @app.tool()
+    async def ingest_set(item: int, subject: Optional[str] = None, action: Optional[str] = None,
+                         title: Optional[str] = None, author: Optional[str] = None,
+                         surnames: Optional[str] = None, edition: Optional[str] = None) -> dict:
+        """Adjust one item of the ingest plan (its number in the ingest report): subject (primary,
+        exactly as listed by the subjects tool), action (library | edition | hold | delete), title,
+        author, surnames (for the file name), edition. Returns where it will now go."""
+        st: State = state_holder["state"]
+        if action not in (None, "library", "edition", "hold", "delete"):
+            return {"error": "action must be library, edition, hold or delete"}
+
+        def go():
+            from . import ingest as ing
+            from .db import connect
+            con = connect(st.cfg.db_path)
+            try:
+                return ing.set_item(st.cfg, con, item, action=action, primary=subject, title=title,
+                                    author=author, surnames=surnames, edition=edition)
+            finally:
+                con.close()
+        try:
+            return await anyio.to_thread.run_sync(go)
+        except SystemExit as e:
+            return {"error": str(e)}
+
+    @app.tool()
+    async def store(apply: bool = False) -> dict:
+        """Carry out the ingest plan. apply=false: what would happen (counts). apply=true starts
+        `librarian store --apply` in the background: books copied into their subject folders (inbox
+        originals deleted after the copy is verified), others to the hold folder, worse copies deleted,
+        tags added, the new books indexed and queued for OCR (handed to a running OCR batch, or a new
+        batch window started). Call store() again for the result."""
+        st: State = state_holder["state"]
+        if not apply:
+            def dry():
+                from . import ingest as ing
+                from .db import connect
+                con = connect(st.cfg.db_path)
+                try:
+                    return ing.store(st.cfg, con, apply=False)
+                finally:
+                    con.close()
+            try:
+                return await anyio.to_thread.run_sync(dry)
+            except SystemExit as e:
+                return {"error": str(e)}
+        return await anyio.to_thread.run_sync(lambda: _background(st.cfg, "store", ["store", "--apply"], True, None))
+
+    @app.tool()
     async def status() -> dict:
         """Index and server state: build date, books and pages indexed, models and GPU, Ollama."""
         st: State = state_holder["state"]
@@ -511,6 +569,42 @@ def _intake_check(cfg, run: bool) -> dict:
             out["report"] = md.read_text(encoding="utf-8")[:12000]
     elif not running:
         out["note"] = "no check has run yet: call intake_check(run=true)"
+    return out
+
+
+def _background(cfg, name: str, args: list, run: bool, report: Optional[str]) -> dict:
+    """Start `librarian <args>` detached (once at a time per name) and report on it and its last output."""
+    import json as _json
+    import subprocess
+    rep = cfg.reports
+    rep.mkdir(parents=True, exist_ok=True)
+    pidfile = rep / f"{name}.pid"
+    running = _intake_running(pidfile)
+    out: dict = {}
+    if run and not running:
+        log = cfg.data / "logs" / f"{time.strftime('%Y%m%d-%H%M%S')}-{name}.out"
+        logf = open(log, "w", encoding="utf-8")
+        flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        p = subprocess.Popen([sys.executable, "-m", "librarian", *args], cwd=REPO, stdin=subprocess.DEVNULL,
+                             stdout=logf, stderr=subprocess.STDOUT, creationflags=flags)
+        running = {"pid": p.pid, "started": time.strftime("%Y-%m-%d %H:%M:%S"), "output": str(log)}
+        pidfile.write_text(_json.dumps(running), encoding="utf-8")
+        out["started"] = True
+    if running:
+        out["running"] = running
+        try:
+            tail = Path(running.get("output", "")).read_text(encoding="utf-8", errors="replace").splitlines()[-15:]
+            out["progress"] = tail
+        except OSError:
+            pass
+    elif pidfile.is_file():
+        try:
+            info = _json.loads(pidfile.read_text(encoding="utf-8"))
+            out["last_run_output"] = Path(info["output"]).read_text(encoding="utf-8", errors="replace").splitlines()[-25:]
+        except (OSError, ValueError, KeyError):
+            pass
+    if report and (rep / report).is_file():
+        out["report"] = (rep / report).read_text(encoding="utf-8")[:30000]
     return out
 
 
