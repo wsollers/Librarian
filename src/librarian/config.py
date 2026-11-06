@@ -22,6 +22,8 @@ class Config:
     manifest: Optional[Path] = Path(r"F:\repos\lra-source-profiles\data\source-manifest.yaml")
     publish: Optional[Path] = None
     # Ingestion (docs/ingestion.md): folders new books arrive in, and folders under them to leave alone.
+    papers: Optional[Path] = Path(r"D:\Readings\Papers")    # papers and notes from the inboxes, sorted by hand
+    hold: Optional[Path] = Path(r"D:\Readings\Hold")        # inbox books that are not maths or science
     inbox: list = field(default_factory=list)
     inbox_exclude: list = field(default_factory=list)
 

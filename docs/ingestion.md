@@ -92,11 +92,10 @@ Verdicts:
   one is renamed ` - 1st ed` (as done for Deitmar and Shonkwiler) and goes to lower priority.
 * **uncertain**: conflicting signals (title matches but text does not, or ISBN missing and
   similarity in between). Held in staging and listed in the run summary until decided.
-* **paper**: arXiv-style or under ~30 pages. **Not ingested and not listed**: William goes
-  through many arXiv papers and adds the ones he wants by hand (a librarian MCP tool, below).
-  The original is left where it is and its hash remembered, so it is not looked at again.
-* **not maths**: slides, receipts, manuals and the rest of Downloads. Left alone, hash
-  remembered, not listed. (Only books are deleted from the inboxes.)
+* **paper**: at most 125 pages. Moved to `D:\Readings\Papers` (copied, verified, original
+  deleted) for William to sort by hand; a copy turning up again is a duplicate.
+* **not maths or science**: programming, security, manuals and the rest of Downloads. Moved to
+  `D:\Readings\Hold` by the triage step.
 
 ### 4. Profile: TOC and front matter
 
@@ -188,3 +187,13 @@ as a nightly scheduled task ahead of the night OCR batch.
 4. **Review:** no sheet. A summary after each run; the odd misfiled book is corrected through
    librarian MCP tools (to be added).
 5. **Incoming duplicates that are worse in every respect:** deleted.
+
+Added after the first check (2,010 inbox files; 613 exact duplicates, 26 other editions):
+
+6. **Other editions** (newer or older): kept, and processed after everything else (end of the
+   OCR and Lean check queues).
+7. **Papers and notes:** anything up to **125 pages** is a paper: moved to `D:\Readings\Papers`
+   for sorting by hand (a tight set of notes can be worth keeping; that is taste, not a rule).
+   `librarian intake sort --apply` does this together with deleting exact duplicates.
+8. **Not maths or science** (programming, security, ...): moved to `D:\Readings\Hold`. This is
+   decided by the triage step (Codex), not by a rule.

@@ -11,3 +11,5 @@ inbox = ['~\Downloads',
          'G:\My Drive\Saved from Chrome',   # the phone's Chrome downloads
          'G:\My Drive\Input']               # phone books that land anywhere else
 inbox_exclude = ['G:\My Drive\Librarian']
+papers = 'D:\Readings\Papers'           # inbox papers/notes (<= 125 pages), sorted by hand
+hold   = 'D:\Readings\Hold'             # inbox books that are not maths or science

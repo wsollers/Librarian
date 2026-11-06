@@ -24,7 +24,8 @@ def test_identifiers_from_a_copyright_page():
 def _cfg(tmp_path, inbox):
     data = tmp_path / "data"
     return SimpleNamespace(inbox=[inbox], inbox_exclude=[inbox / "skip"], sources=tmp_path / "Sources",
-                           data=data, publish=None, objects=data / "objects", reports=data / "reports")
+                           data=data, publish=None, objects=data / "objects", reports=data / "reports",
+                           papers=tmp_path / "Papers", hold=tmp_path / "Hold")
 
 
 def _epub(path: Path, title: str, isbn: str) -> None:
@@ -72,10 +73,18 @@ def test_check_sorts_the_inbox(tmp_path, monkeypatch):
     assert "tiny.pdf" not in by and "x.pdf" not in by and s["skipped"]["partial"] == 1
     assert (cfg.reports / "intake-check.md").is_file() and s["by_verdict"]["new"] == 1
 
-    # read-only unless asked; --delete-exact removes exact duplicates only
-    assert (inbox / "Same - Author.pdf").exists()
-    s = intake.check(cfg, con, delete_exact=True, verbose=False)
-    assert s["deleted"] == 2 and not (inbox / "Same - Author.pdf").exists()
+    # check is read-only; sort --apply deletes exact duplicates and moves papers (copy, verify, delete)
+    assert (inbox / "Same - Author.pdf").exists() and (inbox / "paper.pdf").exists()
+    s = intake.check(cfg, con, apply=True, verbose=False)
+    assert s["actions"] == {"deleted": 2, "papers_moved": 1, "errors": 0}
+    assert not (inbox / "Same - Author.pdf").exists()
+    papers = list((tmp_path / "Papers").iterdir())
+    assert len(papers) == 1 and papers[0].read_bytes() == b"%PDF paper" + b"p" * 200_000
     assert (inbox / "Fresh Book.epub").exists() and (inbox / "Measure Theory - Halmos.epub").exists()
-    assert len((cfg.reports / "intake-deleted.tsv").read_text(encoding="utf-8").splitlines()) == 2
+    assert len((cfg.reports / "intake-actions.tsv").read_text(encoding="utf-8").splitlines()) == 3
 
+    # the same paper turning up again is a duplicate of the filed copy
+    (inbox / "paper again.pdf").write_bytes(b"%PDF paper" + b"p" * 200_000)
+    intake.check(cfg, con, verbose=False)
+    by = {Path(r[0]).name: r[1] for r in con.execute("SELECT path, verdict FROM intake")}
+    assert by["paper again.pdf"] == "duplicate"

@@ -1,4 +1,4 @@
-"""Ingestion recon (docs/ingestion.md, steps 1-3): what is waiting in the inbox folders, and how
+r"""Ingestion recon (docs/ingestion.md, steps 1-3): what is waiting in the inbox folders, and how
 much of it the library already has.
 
 `librarian intake check` looks at every .pdf/.epub/.djvu under the configured inboxes and, cheapest
@@ -12,9 +12,15 @@ check first:
    that closely matches a library title.
 
 It writes reports/intake-check.md (summary), reports/intake-check.csv (every file) and
-reports/intake-check.json (summary for the MCP server). Read-only, except with --delete-exact,
-which deletes exact duplicates only (library copies, and repeats of an inbox file) and logs each
-to reports/intake-deleted.tsv. Nothing else is ever deleted by this step.
+reports/intake-check.json (summary for the MCP server). `check` is read-only.
+
+`librarian intake sort` does the same check and then carries out the dispositions that need no
+judgement (dry run unless --apply; every action logged to reports/intake-actions.tsv):
+  * exact duplicates (of a library file, of another inbox file, of something filed before) are
+    deleted;
+  * papers (at most PAPER_PAGES pages) are moved to the papers folder (D:\Readings\Papers) for
+    sorting by hand: copied, the copy verified by SHA-256, then the original deleted.
+New books and other editions stay in the inbox for the next steps (triage, filing).
 """
 
 from __future__ import annotations
@@ -39,7 +45,7 @@ from .inventory import probe_pdf, sha256_file, title_from_filename
 EXTS = {".pdf", ".epub", ".djvu", ".djv"}
 PARTIAL = {".crdownload", ".part", ".partial", ".download", ".tmp"}
 MIN_BYTES = 100_000
-PAPER_PAGES = 30          # at most this many pages (or an arXiv id): a paper, not ingested automatically
+PAPER_PAGES = 125         # at most this many pages: a paper or notes, moved to the papers folder for sorting by hand
 ID_PAGES = 15             # pages read for ISBN / edition / title
 TITLE_MATCH = 0.86        # difflib ratio for a "same title" hint
 
@@ -59,6 +65,12 @@ CREATE TABLE IF NOT EXISTS intake_rejects (   -- hashes decided once (paper, not
     sha256      TEXT PRIMARY KEY,
     reason      TEXT NOT NULL,
     decided_at  TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS intake_done (      -- inbox files dealt with: a reappearing copy is a duplicate
+    sha256      TEXT PRIMARY KEY,
+    disposition TEXT NOT NULL,                -- paper | hold | filed
+    dest        TEXT NOT NULL,
+    done_at     TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS book_ids (         -- identifiers printed in a library book's first pages
     sha256      TEXT NOT NULL,
@@ -262,7 +274,7 @@ def probe(path: Path) -> dict:
 
 # ---------------------------------------------------------------------------------------------
 
-def check(cfg, con: sqlite3.Connection, roots: Optional[list[Path]] = None, delete_exact: bool = False,
+def check(cfg, con: sqlite3.Connection, roots: Optional[list[Path]] = None, apply: bool = False,
           verbose: bool = True) -> dict:
     con.execute("PRAGMA busy_timeout = 300000")   # an OCR batch may be writing to the index meanwhile
     con.executescript(SCHEMA)
@@ -285,6 +297,7 @@ def check(cfg, con: sqlite3.Connection, roots: Optional[list[Path]] = None, dele
         lib_isbn.setdefault(v, []).append(sha)
     lib_titles = {sha: norm_title(r[2]) for sha, r in lib.items()}
     rejects = dict(con.execute("SELECT sha256, reason FROM intake_rejects").fetchall())
+    done = {r[0]: r[1:] for r in con.execute("SELECT sha256, disposition, dest FROM intake_done")}
     cached = {r[0]: r[1:] for r in con.execute("SELECT path, size, mtime_ns, sha256, first_seen, detail FROM intake")}
     now = datetime.now().isoformat(timespec="seconds")
 
@@ -314,6 +327,8 @@ def check(cfg, con: sqlite3.Connection, roots: Optional[list[Path]] = None, dele
         ev: dict = {}
         if sha in lib:
             verdict, ev["library"] = "duplicate", lib[sha][1]
+        elif sha in done:
+            verdict, ev["filed"] = "duplicate", f"{done[sha][0]}: {done[sha][1]}"
         elif sha in first_copy:
             verdict, ev["copy_of"] = "duplicate-in-inbox", first_copy[sha]
         elif sha in rejects:
@@ -330,7 +345,7 @@ def check(cfg, con: sqlite3.Connection, roots: Optional[list[Path]] = None, dele
                        default=(0.0, None))
             if detail.get("error") and not pages:
                 verdict = "unreadable"
-            elif detail.get("arxiv") or (pages and pages <= PAPER_PAGES):
+            elif pages and pages <= PAPER_PAGES:
                 verdict = "paper"
             elif hits:
                 verdict = "isbn-match"
@@ -354,30 +369,59 @@ def check(cfg, con: sqlite3.Connection, roots: Optional[list[Path]] = None, dele
     con.executemany("DELETE FROM intake WHERE path=?", [(p,) for p in gone])
     con.commit()
 
-    deleted = []
-    if delete_exact:
-        log = cfg.reports / "intake-deleted.tsv"
-        cfg.reports.mkdir(parents=True, exist_ok=True)
-        with log.open("a", encoding="utf-8") as f:
-            for r in rows:
-                if r["verdict"] in ("duplicate", "duplicate-in-inbox"):
-                    try:
-                        Path(r["path"]).unlink()
-                    except OSError as e:
-                        r["evidence"]["delete_error"] = str(e)
-                        continue
-                    other = r["evidence"].get("library") or r["evidence"].get("copy_of")
-                    f.write(f"{now}\t{r['verdict']}\t{r['sha256']}\t{r['path']}\t{other}\n")
-                    con.execute("DELETE FROM intake WHERE path=?", (r["path"],))
-                    deleted.append(r["path"])
-                    r["deleted"] = True
-        con.commit()
+    acted = act(cfg, con, rows, now) if apply else {}
 
     return write_reports(cfg, rows, {
         "checked_at": now, "seconds": round(time.time() - t0, 1),
         "inboxes": [str(r) for r in roots], "missing_inboxes": missing_roots, "skipped": skipped,
         "files": len(rows), "hashed_now": hashed, "downloaded_online_only": online,
-        "deleted": len(deleted), "removed_from_inboxes_since_last_check": len(gone)})
+        "applied": apply, "actions": acted, "removed_from_inboxes_since_last_check": len(gone)})
+
+
+def _free_name(folder: Path, name: str) -> Path:
+    dest = folder / name
+    n = 2
+    while dest.exists():
+        dest = folder / f"{Path(name).stem} ({n}){Path(name).suffix}"
+        n += 1
+    return dest
+
+
+def act(cfg, con: sqlite3.Connection, rows: list[dict], now: str) -> dict:
+    """Delete exact duplicates; move papers to the papers folder (copy, verify, delete original)."""
+    cfg.reports.mkdir(parents=True, exist_ok=True)
+    counts = {"deleted": 0, "papers_moved": 0, "errors": 0}
+    with (cfg.reports / "intake-actions.tsv").open("a", encoding="utf-8") as log:
+        for r in rows:
+            v, src = r["verdict"], Path(r["path"])
+            try:
+                if v in ("duplicate", "duplicate-in-inbox"):
+                    other = r["evidence"].get("library") or r["evidence"].get("copy_of") or r["evidence"].get("filed")
+                    src.unlink()
+                    log.write(f"{now}\tdelete\t{v}\t{r['sha256']}\t{src}\t{other}\n")
+                    counts["deleted"] += 1
+                    r["done"] = "deleted"
+                elif v == "paper":
+                    cfg.papers.mkdir(parents=True, exist_ok=True)
+                    dest = _free_name(cfg.papers, src.name)
+                    shutil.copy2(src, dest)
+                    if sha256_file(dest) != r["sha256"]:
+                        dest.unlink()
+                        raise OSError("copy did not verify")
+                    src.unlink()
+                    con.execute("INSERT OR REPLACE INTO intake_done VALUES (?,?,?,?)", (r["sha256"], "paper", str(dest), now))
+                    log.write(f"{now}\tmove\tpaper\t{r['sha256']}\t{src}\t{dest}\n")
+                    counts["papers_moved"] += 1
+                    r["done"] = f"moved to {dest.parent}"
+                else:
+                    continue
+                con.execute("DELETE FROM intake WHERE path=?", (str(src),))
+                con.commit()
+            except OSError as e:
+                counts["errors"] += 1
+                r["done"] = f"error: {e}"
+                log.write(f"{now}\terror\t{v}\t{r['sha256']}\t{src}\t{e}\n")
+    return counts
 
 
 ORDER = ["new", "title-match", "isbn-match", "duplicate", "duplicate-in-inbox", "rejected-before", "paper", "unreadable"]
@@ -388,7 +432,7 @@ MEANING = {
     "duplicate": "byte-identical to a library file",
     "duplicate-in-inbox": "byte-identical to another inbox file",
     "rejected-before": "decided before (paper, not maths, rejected)",
-    "paper": f"arXiv id or at most {PAPER_PAGES} pages: left alone (papers are added by hand)",
+    "paper": f"at most {PAPER_PAGES} pages: goes to the papers folder for sorting by hand",
     "unreadable": "could not be read",
 }
 
@@ -404,7 +448,7 @@ def write_reports(cfg, rows: list[dict], summary: dict) -> dict:
     with (rep / "intake-check.csv").open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         w.writerow(["verdict", "path", "sha256", "size_mb", "pages", "text_layer", "title", "author",
-                    "isbn", "edition", "year", "library_match", "deleted"])
+                    "isbn", "edition", "year", "library_match", "done"])
         for r in sorted(rows, key=lambda r: (ORDER.index(r["verdict"]), r["path"].lower())):
             d, ev = r["detail"], r.get("evidence", {})
             lm = ev.get("library") or ev.get("copy_of") or ev.get("reason") or ""
@@ -412,7 +456,7 @@ def write_reports(cfg, rows: list[dict], summary: dict) -> dict:
                         d.get("pages") or "", {True: "yes", False: "no"}.get(d.get("has_text"), ""),
                         d.get("title_guess") or "", d.get("author_guess") or "", " ".join(d.get("isbn", [])),
                         d.get("edition") or "", d.get("year") or "", "; ".join(lm) if isinstance(lm, list) else lm,
-                        "yes" if r.get("deleted") else ""])
+                        r.get("done", "")])
 
     L = ["# Intake check", "", f"Checked {summary['checked_at']} in {summary['seconds']} s: "
          f"{summary['files']} files in {len(summary['inboxes']) - len(summary['missing_inboxes'])} inbox folder(s).", ""]
@@ -422,11 +466,13 @@ def write_reports(cfg, rows: list[dict], summary: dict) -> dict:
     L += [f"| {v} | {counts[v]} | {MEANING[v]} |" for v in ORDER if counts[v]]
     L += ["", f"New books: {counts['new']} ({summary['new_pages']} pages; {summary['new_without_text']} without a text layer, "
           "which need Codex OCR for identification and contents)."]
-    if summary["deleted"]:
-        L += [f"Deleted exact duplicates: {summary['deleted']} (logged in reports/intake-deleted.tsv)."]
-    elif counts["duplicate"] + counts["duplicate-in-inbox"]:
-        L += [f"Exact duplicates that `intake check --delete-exact` would delete: "
-              f"{counts['duplicate'] + counts['duplicate-in-inbox']}."]
+    if summary["applied"]:
+        a = summary["actions"]
+        L += [f"Done: {a['deleted']} exact duplicates deleted, {a['papers_moved']} papers moved to the papers folder"
+              + (f", {a['errors']} errors (see reports/intake-actions.tsv)" if a["errors"] else "") + "."]
+    elif counts["duplicate"] + counts["duplicate-in-inbox"] + counts["paper"]:
+        L += [f"`intake sort --apply` would delete {counts['duplicate'] + counts['duplicate-in-inbox']} exact "
+              f"duplicates and move {counts['paper']} papers to the papers folder."]
     if summary["downloaded_online_only"]:
         L += [f"{summary['downloaded_online_only']} online-only Drive files were downloaded to hash them."]
 

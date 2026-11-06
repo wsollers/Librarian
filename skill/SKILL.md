@@ -31,8 +31,9 @@ restarted. Fallback: `scripts\run.ps1 search "<terms>" --json` in that repo, if 
   books (title, author, pages, scan or text), and possible duplicates or other editions with the
   library book they resemble. Call `intake_check()` again (no `run`) when asked for the result or
   after a few minutes; while `running` is present it is not finished. Papers and exact duplicates
-  are counts only; never list them unless asked. The check never deletes; exact duplicates are
-  deleted only by `scripts\run.ps1 intake check --delete-exact` on hal5000.
+  are counts only; never list them unless asked. The check never deletes or moves anything;
+  `scripts\run.ps1 intake sort --apply` on hal5000 deletes exact duplicates and moves papers
+  (at most 125 pages) to `D:\Readings\Papers`.
 
 ## Search workflow
 
