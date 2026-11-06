@@ -31,6 +31,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import sqlite3
 import subprocess
 import sys
@@ -378,6 +379,15 @@ def check(cfg, con: sqlite3.Connection, roots: Optional[list[Path]] = None, appl
         "applied": apply, "actions": acted, "removed_from_inboxes_since_last_check": len(gone)})
 
 
+def _unlink(path: Path) -> None:
+    """Delete; a read-only file (Windows refuses with 'Access is denied') is made writable first."""
+    try:
+        path.unlink()
+    except PermissionError:
+        os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+        path.unlink()
+
+
 def _free_name(folder: Path, name: str) -> Path:
     dest = folder / name
     n = 2
@@ -397,7 +407,7 @@ def act(cfg, con: sqlite3.Connection, rows: list[dict], now: str) -> dict:
             try:
                 if v in ("duplicate", "duplicate-in-inbox"):
                     other = r["evidence"].get("library") or r["evidence"].get("copy_of") or r["evidence"].get("filed")
-                    src.unlink()
+                    _unlink(src)
                     log.write(f"{now}\tdelete\t{v}\t{r['sha256']}\t{src}\t{other}\n")
                     counts["deleted"] += 1
                     r["done"] = "deleted"
@@ -408,7 +418,7 @@ def act(cfg, con: sqlite3.Connection, rows: list[dict], now: str) -> dict:
                     if sha256_file(dest) != r["sha256"]:
                         dest.unlink()
                         raise OSError("copy did not verify")
-                    src.unlink()
+                    _unlink(src)
                     con.execute("INSERT OR REPLACE INTO intake_done VALUES (?,?,?,?)", (r["sha256"], "paper", str(dest), now))
                     log.write(f"{now}\tmove\tpaper\t{r['sha256']}\t{src}\t{dest}\n")
                     counts["papers_moved"] += 1

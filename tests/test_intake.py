@@ -1,4 +1,6 @@
 import hashlib
+import os
+import stat
 import sqlite3
 import zipfile
 from pathlib import Path
@@ -41,6 +43,7 @@ def test_check_sorts_the_inbox(tmp_path, monkeypatch):
     (inbox / "skip").mkdir(parents=True)
     lib_bytes = b"%PDF library copy" + b"x" * 200_000
     (inbox / "Same - Author.pdf").write_bytes(lib_bytes)                        # = library file
+    os.chmod(inbox / "Same - Author.pdf", stat.S_IREAD)                          # read-only, still deleted
     (inbox / "paper.pdf").write_bytes(b"%PDF paper" + b"p" * 200_000)
     (inbox / "paper copy.pdf").write_bytes(b"%PDF paper" + b"p" * 200_000)       # = another inbox file
     (inbox / "tiny.pdf").write_bytes(b"%PDF" * 10)                               # under 100 KB
