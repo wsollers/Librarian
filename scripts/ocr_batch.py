@@ -334,7 +334,7 @@ class Batch:
         threading.Thread(target=self.ticker, daemon=True).start()
         self.load_queue()
         books = self.state["books"]
-        todo = [q for q in self.queue if books.get(q["sha"], {}).get("status") != "done"]
+        todo = [q for q in self.queue if self.a.recheck_done or books.get(q["sha"], {}).get("status") != "done"]
         self.log(f"queue {self.a.queue}: {len(self.queue)} books, {len(todo)} to do; status: {self.status_path}")
         if not self.a.no_audit and not self.state.get("audited"):
             self.phase = "audit --mark"
@@ -406,7 +406,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--queue", default="config/ocr-queue-2.txt", help="queue file (sha prefixes or path patterns)")
     ap.add_argument("--pause", type=int, default=60, help="seconds to wait after a book that used Codex (default 60)")
-    ap.add_argument("--all-pages", action="store_true", help="OCR front/back matter too (default: --body-only)")
+    ap.add_argument("--body-only", action="store_true",
+                    help="skip the first/last 5%% of each book (old behaviour; it cut real content from scans)")
+    ap.add_argument("--all-pages", action="store_true", help="(default now) OCR every low-quality page, front and back matter included")
+    ap.add_argument("--recheck-done", action="store_true",
+                    help="also run books already marked done (e.g. to OCR the edges skipped by an earlier --body-only run)")
     ap.add_argument("--limit", type=int, help="do at most N books still to do (trial runs)")
     ap.add_argument("--stall-min", type=int, default=20, help="kill a book after N minutes with no output and no new page")
     ap.add_argument("--book-hours", type=int, default=6, help="hard limit per book")
@@ -414,6 +418,7 @@ def main() -> int:
     ap.add_argument("--max-cooldowns", type=int, default=6, help="give up after this many cooldowns in a row")
     ap.add_argument("--no-audit", action="store_true", help="skip the first 'audit --mark'")
     a = ap.parse_args()
+    a.all_pages = not a.body_only
     b = Batch(a)
     try:
         return b.run()
