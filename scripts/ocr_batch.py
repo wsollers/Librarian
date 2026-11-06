@@ -304,11 +304,12 @@ class Batch:
             self.write_status()
             a = self.librarian(["audit", "--mark"], "-", watch_cache=False, hard_limit_min=120)
             if a.get("stalled") or a["exit"] != 0:
-                self.phase, self.note = "stopped", "audit --mark failed (see log)"
-                self.write_status()
-                return 1
-            self.state["audited"] = datetime.now().isoformat(timespec="seconds")
-            self.save_state()
+                # not fatal: pages marked by an earlier audit still count, and extract --llm-ocr
+                # also picks up every low-quality and legacy page on its own
+                self.log("audit --mark failed (see log); carrying on with the pages already marked")
+            else:
+                self.state["audited"] = datetime.now().isoformat(timespec="seconds")
+                self.save_state()
         retry = []
         for pass_no, batch in ((1, todo), (2, retry)):
             if pass_no == 2 and batch:

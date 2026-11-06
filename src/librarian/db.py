@@ -58,7 +58,9 @@ CREATE TABLE IF NOT EXISTS pages (
 
 def connect(path: Path) -> sqlite3.Connection:
     path.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(path)
+    # Several processes share the index (OCR batch, intake check, audit): wait for a writer instead
+    # of failing after sqlite's default 5 s.
+    con = sqlite3.connect(path, timeout=120)
     con.execute("PRAGMA journal_mode=DELETE")
     con.execute("PRAGMA foreign_keys=ON")
     con.executescript(SCHEMA)
