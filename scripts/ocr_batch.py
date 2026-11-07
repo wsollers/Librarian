@@ -172,7 +172,7 @@ class Batch:
                                 stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace",
                                 creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
         self.proc = proc
-        res = {"ocr_pages": 0, "done": 0, "failed": 0, "skipped": False, "db_locked": False}
+        res = {"ocr_pages": 0, "done": 0, "failed": 0, "skipped": False, "db_locked": False, "missing": False}
 
         def reader():
             for line in proc.stdout:
@@ -191,6 +191,8 @@ class Batch:
                     res["skipped"] = True
                 elif "database is locked" in line:
                     res["db_locked"] = True
+                elif "file missing:" in line:
+                    res["missing"] = True
         th = threading.Thread(target=reader, daemon=True)
         th.start()
         cache = self.cfg.objects / sha / "ocr-cache"
@@ -262,7 +264,10 @@ class Batch:
         rec = {"path": q["path"], "finished": datetime.now().isoformat(timespec="seconds"),
                "seconds": round(time.time() - self.current["t0"]), "ocr_pages": r["ocr_pages"],
                "ocr_done": r["done"], "ocr_failed": r["failed"]}
-        if r["db_locked"] and r["done"] == 0:
+        if r["missing"]:
+            # the book's file is not where the index says (renamed or moved): not Codex's fault
+            rec["status"], rec["why"] = "failed", "file missing: run librarian inventory"
+        elif r["db_locked"] and r["done"] == 0:
             rec["status"] = "db-locked"
         elif r.get("stalled"):
             rec["status"], rec["why"] = "stalled", r["stalled"]
@@ -336,6 +341,15 @@ class Batch:
         books = self.state["books"]
         todo = [q for q in self.queue if self.a.recheck_done or books.get(q["sha"], {}).get("status") != "done"]
         self.log(f"queue {self.a.queue}: {len(self.queue)} books, {len(todo)} to do; status: {self.status_path}")
+        # pick up books renamed or moved since the last inventory (cheap: hashes are reused)
+        self.phase = "inventory"
+        self.write_status()
+        inv = self.librarian(["inventory"], "-", watch_cache=False, hard_limit_min=60)
+        if inv.get("stalled") or inv["exit"] != 0:
+            self.log("inventory failed (see log); carrying on with the paths already in the index")
+        else:
+            self.load_queue()          # paths may have changed
+            todo = [q for q in self.queue if self.a.recheck_done or books.get(q["sha"], {}).get("status") != "done"]
         if not self.a.no_audit and not self.state.get("audited"):
             self.phase = "audit --mark"
             self.write_status()

@@ -149,6 +149,9 @@ def extract_book(cfg: Config, con: sqlite3.Connection, row: sqlite3.Row, opt: Op
     src = cfg.sources / row["path"]
     obj = cfg.objects / sha
     manifest_path = obj / "extract.json"
+    if not src.is_file():
+        log.error("file missing: %s (moved or renamed since the last inventory? run: librarian inventory)", src)
+        return {"sha256": sha, "error": "file missing"}
     resume: Optional[dict] = None
     if manifest_path.is_file() and not opt.force:
         m = json.loads(manifest_path.read_text(encoding="utf-8"))
