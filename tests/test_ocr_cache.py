@@ -18,3 +18,9 @@ def test_failed_pages_are_not_cached(tmp_path, monkeypatch):
     cache = tmp_path / "ocr-cache"
     assert ocr.llm_ocr(Path("b.pdf"), 3, cache) == (None, "llm-ocr:codex")
     assert not (cache / "0003.md").exists()
+
+
+def test_codex_narration_is_not_page_text():
+    assert ocr.strip_narration("I’ll inspect the page at full resolution to distinguish printed marks.") == ""
+    assert ocr.strip_narration("I’m checking the page for faint text.\n\n42  Chapter 3\nText") == "42  Chapter 3\nText"
+    assert ocr.strip_narration("I will not prove that every set is finite.") == "I will not prove that every set is finite."

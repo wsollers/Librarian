@@ -6,6 +6,7 @@ printed line breaks that citations depend on.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -17,8 +18,22 @@ from .log import log
 OCR_PROMPT = (
     "Transcribe this book page exactly. Output Markdown. Keep the page's own line breaks: "
     "one output line per printed line. Write mathematics as LaTeX ($...$ inline, $$...$$ display). "
-    "Include running heads and page numbers as they appear. Do not summarise, correct or add anything."
+    "Include running heads and page numbers as they appear. Do not summarise, correct or add anything. "
+    "If the page is blank, reply with nothing at all. Never describe what you are doing."
 )
+
+# Codex sometimes answers a blank or near-blank page with a remark about what it is doing
+# ("I'll inspect the page at full resolution ..."). That is not page text.
+_NARRATION = re.compile(r"^\s*(I[’']ll|I[’']m|I will|I am|Let me|I need to|I can see)\b[^\n]*"
+                        r"(inspect|check|look|examin|zoom|enhanc|resolution|verify|distinguish|transcrib)", re.I)
+
+
+def strip_narration(text: str) -> str:
+    """Drop leading paragraphs that are Codex talking about the page; '' if nothing else remains."""
+    paras = re.split(r"\n\s*\n", text.strip())
+    while paras and _NARRATION.match(paras[0]):
+        paras.pop(0)
+    return "\n\n".join(paras).strip("\n")
 
 
 def render_page(pdf: Path, page: int, out_dir: Path, dpi: int = 200) -> Path:
@@ -58,7 +73,7 @@ def codex_ocr(pdf: Path, page: int) -> Optional[str]:
     log.debug("codex ocr %s p%d chars=%d", pdf.name, page, len(text))
     if text.lstrip().startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0]
-    return text
+    return strip_narration(text)
 
 
 def llm_ocr(pdf: Path, page: int, cache_dir: Optional[Path] = None) -> tuple[Optional[str], str]:
@@ -68,7 +83,7 @@ def llm_ocr(pdf: Path, page: int, cache_dir: Optional[Path] = None) -> tuple[Opt
     cached = cache_dir / f"{page:04d}.md" if cache_dir else None
     if cached and cached.is_file() and cached.stat().st_size:
         log.debug("codex ocr cache hit %s p%d", pdf.name, page)
-        return cached.read_text(encoding="utf-8"), "llm-ocr:codex"
+        return strip_narration(cached.read_text(encoding="utf-8")), "llm-ocr:codex"
     text = codex_ocr(pdf, page)
     if cached and text is not None and text.strip():
         cached.parent.mkdir(parents=True, exist_ok=True)
