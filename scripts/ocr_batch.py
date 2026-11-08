@@ -46,6 +46,18 @@ from librarian.db import connect  # noqa: E402
 RE_START = re.compile(r"LLM OCR \(codex\): (\d+) pages")
 RE_PROG = re.compile(r"OCR (\d+)/(\d+) pages, (\d+) failed")
 RE_SKIP = re.compile(r"skip \(cached\)")
+RE_QUOTA = re.compile(r"hit your usage limit.*?try again at ([A-Z][a-z]{2} \d{1,2})(?:st|nd|rd|th)?, (\d{4}) (\d{1,2}:\d{2} [AP]M)")
+
+
+def quota_reset(line: str):
+    """'... try again at Nov 11th, 2026 3:08 AM.' -> datetime, or None."""
+    m = RE_QUOTA.search(line)
+    if not m:
+        return None
+    try:
+        return datetime.strptime(f"{m.group(1)} {m.group(2)} {m.group(3)}", "%b %d %Y %I:%M %p")
+    except ValueError:
+        return None
 
 
 def child_env() -> dict:
@@ -106,6 +118,7 @@ class Batch:
         self.queue: list[dict] = []
         self.lock = threading.Lock()
         self.proc: subprocess.Popen | None = None
+        self.quota_until = None
 
     # ---- output -------------------------------------------------------------------------
     def log(self, msg: str, echo: bool = True) -> None:
@@ -172,7 +185,8 @@ class Batch:
                                 stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace",
                                 creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0))
         self.proc = proc
-        res = {"ocr_pages": 0, "done": 0, "failed": 0, "skipped": False, "db_locked": False, "missing": False}
+        res = {"ocr_pages": 0, "done": 0, "failed": 0, "skipped": False, "db_locked": False, "missing": False,
+               "quota_until": None}
 
         def reader():
             for line in proc.stdout:
@@ -193,6 +207,8 @@ class Batch:
                     res["db_locked"] = True
                 elif "file missing:" in line:
                     res["missing"] = True
+                elif "hit your usage limit" in line:
+                    res["quota_until"] = quota_reset(line) or res["quota_until"] or "unknown"
         th = threading.Thread(target=reader, daemon=True)
         th.start()
         cache = self.cfg.objects / sha / "ocr-cache"
@@ -264,7 +280,10 @@ class Batch:
         rec = {"path": q["path"], "finished": datetime.now().isoformat(timespec="seconds"),
                "seconds": round(time.time() - self.current["t0"]), "ocr_pages": r["ocr_pages"],
                "ocr_done": r["done"], "ocr_failed": r["failed"]}
-        if r["missing"]:
+        if r["quota_until"] and r["failed"] * 2 >= max(r["done"], 1):
+            rec["status"], rec["why"] = "quota", f"Codex usage limit until {r['quota_until']}"
+            self.quota_until = r["quota_until"]
+        elif r["missing"]:
             # the book's file is not where the index says (renamed or moved): not Codex's fault
             rec["status"], rec["why"] = "failed", "file missing: run librarian inventory"
         elif r["db_locked"] and r["done"] == 0:
@@ -388,6 +407,21 @@ class Batch:
                         if not self.wait(5, "waiting: index locked by another program"):
                             break
                         continue
+                    if st == "quota":
+                        until = self.quota_until
+                        if self.a.wait_for_quota and isinstance(until, datetime):
+                            mins = max(1.0, (until - datetime.now()).total_seconds() / 60 + 5)
+                            self.log(f"Codex usage limit reached: waiting until {until:%a %H:%M} ({mins / 60:.1f} h)")
+                            if not self.wait(mins, f"waiting for the Codex usage limit to reset ({until:%a %d %b %H:%M})"):
+                                break
+                            continue
+                        self.phase = "stopped"
+                        self.note = (f"Codex usage limit reached; it resets {until:%a %d %b %H:%M}" if isinstance(until, datetime)
+                                     else "Codex usage limit reached") + ". Run the script again then (or use --wait-for-quota)."
+                        self.current = {}
+                        self.write_status()
+                        self.log("STOP: " + self.note)
+                        return 3
                     if st != "codex-failing":
                         break
                     cooldowns += 1
@@ -431,6 +465,8 @@ def main() -> int:
     ap.add_argument("--cooldown", type=int, default=30, help="minutes to wait when Codex fails most pages")
     ap.add_argument("--max-cooldowns", type=int, default=6, help="give up after this many cooldowns in a row")
     ap.add_argument("--no-audit", action="store_true", help="skip the first 'audit --mark'")
+    ap.add_argument("--wait-for-quota", action="store_true",
+                    help="when Codex reports its usage limit, sleep until the reset time it gives and carry on")
     a = ap.parse_args()
     a.all_pages = not a.body_only
     b = Batch(a)
