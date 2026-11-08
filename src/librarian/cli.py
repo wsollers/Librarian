@@ -102,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("action", nargs="?", default="run", choices=["run", "set", "show"],
                    help="run (default): sort + triage + plan; set N: adjust item N; show: re-render the report")
     p.add_argument("n", nargs="?", type=int, help="set: the item number in reports/ingest.md")
+    p.add_argument("--sha", action="append", help="set: the item(s) by sha256 prefix instead of number (repeatable)")
     p.add_argument("--root", action="append", help="run: only these inbox folders (repeatable)")
     p.add_argument("--no-sort", action="store_true", help="run: skip the inbox check (duplicates/papers)")
     p.add_argument("--retriage", action="store_true", help="run: ask Codex again for books already triaged")
@@ -217,11 +218,13 @@ def main(argv: list[str] | None = None) -> int:
             summary.update(ingest.run(cfg, con, roots=roots, sort=not a.no_sort, workers=a.workers,
                                       retriage=a.retriage))
         elif a.action == "set":
-            if not a.n:
-                raise SystemExit("ingest set N ...: give the item number")
-            summary.update(ingest.set_item(cfg, con, a.n, action=a.set_action, primary=a.subject,
-                                           secondary=a.secondary, title=a.title, author=a.author,
-                                           surnames=a.surnames, edition=a.edition))
+            if not a.n and not a.sha:
+                raise SystemExit("ingest set N ... (or --sha PREFIX ...): say which item")
+            targets = [dict(sha=x) for x in a.sha] if a.sha else [dict(n=a.n)]
+            summary["set"] = [ingest.set_item(cfg, con, **t, action=a.set_action, primary=a.subject,
+                                              secondary=a.secondary, title=a.title, author=a.author,
+                                              surnames=a.surnames, edition=a.edition) for t in targets]
+            summary["report"] = str(cfg.reports / "ingest.md")
         else:
             summary["report"] = ingest.render(cfg, ingest.load_plan(cfg))
         print(f"report: {summary.get('report')}", file=sys.stderr)

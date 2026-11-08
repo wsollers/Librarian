@@ -481,12 +481,17 @@ def render(cfg, plan: list[dict]) -> str:
     return str(out)
 
 
-def set_item(cfg, con: sqlite3.Connection, n: int, **fields) -> dict:
+def set_item(cfg, con: sqlite3.Connection, n: Optional[int] = None, sha: Optional[str] = None, **fields) -> dict:
+    """Adjust one plan item, by its number in the report or by a sha256 prefix (numbers shift when an
+    item changes group; hashes do not)."""
     con.executescript(SCHEMA)
     plan = load_plan(cfg)
-    it = next((i for i in plan if i.get("n") == n), None)
+    if sha:
+        it = next((i for i in plan if i["sha256"].startswith(sha.lower())), None)
+    else:
+        it = next((i for i in plan if i.get("n") == n), None)
     if not it:
-        raise SystemExit(f"no item {n} in the plan")
+        raise SystemExit(f"no item {sha or n} in the plan")
     fields = {k: v for k, v in fields.items() if v is not None}
     if "primary" in fields and fields["primary"] not in subjects.valid_subjects():
         raise SystemExit(f"'{fields['primary']}' is not in config/taxonomy.yaml")
