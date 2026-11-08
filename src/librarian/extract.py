@@ -86,11 +86,39 @@ def pdf_pages_text(pdf: Path, pages: int) -> list[str]:
 
 
 def page_has_images(pdf: Path, page: int) -> bool:
+    """Is there anything on the page besides a text layer? Raster images, or (for PDFs whose text
+    was converted to outlines, which have neither a text layer nor images) visible ink."""
     if not shutil.which("pdfimages"):
         return True
     r = subprocess.run(["pdfimages", "-list", "-f", str(page), "-l", str(page), str(pdf)],
                        capture_output=True, timeout=60)
-    return len(r.stdout.decode(errors="replace").strip().splitlines()) > 2
+    if len(r.stdout.decode(errors="replace").strip().splitlines()) > 2:
+        return True
+    return page_ink(pdf, page) > INK_MIN
+
+
+INK_MIN = 0.002     # share of dark pixels above which a page is not blank (a page number alone is ~0.0005)
+
+
+def page_ink(pdf: Path, page: int) -> float:
+    """Share of dark pixels on a coarse grey rendering of the page (vector-drawn text counts)."""
+    import tempfile
+    if not shutil.which("pdftoppm"):
+        return 1.0
+    with tempfile.TemporaryDirectory() as td:
+        prefix = Path(td) / "p"
+        try:
+            subprocess.run(["pdftoppm", "-q", "-r", "40", "-gray", "-f", str(page), "-l", str(page), "-singlefile",
+                            str(pdf), str(prefix)], check=True, timeout=60)
+            data = prefix.with_suffix(".pgm").read_bytes()
+        except (subprocess.SubprocessError, OSError):
+            return 1.0
+    # binary PGM: 'P5' width height maxval, then one byte per pixel
+    parts = data.split(maxsplit=4)
+    if len(parts) < 5 or parts[0] != b"P5":
+        return 1.0
+    pixels = parts[4]
+    return sum(1 for v in pixels if v < 128) / max(len(pixels), 1)
 
 
 def djvu_pages_text(djvu: Path) -> list[str]:
