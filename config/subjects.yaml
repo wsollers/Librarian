@@ -303,6 +303,17 @@ cea502eda67a5937:
   kind: textbook
   confidence: high
   note: 'Reid: rings, modules, Noetherian, Nullstellensatz, DVRs; commutative algebra.'
+44a4d6b64e8d57d4:
+  title: Undergraduate Commutative Algebra
+  primary: Algebra/Commutative Algebra
+  secondary:
+  - Algebra/Algebraic Geometry
+  - Algebra/Abstract Algebra
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: This textbook introduces commutative algebra and its connections to algebraic geometry for advanced undergraduates
+    and beginning graduate students.
 16edeadac520354a:
   title: Algebra and Galois Theories
   primary: Algebra/Field and Galois Theory
@@ -469,6 +480,17 @@ b13309343f7e2206:
   kind: textbook
   confidence: high
   note: Strang's applications-oriented linear algebra.
+5fa318770fbdbbc4:
+  title: Linear Algebra and Its Applications
+  primary: Algebra/Linear Algebra
+  secondary:
+  - Applied and Computational/Numerical Linear Algebra
+  - Applied and Computational/Optimization
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: An introductory textbook on linear algebra, with chapters on matrix computation and linear programming;
+    the listed Lay title is a different work.
 99807ba6907e1ac5:
   title: Linear Algebra and its Applications 5th Edition
   primary: Algebra/Linear Algebra
@@ -528,6 +550,15 @@ b9eb138936f572f7:
   kind: textbook
   confidence: high
   note: Matrix algebra with computations and statistical applications.
+17c830ae141addd2:
+  title: Problems and Theorems in Linear Algebra
+  primary: Algebra/Linear Algebra
+  secondary:
+  - General/Problem Books and Solutions
+  level: undergrad
+  kind: problem-book
+  confidence: high
+  note: This undergraduate linear algebra book develops theorems and proofs alongside problems with solutions.
 789a6a86ac814863:
   title: The Geometry of Euclidean Space
   primary: Algebra/Linear Algebra
@@ -860,16 +891,6 @@ f52f83b34735b39b:
   kind: paper
   confidence: high
   note: AAA algorithm for rational approximation; paper.
-688a66a431bdefb1:
-  title: The NU RBS Book e2
-  primary: Applied and Computational/Computer Aided Geometric Design
-  secondary:
-  - Applied and Computational/Numerical Analysis
-  - Geometry and Topology/Differential Geometry
-  level: graduate
-  kind: monograph
-  confidence: high
-  note: B-splines/NURBS for CAGD; no CAGD subject.
 2921bf46488afedf:
   title: A Course in the Calculus of Variations Optimization Regularity and Modeling
   primary: Analysis/Calculus of Variations
@@ -967,6 +988,16 @@ f620185bd83ddb8e:
   kind: lecture-notes
   confidence: high
   note: Riemann surfaces, theta functions, integrable systems lectures.
+80aa5fa8da322d9a:
+  title: Complex Analysis, Riemann Surfaces and Integrable Systems
+  primary: Analysis/Complex Analysis
+  secondary:
+  - Geometry and Topology/Manifolds
+  - Differential Equations and Dynamics/Dynamical Systems
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate textbook on complex analysis, Riemann surfaces, and integrable systems.
 6ec28c91ac5cfdd6:
   title: Concepts of Function Theory
   primary: Analysis/Complex Analysis
@@ -1003,6 +1034,17 @@ f8c073a0d5c14c4c:
   kind: textbook
   confidence: high
   note: Complex analysis textbook with exercises, conformal maps, residues.
+7a215ac0ade98743:
+  title: Riemann Surfaces
+  primary: Analysis/Complex Analysis
+  secondary:
+  - Geometry and Topology/Manifolds
+  - Algebra/Algebraic Geometry
+  level: graduate
+  kind: lecture-notes
+  confidence: high
+  note: Graduate lecture notes on Riemann surfaces, covering complex analysis, sheaves, cohomology, and compact
+    and open surfaces.
 950e33f7722b3439:
   title: Univalent Functions
   primary: Analysis/Complex Analysis
@@ -1020,6 +1062,14 @@ f8c073a0d5c14c4c:
   kind: textbook
   confidence: high
   note: Geometric, visual approach to complex analysis.
+6ffea6632d57635b:
+  title: Visual Complex Analysis
+  primary: Analysis/Complex Analysis
+  secondary: []
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: A visually oriented textbook that develops complex analysis through geometric arguments.
 b151bdc9e38b7397:
   title: A Course on Convex Geometry
   primary: Analysis/Convex Analysis
@@ -1208,17 +1258,6 @@ a86fa23b603a7395:
   kind: lecture-notes
   confidence: high
   note: Course notes on normed and Banach spaces, function spaces, calculus on them.
-5ca845be90e7dbcc:
-  title: Applied Functional Analysis (2nd ed, Balakrishnan)
-  primary: Analysis/Functional Analysis
-  secondary:
-  - Analysis/Operator Theory
-  - Differential Equations and Dynamics/Control Theory
-  - Probability and Statistics/Stochastic Processes
-  level: graduate
-  kind: textbook
-  confidence: high
-  note: 'Balakrishnan, Springer Applications of Mathematics 3, 2nd ed 1981 (ISBN 0-387-90527-8): Hilbert spaces, convex programming, operators, semigroups, optimal control, stochastic optimization.'
 3627552f08cdf159:
   title: Applied functional analysis
   primary: Analysis/Functional Analysis
@@ -1229,6 +1268,18 @@ a86fa23b603a7395:
   kind: textbook
   confidence: high
   note: Distributions, Green's functions, Banach spaces, fixed points.
+5ca845be90e7dbcc:
+  title: Applied Functional Analysis (2nd ed, Balakrishnan)
+  primary: Analysis/Functional Analysis
+  secondary:
+  - Analysis/Operator Theory
+  - Differential Equations and Dynamics/Control Theory
+  - Probability and Statistics/Stochastic Processes
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Balakrishnan, Springer Applications of Mathematics 3, 2nd ed 1981 (ISBN 0-387-90527-8): Hilbert spaces,
+    convex programming, operators, semigroups, optimal control, stochastic optimization.'
 67e373414d56549f:
   title: Applied Functional Analysis Lecture Notes
   primary: Analysis/Functional Analysis
@@ -1406,6 +1457,15 @@ d4f3a1586209f800:
   kind: textbook
   confidence: high
   note: 'Kolmogorov-Fomin: sets, metric spaces, measure, Banach spaces.'
+8d43c3737236254c:
+  title: Linear Topological Spaces
+  primary: Analysis/Functional Analysis
+  secondary:
+  - Geometry and Topology/Point-Set Topology
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate text on linear topological spaces, including locally convex spaces, duality, and functional analysis.
 d50bfb935e730efe:
   title: Nonlinear Functional Analysis A First Course
   primary: Analysis/Functional Analysis
@@ -1457,6 +1517,16 @@ b9fbb8249c069b64:
   kind: textbook
   confidence: high
   note: Hilbert spaces, Fourier, measure, Banach algebras, spectral theorem.
+ff0ea8d2ff339156:
+  title: Topological Vector Spaces
+  primary: Analysis/Functional Analysis
+  secondary:
+  - Analysis/Operator Theory
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A systematic graduate text on topological vector spaces, including locally convex spaces, tensor products,
+    and nuclear spaces.
 3fcd09913d6f18ee:
   title: Geometric Measure Theory
   primary: Analysis/Geometric Measure Theory
@@ -1524,15 +1594,6 @@ a96b6079521f536c:
   kind: monograph
   confidence: high
   note: Singular integrals, Banach-valued harmonic analysis, spectral theory.
-5a39367cab3f353f:
-  title: Classical Fine Potential Theory
-  primary: Analysis/Potential Theory
-  secondary:
-  - Analysis/Complex Analysis
-  level: research
-  kind: monograph
-  confidence: medium
-  note: Fine potential theory; closest existing is harmonic analysis.
 38c219d3c9013a85:
   title: Classical Fourier Analysis
   primary: Analysis/Harmonic Analysis
@@ -1571,6 +1632,43 @@ bd25696b79962c50:
   kind: monograph
   confidence: high
   note: Dyadic lattices, Carleson families, Calderon-Zygmund operators; not Foundations.
+3d06d11997cfdcd4:
+  title: Handbook of Means and Their Inequalities
+  primary: Analysis/Inequalities
+  secondary:
+  - Analysis/Convex Analysis
+  level: research
+  kind: reference
+  confidence: medium
+  note: Means and inequalities handbook; convexity heavy; no better subject.
+1f29eee35132c148:
+  title: Inequalities
+  primary: Analysis/Inequalities
+  secondary: []
+  level: school
+  kind: textbook
+  confidence: high
+  note: Elementary inequalities, olympiad-style problem collection.
+7e5cc81e29de1f15:
+  title: Inequalities Hardy
+  primary: Analysis/Inequalities
+  secondary:
+  - Analysis/Convex Analysis
+  - Analysis/Sequences and Series
+  - Analysis/Calculus of Variations
+  level: graduate
+  kind: monograph
+  confidence: high
+  note: Classical inequalities, means, convex functions, integrals.
+1a1316a115ca40b6:
+  title: The Cauchy Schwars Master Class
+  primary: Analysis/Inequalities
+  secondary:
+  - Analysis/Convex Analysis
+  level: undergrad
+  kind: monograph
+  confidence: high
+  note: Inequalities problem-oriented text.
 64498329b65eea01:
   title: An Introduction to Measure
   primary: Analysis/Measure and Integration
@@ -1681,6 +1779,16 @@ bc6619c4c65ae36f:
   kind: textbook
   confidence: high
   note: Wheeden-Zygmund measure and integral, with real-analysis preliminaries
+905775b27846c308:
+  title: 'Measure and Integral: An Introduction to Real Analysis'
+  primary: Analysis/Measure and Integration
+  secondary:
+  - Analysis/Real Analysis
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate-level textbook developing measure and Lebesgue integration, with applications to real and harmonic
+    analysis.
 8073fe20ac7d5495:
   title: Measure and Integration
   primary: Analysis/Measure and Integration
@@ -2172,6 +2280,15 @@ eaf21cf418269198:
   kind: monograph
   confidence: high
   note: Spectral convergence of Laplacians on graph-like spaces.
+5a39367cab3f353f:
+  title: Classical Fine Potential Theory
+  primary: Analysis/Potential Theory
+  secondary:
+  - Analysis/Complex Analysis
+  level: research
+  kind: monograph
+  confidence: medium
+  note: Fine potential theory; closest existing is harmonic analysis.
 8bc11bde3505f68c:
   title: A Circle Line Study of Mathematical analysis
   primary: Analysis/Real Analysis
@@ -2297,6 +2414,18 @@ cd1081ca5dd717d0:
   kind: textbook
   confidence: high
   note: Analysis of one variable then metric spaces and several variables.
+f6701f6321d7fcc9:
+  title: Advanced Calculus
+  primary: Analysis/Real Analysis
+  secondary:
+  - Calculus/Multivariable and Vector Calculus
+  - Analysis/Sequences and Series
+  - Geometry and Topology/Differential Geometry
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate text developing rigorous analysis and multivariable calculus, with applications to geometry
+    and numerical methods.
 0f660721c17cd5d9:
   title: An Introduction to Real Analysis
   primary: Analysis/Real Analysis
@@ -2482,6 +2611,89 @@ fd6baafab7625e0f:
   kind: lecture-notes
   confidence: high
   note: 'Theoretical foundations of calculus: reals, sequences, continuity, differentiation, integration.'
+30dc2f6b93f832e5:
+  title: Foundations of Modern Analysis (Treatise on Analysis Vol I)
+  primary: Analysis/Real Analysis
+  secondary:
+  - Analysis/Metric Spaces
+  - Analysis/Functional Analysis
+  - Analysis/Analysis in Several Variables
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Dieudonné. Ch. I-XI: sets, real numbers, metric, normed and Hilbert spaces, continuous functions, differential calculus, analytic functions, existence theorems, elementary spectral theory.'
+386b9f8fe649a4e2:
+  title: Treatise on Analysis Vol II
+  primary: Analysis/Measure and Integration
+  secondary:
+  - Analysis/Operator Theory
+  - Analysis/Harmonic Analysis
+  - Analysis/Functional Analysis
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Dieudonné. Ch. XII-XV: topology and topological algebra, integration, integration in locally compact groups, normed algebras and spectral theory.'
+87bb49a79192d9d7:
+  title: Treatise on Analysis Vol III
+  primary: Geometry and Topology/Manifolds
+  secondary:
+  - Analysis/Distributions and Sobolev Spaces
+  - Geometry and Topology/Differential Topology
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Dieudonné. Ch. XVI-XVII: differential manifolds, differential calculus on manifolds (distributions, differential operators).'
+7fe1ba4a6a5a4332:
+  title: Treatise on Analysis Vol IV
+  primary: Geometry and Topology/Differential Geometry
+  secondary:
+  - Algebra/Lie Groups and Lie Algebras
+  - Geometry and Topology/Riemannian Geometry
+  - Differential Equations and Dynamics/Ordinary Differential Equations
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Dieudonné. Ch. XVIII-XX: differential systems, Lie groups, principal connections and Riemannian geometry.'
+0a0b3f8f01850cac:
+  title: Treatise on Analysis Vol V
+  primary: Algebra/Lie Groups and Lie Algebras
+  secondary:
+  - Algebra/Representation Theory
+  - Analysis/Harmonic Analysis
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Dieudonné. Ch. XXI: compact Lie groups and semisimple Lie groups.'
+978633064ec09b22:
+  title: Treatise on Analysis Vol VI
+  primary: Analysis/Harmonic Analysis
+  secondary:
+  - Algebra/Representation Theory
+  - Algebra/Lie Groups and Lie Algebras
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Dieudonné. Ch. XXII: harmonic analysis.'
+d2e94693c8eb791a:
+  title: Treatise on Analysis Vol VII
+  primary: Differential Equations and Dynamics/Partial Differential Equations
+  secondary:
+  - Analysis/Distributions and Sobolev Spaces
+  - Analysis/Operator Theory
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Dieudonné. Ch. XXIII (first part): linear functional equations, pseudo-differential operators.'
+47f41b0d69fe3d93:
+  title: Treatise on Analysis Vol VIII
+  primary: Differential Equations and Dynamics/Partial Differential Equations
+  secondary:
+  - Analysis/Distributions and Sobolev Spaces
+  - Analysis/Operator Theory
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: 'Dieudonné. Ch. XXIII (second part): linear functional equations, boundary problems.'
 b424c723bd9a39a5:
   title: From Classical to Modern Analysis-Schinazi
   primary: Analysis/Real Analysis
@@ -2510,34 +2722,6 @@ a9ab5e0578ae07b4:
   kind: textbook
   confidence: high
   note: Unites real and complex analysis after introductory analysis.
-3d06d11997cfdcd4:
-  title: Handbook of Means and Their Inequalities
-  primary: Analysis/Inequalities
-  secondary:
-  - Analysis/Convex Analysis
-  level: research
-  kind: reference
-  confidence: medium
-  note: Means and inequalities handbook; convexity heavy; no better subject.
-1f29eee35132c148:
-  title: Inequalities
-  primary: Analysis/Inequalities
-  secondary: []
-  level: school
-  kind: textbook
-  confidence: high
-  note: Elementary inequalities, olympiad-style problem collection.
-7e5cc81e29de1f15:
-  title: Inequalities Hardy
-  primary: Analysis/Inequalities
-  secondary:
-  - Analysis/Convex Analysis
-  - Analysis/Sequences and Series
-  - Analysis/Calculus of Variations
-  level: graduate
-  kind: monograph
-  confidence: high
-  note: Classical inequalities, means, convex functions, integrals.
 747ae4ba9df89f29:
   title: Intermediate Analysis an Introduction to the Theory of Functions of One Real Variable
   primary: Analysis/Real Analysis
@@ -2649,6 +2833,17 @@ f81fc060764be9d4:
   kind: textbook
   confidence: high
   note: 'Apostol: classic analysis incl. Riemann-Stieltjes and Lebesgue.'
+9011f6c191dd9acb:
+  title: Mathematical Analysis – Problems and Exercises II
+  primary: Analysis/Real Analysis
+  secondary:
+  - Calculus/Single-Variable Calculus
+  - Analysis/Complex Analysis
+  - Analysis/Measure and Integration
+  level: undergrad
+  kind: problem-book
+  confidence: high
+  note: An undergraduate problem collection covering real and complex analysis, calculus, and measure theory.
 2504b7a4db75d8b1:
   title: Primer of Real Functions
   primary: Analysis/Real Analysis
@@ -2677,6 +2872,27 @@ f81fc060764be9d4:
   kind: textbook
   confidence: medium
   note: 'Rudin chapters 6 onward: Riemann-Stieltjes, function sequences, several variables.'
+a5e43f617e6b0ceb:
+  title: Problems and Theorems in Analysis
+  primary: Analysis/Real Analysis
+  secondary:
+  - Analysis/Complex Analysis
+  - Analysis/Sequences and Series
+  level: graduate
+  kind: problem-book
+  confidence: high
+  note: A collection of advanced problems and theorems in analysis, covering series, integral calculus, and function
+    theory.
+181713969578d6d2:
+  title: Problems in Real analysis
+  primary: Analysis/Real Analysis
+  secondary:
+  - Analysis/Sequences and Series
+  - General/Problem Books and Solutions
+  level: intro-undergrad
+  kind: problem-book
+  confidence: medium
+  note: A B.Sc.-level collection of real analysis problems covering real numbers, sequences, and series.
 268abcd056dd4b11:
   title: REAL ANALYSIS
   primary: Analysis/Real Analysis
@@ -2805,15 +3021,6 @@ aa890b1fa2bbc590:
   kind: textbook
   confidence: high
   note: Honors-calculus integration theory, Henstock-Kurzweil style integral.
-1a1316a115ca40b6:
-  title: The Cauchy Schwars Master Class
-  primary: Analysis/Inequalities
-  secondary:
-  - Analysis/Convex Analysis
-  level: undergrad
-  kind: monograph
-  confidence: high
-  note: Inequalities problem-oriented text.
 2465aa926f2ff484:
   title: The real numbers and completeness
   primary: Analysis/Real Analysis
@@ -2831,6 +3038,15 @@ aa890b1fa2bbc590:
   kind: textbook
   confidence: high
   note: Construction of reals through sequences, series, integration.
+e0fb9a6151846140:
+  title: The Theory of Functions of a Real Variable
+  primary: Analysis/Real Analysis
+  secondary:
+  - Analysis/Measure and Integration
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate-level textbook on real analysis, measure, the Lebesgue integral, and derivatives.
 32365178d78f95b1:
   title: The Theory Of Functions Of A Real Variable And The Theory Of Fouriers Series
   primary: Analysis/Real Analysis
@@ -2988,6 +3204,16 @@ b7ad9a1d03051ce5:
   kind: textbook
   confidence: high
   note: Vectors, tensors, field theory.
+68ed4d8876cfd86f:
+  title: Vector and Tensor Calculus
+  primary: Analysis/Vector and Tensor Analysis
+  secondary:
+  - Calculus/Multivariable and Vector Calculus
+  - Geometry and Topology/Manifolds
+  level: undergrad
+  kind: lecture-notes
+  confidence: high
+  note: These are undergraduate notes on multivariable vector calculus, differential forms, and tensor calculus.
 0da3a47d090f0847:
   title: Asymptotic Analysis and Singular Perturbation Theory
   primary: Applied and Computational/Asymptotics and Perturbation Theory
@@ -3004,6 +3230,16 @@ b7ad9a1d03051ce5:
   kind: lecture-notes
   confidence: high
   note: Short notes on regular perturbation expansions.
+688a66a431bdefb1:
+  title: The NU RBS Book e2
+  primary: Applied and Computational/Computer Aided Geometric Design
+  secondary:
+  - Applied and Computational/Numerical Analysis
+  - Geometry and Topology/Differential Geometry
+  level: graduate
+  kind: monograph
+  confidence: high
+  note: B-splines/NURBS for CAGD; no CAGD subject.
 78894d5603fff55f:
   title: Engineering AI Systems
   primary: Applied and Computational/Data Science and Machine Learning
@@ -3023,6 +3259,15 @@ b7ad9a1d03051ce5:
   kind: lecture-notes
   confidence: medium
   note: 'Inverse problems: Bayesian inference, Monte Carlo, least squares.'
+00b0560d4e22f9f5:
+  title: Make Your Own Neural Network
+  primary: Applied and Computational/Data Science and Machine Learning
+  secondary: []
+  level: general
+  kind: textbook
+  confidence: high
+  note: An accessible guide to neural networks with a Python implementation, so it fits machine learning as a quantitative
+    subject.
 b3e3d7b7f6873c9f:
   title: Mathematical Foundations of Big Data Analytics
   primary: Applied and Computational/Data Science and Machine Learning
@@ -3040,6 +3285,58 @@ b3e3d7b7f6873c9f:
   kind: monograph
   confidence: high
   note: Preference, risk, uncertainty and social choice; decision theory, not analysis.
+082746f60123ec42:
+  title: 'Introduction to the Mathematics of Finance: From Risk Management to Options Pricing'
+  primary: Applied and Computational/Mathematical Finance
+  secondary:
+  - Probability and Statistics/Probability Theory
+  - Applied and Computational/Optimization
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An upper-division introduction to mathematical finance covering portfolio risk, probability, and option
+    pricing.
+7312f728ffd64ea1:
+  title: 'Mathematical Methods for Finance: Tools for Asset and Risk Management'
+  primary: Applied and Computational/Mathematical Finance
+  secondary:
+  - Probability and Statistics/Probability Theory
+  - Probability and Statistics/Stochastic Calculus and SDEs
+  - Applied and Computational/Optimization
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: A textbook on calculus, probability, optimization, and stochastic processes applied to asset and risk management
+    in finance.
+3820f3b2da4aa992:
+  title: The Concepts and Practice of Mathematical Finance
+  primary: Applied and Computational/Mathematical Finance
+  secondary:
+  - Probability and Statistics/Stochastic Calculus and SDEs
+  - Probability and Statistics/Probability Theory
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: A textbook on mathematical finance covering derivatives pricing, stochastic models, and practical numerical
+    methods.
+0e9e48672648691d:
+  title: A First Course in Mathematical Modeling
+  primary: Applied and Computational/Mathematical Modeling
+  secondary:
+  - Differential Equations and Dynamics/Ordinary Differential Equations
+  level: intro-undergrad
+  kind: textbook
+  confidence: medium
+  note: Mathematical modeling with difference and differential equations; applied modeling.
+0798b40f34cc2fed:
+  title: Signals & Systems
+  primary: Applied and Computational/Mathematical Modeling
+  secondary:
+  - Analysis/Fourier Analysis
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook on signal and system analysis, including Fourier methods, transforms, and sampling.
 c61fea4aeaae066b:
   title: An Introduction to Numerical Anlysis
   primary: Applied and Computational/Numerical Analysis
@@ -3284,17 +3581,16 @@ a2750bf4041e515e:
   kind: textbook
   confidence: high
   note: 'Apostol vol 2: linear algebra, multivariable calculus, probability.'
-c96fcd59dec6b0c4:
-  title: Calculus
+aebecc12a0155615:
+  title: 'Calculus Illustrated. Volume 4: Calculus in Higher Dimensions'
   primary: Calculus/Multivariable and Vector Calculus
   secondary:
-  - Algebra/Linear Algebra
-  - Probability and Statistics/Probability Theory
-  - Differential Equations and Dynamics/Ordinary Differential Equations
+  - Analysis/Analysis in Several Variables
+  - Analysis/Vector and Tensor Analysis
   level: undergrad
   kind: textbook
-  confidence: high
-  note: 'Apostol vol 2: linear algebra, multivariable calculus, probability.'
+  confidence: medium
+  note: An undergraduate textbook on multivariable calculus, including gradients, integrals, and vector fields.
 d0874dcaa3b103c5:
   title: Calculus of Several Variables
   primary: Calculus/Multivariable and Vector Calculus
@@ -3315,6 +3611,28 @@ efc97b1bc0da5b9b:
   kind: textbook
   confidence: high
   note: 'Apostol vol 2: linear algebra, multivariable calculus, probability.'
+c96fcd59dec6b0c4:
+  title: 'Calculus, Volume 2: Multi-Variable Calculus and Linear Algebra, with Applications to Differential Equations
+    and Probability'
+  primary: Calculus/Multivariable and Vector Calculus
+  secondary:
+  - Algebra/Linear Algebra
+  - Differential Equations and Dynamics/Ordinary Differential Equations
+  - Probability and Statistics/Probability Theory
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate calculus textbook covering multivariable calculus alongside linear algebra, differential
+    equations, probability, and numerical analysis.
+13bd56ff971dda41:
+  title: 'Calculus: Early Transcendentals'
+  primary: Calculus/Multivariable and Vector Calculus
+  secondary:
+  - Calculus/Single-Variable Calculus
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: A comprehensive introductory calculus textbook covering single-variable, multivariable, and vector calculus.
 9d3a63569b818068:
   title: Multidimensional Differential and Integral Calculus
   primary: Calculus/Multivariable and Vector Calculus
@@ -3333,6 +3651,42 @@ efc97b1bc0da5b9b:
   kind: textbook
   confidence: high
   note: Multivariable calculus text, not rigorous analysis.
+cdeb164275cb208f:
+  title: Vector and Complex Calculus for the Physical Sciences
+  primary: Calculus/Multivariable and Vector Calculus
+  secondary:
+  - Analysis/Complex Analysis
+  - Algebra/Linear Algebra
+  level: undergrad
+  kind: lecture-notes
+  confidence: high
+  note: Undergraduate course notes covering vector algebra and calculus alongside complex calculus for the physical
+    sciences.
+1c3e052e2116a185:
+  title: Vector Calculus
+  primary: Calculus/Multivariable and Vector Calculus
+  secondary: []
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: A sophomore-level textbook on multivariable calculus and vector analysis.
+73c899d67fec43c2:
+  title: Vector Calculus
+  primary: Calculus/Multivariable and Vector Calculus
+  secondary: []
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: A one-semester textbook on multivariable and vector calculus for students who have completed single-variable
+    calculus.
+781814bc873d6f2c:
+  title: Vector Calculus
+  primary: Calculus/Multivariable and Vector Calculus
+  secondary: []
+  level: intro-undergrad
+  kind: lecture-notes
+  confidence: high
+  note: Cambridge Part IA lecture notes by David Tong covering multivariable and vector calculus.
 d0e1ef05c49b758f:
   title: Vector Calculus and Differential Equations
   primary: Calculus/Multivariable and Vector Calculus
@@ -3343,6 +3697,14 @@ d0e1ef05c49b758f:
   kind: textbook
   confidence: high
   note: Vector calculus, series, plus ODEs and Laplace transform.
+c7524a29ed1882d5:
+  title: Vector Calculus for Engineers
+  primary: Calculus/Multivariable and Vector Calculus
+  secondary: []
+  level: intro-undergrad
+  kind: lecture-notes
+  confidence: high
+  note: Lecture notes introducing multivariable and vector calculus for engineering students.
 4269739290accf53:
   title: Vectors and Functions of Several Variables
   primary: Calculus/Multivariable and Vector Calculus
@@ -3352,6 +3714,17 @@ d0e1ef05c49b758f:
   kind: textbook
   confidence: high
   note: Vector calculus, line and surface integrals.
+ceac5327e1705e91:
+  title: Algebra and Trigonometry with Analytic Geometry
+  primary: Calculus/Precalculus
+  secondary:
+  - Calculus/Single-Variable Calculus
+  - Algebra/Linear Algebra
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: A college algebra, trigonometry, and analytic geometry textbook covering foundational topics that prepare
+    students for calculus.
 94d1f5a7af0571d7:
   title: Basic Mathematics
   primary: Calculus/Precalculus
@@ -3387,6 +3760,24 @@ f05fdb074f3b0afd:
   kind: other
   confidence: low
   note: One-page graph image, no text; guess from title.
+689e9890219060fb:
+  title: Precalculus
+  primary: Calculus/Precalculus
+  secondary: []
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: A college-level precalculus textbook covering functions, trigonometry, and related topics.
+80a7a42fa487e682:
+  title: Precalculus with Geometry and Trigonometry
+  primary: Calculus/Precalculus
+  secondary:
+  - Geometry and Topology/Euclidean and Classical Geometry
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: A precalculus textbook covering algebra, analytic geometry, and trigonometry for students preparing for
+    higher mathematics.
 0b5be2e173dbf47f:
   title: Trigonometry
   primary: Calculus/Precalculus
@@ -3414,6 +3805,15 @@ b7ab67f7c64d4a81:
   kind: textbook
   confidence: medium
   note: Pure mathematics course at pre-university level; title only.
+785f8c462ee16fc0:
+  title: A First Course in Calculus
+  primary: Calculus/Single-Variable Calculus
+  secondary:
+  - Calculus/Multivariable and Vector Calculus
+  level: intro-undergrad
+  kind: textbook
+  confidence: medium
+  note: A first-year calculus textbook covering differentiation, integration, and some multivariable calculus.
 98b9aa2ec9bd79d2:
   title: Analytic Geometry and Calculus
   primary: Calculus/Single-Variable Calculus
@@ -3507,6 +3907,17 @@ afec152a816336b7:
   kind: textbook
   confidence: high
   note: Standard calculus text with analytic geometry.
+9d70477000212db4:
+  title: 'Calculus, Volume 1: One-Variable Calculus, with an Introduction to Linear Algebra'
+  primary: Calculus/Single-Variable Calculus
+  secondary:
+  - Algebra/Linear Algebra
+  - Differential Equations and Dynamics/Ordinary Differential Equations
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: A rigorous undergraduate textbook on single-variable calculus that also introduces linear algebra and differential
+    equations.
 5183b65ebf6c7d5c:
   title: Differential and Integral Calculus
   primary: Calculus/Single-Variable Calculus
@@ -3744,15 +4155,6 @@ a9b7f3eb9c3540bb:
   kind: textbook
   confidence: high
   note: 'Discrete dynamical systems on R: periodic points, Sarkovskii, chaos.'
-0e9e48672648691d:
-  title: A First Course in Mathematical Modeling
-  primary: Applied and Computational/Mathematical Modeling
-  secondary:
-  - Differential Equations and Dynamics/Ordinary Differential Equations
-  level: intro-undergrad
-  kind: textbook
-  confidence: medium
-  note: Mathematical modeling with difference and differential equations; applied modeling.
 95c99624b12a05b2:
   title: Differential Equations Dynamical Systems and an Introduction to Chaos
   primary: Differential Equations and Dynamics/Dynamical Systems
@@ -3809,6 +4211,16 @@ e4c3681c828fd301:
   kind: textbook
   confidence: high
   note: Nonlinear stability, bifurcations, chaos, control.
+11e77e93866fcf21:
+  title: One-Dimensional Dynamics
+  primary: Differential Equations and Dynamics/Dynamical Systems
+  secondary:
+  - Differential Equations and Dynamics/Ergodic Theory
+  - Analysis/Complex Analysis
+  level: research
+  kind: monograph
+  confidence: medium
+  note: A research-level account of one-dimensional dynamical systems, including ergodic theory and renormalization.
 9b1ab21c1da08d0e:
   title: A First Course in Ergodic Theory
   primary: Differential Equations and Dynamics/Ergodic Theory
@@ -3983,6 +4395,17 @@ abb321e74f8faf55:
   kind: monograph
   confidence: high
   note: Pseudo-differential operators on singular manifolds.
+dc9a53655ddc1b2a:
+  title: 'Applied Partial Differential Equations: With Fourier Series and Boundary Value Problems'
+  primary: Differential Equations and Dynamics/Partial Differential Equations
+  secondary:
+  - Analysis/Fourier Analysis
+  - Applied and Computational/Numerical Analysis
+  level: undergrad
+  kind: textbook
+  confidence: medium
+  note: An undergraduate textbook on applied partial differential equations, covering Fourier series, boundary value
+    problems, and numerical methods.
 db5ae0a353eedb47:
   title: Essential Partial Differential Equations
   primary: Differential Equations and Dynamics/Partial Differential Equations
@@ -4041,6 +4464,17 @@ cf08523b375948f5:
   kind: lecture-notes
   confidence: high
   note: Power series, Fourier series, orthogonality leading to PDEs by separation of variables.
+9526fbe59e390fd0:
+  title: Introduction to Partial Differential Equations
+  primary: Differential Equations and Dynamics/Partial Differential Equations
+  secondary:
+  - Analysis/Fourier Analysis
+  - Applied and Computational/Numerical Analysis
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An advanced undergraduate textbook on the theory, solution methods, and numerical analysis of partial differential
+    equations.
 7fdd06d5ab8441a7:
   title: Introduction to Partial Differential Equations e3
   primary: Differential Equations and Dynamics/Partial Differential Equations
@@ -4107,6 +4541,17 @@ ebd348ba93cd29af:
   kind: textbook
   confidence: high
   note: 'Evans graduate PDE: Sobolev spaces, elliptic, nonlinear PDE, calculus of variations.'
+a902beeb56cf0627:
+  title: Partial Differential Equations
+  primary: Differential Equations and Dynamics/Partial Differential Equations
+  secondary:
+  - Analysis/Distributions and Sobolev Spaces
+  - Analysis/Calculus of Variations
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate textbook surveying linear and nonlinear partial differential equations, including Sobolev space
+    methods and the calculus of variations.
 66287705d8971b2c:
   title: Partial Differential Equations 1
   primary: Differential Equations and Dynamics/Partial Differential Equations
@@ -4190,6 +4635,15 @@ a938289fb5142e87:
   kind: textbook
   confidence: high
   note: Symmetric functions, Schur functions, tableaux.
+07cfaaa69e9cc4c7:
+  title: 'Combinatorics on Words formalized: Basics'
+  primary: Discrete Mathematics/Combinatorics
+  secondary:
+  - Computer Science/Formal Methods and Verification
+  level: graduate
+  kind: lecture-notes
+  confidence: medium
+  note: A formalized treatment of combinatorics on words with Isabelle proofs, placing it in discrete mathematics.
 e20724f4491903fd:
   title: Discrete Calculus
   primary: Discrete Mathematics/Combinatorics
@@ -4216,6 +4670,15 @@ e20724f4491903fd:
   kind: monograph
   confidence: high
   note: Stanley's Enumerative Combinatorics vol. 2.
+550a9366b5cfcd9f:
+  title: 'Finite Ordered Sets: Concepts, Results and Uses'
+  primary: Discrete Mathematics/Combinatorics
+  secondary:
+  - Foundations/Lattice and Order Theory
+  level: graduate
+  kind: monograph
+  confidence: high
+  note: A graduate-level monograph on finite ordered sets, their combinatorial theory and applications.
 08145cac8e2bad7f:
   title: Introduction to Combinatorics and Graph Theory
   primary: Discrete Mathematics/Combinatorics
@@ -4520,6 +4983,30 @@ cb8517e7e645b58f:
   kind: monograph
   confidence: medium
   note: Shoenfield's recursion theory; little text available.
+9cfbc2c391353c09:
+  title: Fuzzy Mathematics
+  primary: Foundations/Fuzzy Mathematics
+  secondary: []
+  level: graduate
+  kind: monograph
+  confidence: medium
+  note: Fuzzy sets, fuzzy numbers, vagueness.
+b5579cc106807cd4:
+  title: Fuzzy Mathematics
+  primary: Foundations/Fuzzy Mathematics
+  secondary: []
+  level: research
+  kind: survey
+  confidence: medium
+  note: Special issue collection on fuzzy mathematics.
+9b9d64561587bcec:
+  title: Fuzzy Sets and Rule Bases
+  primary: Foundations/Fuzzy Mathematics
+  secondary: []
+  level: undergrad
+  kind: lecture-notes
+  confidence: medium
+  note: Short notes on fuzzy sets and rule bases.
 bf6e38d05edb5780:
   title: Lambda Calculus With Types
   primary: Foundations/Lambda Calculus
@@ -4538,6 +5025,14 @@ bf6e38d05edb5780:
   kind: monograph
   confidence: high
   note: Barendregt's untyped lambda calculus, syntax and semantics (models).
+95cb5804ebdbb048:
+  title: Algebraic Theory of Lattices
+  primary: Foundations/Lattice and Order Theory
+  secondary: []
+  level: graduate
+  kind: monograph
+  confidence: high
+  note: A graduate-level treatment of lattice structure theory, classified under lattice and order theory.
 c59642703ed16664:
   title: Calculus of Relations Axiomatisation and Algorithms
   primary: Foundations/Lattice and Order Theory
@@ -4558,6 +5053,25 @@ c59642703ed16664:
   kind: monograph
   confidence: high
   note: Gratzer general lattice theory.
+656c35120853bb63:
+  title: General Lattice Theory
+  primary: Foundations/Lattice and Order Theory
+  secondary:
+  - Algebra/Universal Algebra
+  level: graduate
+  kind: reference
+  confidence: high
+  note: A comprehensive reference on lattice theory and its algebraic structure, intended for advanced mathematical
+    study.
+85872479755eeacd:
+  title: General Lattice Theory
+  primary: Foundations/Lattice and Order Theory
+  secondary:
+  - Algebra/Universal Algebra
+  level: graduate
+  kind: monograph
+  confidence: medium
+  note: A graduate-level monograph on lattice theory, a branch of mathematics concerned with ordered algebraic structures.
 4a8be3cd2682552a:
   title: Introduction to Lattices and Order
   primary: Foundations/Lattice and Order Theory
@@ -4592,6 +5106,16 @@ b76462486fba3cb2:
   kind: lecture-notes
   confidence: high
   note: Lecture notes on lattice theory with reference list.
+b2f7305336b4dfcd:
+  title: 'Lattice Theory: Foundation'
+  primary: Foundations/Lattice and Order Theory
+  secondary:
+  - Algebra/Universal Algebra
+  level: research
+  kind: reference
+  confidence: high
+  note: A comprehensive research-level treatment of lattice theory, including order, congruences, constructions,
+    and varieties.
 c0cb0214f9830239:
   title: Latticenotes
   primary: Foundations/Lattice and Order Theory
@@ -4664,6 +5188,17 @@ ddf49d716a58b00d:
   kind: textbook
   confidence: medium
   note: Mostly informal/inductive logic with some formal logic chapters; philosophy-style.
+e1fb687bb9f1d246:
+  title: A Concise Introduction to Mathematical Logic
+  primary: Foundations/Mathematical Logic
+  secondary:
+  - Foundations/Model Theory
+  - Foundations/Computability and Recursion Theory
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate-level textbook covering mathematical logic, model theory, and incompleteness, with a chapter
+    on logic programming.
 79baf1ed4e817e0b:
   title: A Course in Logic for Mathematicians
   primary: Foundations/Mathematical Logic
@@ -4695,6 +5230,16 @@ f0c61665af442458:
   kind: textbook
   confidence: high
   note: 'Enderton: sentential and first-order logic, undecidability.'
+5c755fa1ec9c8a1d:
+  title: A Mathematical Introduction to Logic
+  primary: Foundations/Mathematical Logic
+  secondary:
+  - Foundations/Model Theory
+  - Foundations/Computability and Recursion Theory
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook introducing mathematical logic, including model theory and computability.
 c02e492ac6d8c687:
   title: A Mathematical Introduction to Mathematical Logic
   primary: Foundations/Mathematical Logic
@@ -4731,6 +5276,15 @@ d7e7c93ad0036bbc:
   kind: lecture-notes
   confidence: high
   note: Short primer on second-order logic.
+8b3aa30887994f50:
+  title: An Introduction to Formal Logic
+  primary: Foundations/Mathematical Logic
+  secondary:
+  - Foundations/Proofs and Mathematical Reasoning
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: An introductory textbook on deductive and classical first-order logic, classified under mathematical logic.
 2d406100d6dbeeb6:
   title: An Introduction to Mathematical Logic
   primary: Foundations/Mathematical Logic
@@ -4766,6 +5320,17 @@ d7e7c93ad0036bbc:
   kind: paper
   confidence: medium
   note: Short article on second-order predicate logic.
+38ae22d8f47f2f07:
+  title: 'Beginning Mathematical Logic: A Study Guide'
+  primary: Foundations/Mathematical Logic
+  secondary:
+  - Foundations/Model Theory
+  - Foundations/Set Theory
+  - Foundations/Proof Theory
+  level: intro-undergrad
+  kind: survey
+  confidence: high
+  note: Peter Smith’s introductory guide surveys mathematical logic topics and recommends books for studying them.
 f7627839e877b758:
   title: Concise Introduction to Logic and Set Theory
   primary: Foundations/Mathematical Logic
@@ -4785,14 +5350,6 @@ f7627839e877b758:
   kind: lecture-notes
   confidence: high
   note: Second-order and higher-order logic, syntax, semantics, metalogic.
-c89db3034475c148:
-  title: dokumen pub models-and-idealizations-in-science-artifactual-and-fictional-approaches-logic-epistemology-and-the-unity-of-science-50-3030658015-9783030658014
-  primary: Foundations/Philosophy of Mathematics and Science
-  secondary: []
-  level: research
-  kind: monograph
-  confidence: low
-  note: 'Philosophy of science: models and idealization; no good mathematical subject.'
 4701c2e6efd82249:
   title: Extensions of First Order Logic
   primary: Foundations/Mathematical Logic
@@ -4820,6 +5377,17 @@ b3ed5b5fbcabd333:
   kind: textbook
   confidence: high
   note: 'Modal logic: propositional and first-order modal systems, tableaus.'
+9532602efa8a9b70:
+  title: First-order Logic
+  primary: Foundations/Mathematical Logic
+  secondary:
+  - Foundations/Model Theory
+  - Foundations/Proof Theory
+  level: undergrad
+  kind: textbook
+  confidence: medium
+  note: An Open Logic Project textbook part developing first-order logic and its metatheory, including semantics,
+    model theory, and completeness.
 297f78eb6b6c0f19:
   title: Foundations of Mathematical Logic
   primary: Foundations/Mathematical Logic
@@ -4928,11 +5496,14 @@ d3a4873fdddd37fb:
   title: Logic and Structure
   primary: Foundations/Mathematical Logic
   secondary:
+  - Foundations/Model Theory
   - Foundations/Proof Theory
-  level: graduate
+  - Foundations/Computability and Recursion Theory
+  level: intro-undergrad
   kind: textbook
   confidence: high
-  note: Van Dalen edition.
+  note: An introductory textbook on formal logic, model theory, proof theory, and incompleteness, classified as
+    mathematical logic.
 ba79bac545f29eb9:
   title: Logic As Algebra
   primary: Foundations/Mathematical Logic
@@ -5056,6 +5627,17 @@ d42ed607d018333b:
   kind: paper
   confidence: high
   note: Expository paper on second-order logic and incompleteness.
+fc0a6a2ac3e0dd83:
+  title: Sentential Logic
+  primary: Foundations/Mathematical Logic
+  secondary:
+  - Foundations/Proof Theory
+  - Foundations/Proofs and Mathematical Reasoning
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: A textbook excerpt introducing sentential logic and developing formal proofs and Gödel’s results, so it
+    belongs to mathematical logic.
 25df3e8fa47587f6:
   title: Sets Models and Proofs
   primary: Foundations/Mathematical Logic
@@ -5482,6 +6064,16 @@ e3b52ca9419efa91:
   kind: textbook
   confidence: high
   note: Constructs N, Z, Q, R, C.
+be13dd071712fb32:
+  title: Number Systems and the Foundations of Analysis
+  primary: Foundations/Number Systems
+  secondary:
+  - Foundations/Set Theory
+  - Analysis/Real Analysis
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate text developing number systems from logic and set theory through the real numbers and analysis.
 872a938d90cf9617:
   title: Numbers
   primary: Foundations/Number Systems
@@ -5634,6 +6226,23 @@ b78f165f80bed7fe:
   kind: popular
   confidence: high
   note: Axioms, constructions of reals, complex, quaternions, hyperreals, surreals.
+c89db3034475c148:
+  title: dokumen pub models-and-idealizations-in-science-artifactual-and-fictional-approaches-logic-epistemology-and-the-unity-of-science-50-3030658015-9783030658014
+  primary: Foundations/Philosophy of Mathematics and Science
+  secondary: []
+  level: research
+  kind: monograph
+  confidence: low
+  note: 'Philosophy of science: models and idealization; no good mathematical subject.'
+322b1148997f78b3:
+  title: Transformation—A Fundamental Idea of Mathematics Education
+  primary: Foundations/Philosophy of Mathematics and Science
+  secondary: []
+  level: graduate
+  kind: other
+  confidence: medium
+  note: This edited research volume examines transformation in mathematics education and didactics, so it belongs
+    to mathematics, though the subject list has no dedicated education category.
 96c866c69155bace:
   title: An Introduction to Proof Theory
   primary: Foundations/Proof Theory
@@ -5844,6 +6453,19 @@ c7c368c910f32a4d:
   kind: textbook
   confidence: high
   note: Intro to proof using basic analysis examples.
+cc255f6b48f3de3d:
+  title: 'Pure Mathematics for Beginners: A Rigorous Introduction to Logic, Set Theory, Abstract Algebra, Number
+    Theory, Real Analysis, Topology, Complex Analysis, and Linear Algebra'
+  primary: Foundations/Proofs and Mathematical Reasoning
+  secondary:
+  - Algebra/Abstract Algebra
+  - Analysis/Real Analysis
+  - Geometry and Topology/Point-Set Topology
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: A self-contained, rigorous introductory textbook spanning core areas of pure mathematics and mathematical
+    reasoning.
 dc3b8187c2bf6c40:
   title: tag reference
   primary: Foundations/Proofs and Mathematical Reasoning
@@ -5928,6 +6550,16 @@ f601a4d19f0197f0:
   kind: monograph
   confidence: high
   note: Bourbaki set theory with formal mathematics and logic foundations.
+2d6fc41429ce1808:
+  title: 'Elements of Mathematics: Theory of Sets'
+  primary: Foundations/Set Theory
+  secondary:
+  - Foundations/Mathematical Logic
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: Bourbaki’s axiomatic treatment of set theory and mathematical structures, presented as a foundational mathematics
+    text.
 6acb688f58885d43:
   title: Elements of Set Theory
   primary: Foundations/Set Theory
@@ -5936,30 +6568,6 @@ f601a4d19f0197f0:
   kind: textbook
   confidence: high
   note: Classic axiomatic set theory textbook.
-9cfbc2c391353c09:
-  title: Fuzzy Mathematics
-  primary: Foundations/Fuzzy Mathematics
-  secondary: []
-  level: graduate
-  kind: monograph
-  confidence: medium
-  note: Fuzzy sets, fuzzy numbers, vagueness.
-b5579cc106807cd4:
-  title: Fuzzy Mathematics
-  primary: Foundations/Fuzzy Mathematics
-  secondary: []
-  level: research
-  kind: survey
-  confidence: medium
-  note: Special issue collection on fuzzy mathematics.
-9b9d64561587bcec:
-  title: Fuzzy Sets and Rule Bases
-  primary: Foundations/Fuzzy Mathematics
-  secondary: []
-  level: undergrad
-  kind: lecture-notes
-  confidence: medium
-  note: Short notes on fuzzy sets and rule bases.
 d29895a0083904dd:
   title: Introduction to Set Theory
   primary: Foundations/Set Theory
@@ -5968,6 +6576,15 @@ d29895a0083904dd:
   kind: textbook
   confidence: high
   note: 'Set theory textbook: relations, ordinals, cardinals.'
+26366b1d51182143:
+  title: Introduction to Set Theory
+  primary: Foundations/Set Theory
+  secondary:
+  - Foundations/Mathematical Logic
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: This is a third edition textbook introducing mathematical set theory.
 015b263beb54f911:
   title: INTRODUCTION TO SET THEORY AND TOPOLOGY
   primary: Foundations/Set Theory
@@ -6031,6 +6648,16 @@ edaec50b03ae3164:
   kind: monograph
   confidence: high
   note: Quine's set theory with logic of virtual classes.
+45322a0ae9517164:
+  title: Set Theory
+  primary: Foundations/Set Theory
+  secondary:
+  - Foundations/Mathematical Logic
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate text on axiomatic and advanced set theory, including forcing, large cardinals, and descriptive
+    set theory.
 035f65ded66bcf53:
   title: Set Theory a First Course
   primary: Foundations/Set Theory
@@ -6189,6 +6816,17 @@ be7ab3d1c58c8308:
   kind: monograph
   confidence: medium
   note: Simple type theory (higher-order logic) with proofs
+b86717e32348c82e:
+  title: Simple Type Theory
+  primary: Foundations/Type Theory
+  secondary:
+  - Foundations/Mathematical Logic
+  - Foundations/Proof Theory
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate-level textbook on simple type theory and its syntax, semantics, proof system, and applications
+    to formalizing mathematics.
 b6ed1ebeb0d4fdae:
   title: Temporal Type Theory
   primary: Foundations/Type Theory
@@ -6346,6 +6984,15 @@ d6fde44b435a23e9:
   kind: monograph
   confidence: medium
   note: Bell's history; no TOC extracted.
+d78cc16d0c3fa82d:
+  title: 'The History of Mathematics: An Introduction'
+  primary: General/History of Mathematics
+  secondary: []
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook surveying the history of mathematics from ancient civilizations through the twentieth
+    century.
 3964ba9f032879bb:
   title: The Making of Mathematics
   primary: General/History of Mathematics
@@ -6375,6 +7022,24 @@ a32761e6fe3d2473:
   kind: popular
   confidence: medium
   note: Elegant proofs across number theory, geometry, analysis, combinatorics, graph theory.
+e3af646a4a9dfe56:
+  title: 'Street-Fighting Mathematics: The Art of Educated Guessing and Opportunistic Problem Solving'
+  primary: General/Popular and Recreational Mathematics
+  secondary: []
+  level: general
+  kind: popular
+  confidence: high
+  note: An accessible book on estimation and practical mathematical problem solving, so it fits popular mathematics.
+628ca8fef39a3e52:
+  title: Exercises for The Feynman Lectures on Physics
+  primary: General/Problem Books and Solutions
+  secondary:
+  - Physics/Classical Mechanics
+  - Physics/Mathematical Physics
+  level: intro-undergrad
+  kind: problem-book
+  confidence: high
+  note: An introductory physics exercise collection for The Feynman Lectures on Physics, with answers and solutions.
 0425889db04a1613:
   title: Inequalities A Mathematical Olympiad Approach
   primary: General/Problem Books and Solutions
@@ -6403,6 +7068,14 @@ a32761e6fe3d2473:
   kind: problem-book
   confidence: high
   note: Problem collection in calculus for technical schools.
+d57b7da43589eaf9:
+  title: Organic Chemistry
+  primary: General/Reference and Handbooks
+  secondary: []
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: An introductory college organic chemistry textbook, classified as science because it teaches chemistry.
 f67726a93f3f5ac9:
   title: Princeton Companion To Mathematics
   primary: General/Reference and Handbooks
@@ -6524,6 +7197,16 @@ c2dfaebb9dd3b18b:
   kind: textbook
   confidence: high
   note: Elastic curves, Willmore surfaces; curves and surfaces with variational focus.
+9c1d64e8aa591532:
+  title: Differential Geometry of Curves & Surfaces
+  primary: Geometry and Topology/Differential Geometry
+  secondary:
+  - Geometry and Topology/Riemannian Geometry
+  - Geometry and Topology/Manifolds
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook on the local and global differential geometry of curves and surfaces.
 9897b26e5b9f56fd:
   title: Differential Geometry of Curves and Surfaces
   primary: Geometry and Topology/Differential Geometry
@@ -6556,6 +7239,17 @@ f1f37e8468fbab0a:
   kind: lecture-notes
   confidence: medium
   note: Calculus on surfaces in R3
+413a96015f5c6406:
+  title: 'Differential Geometry: an introduction by a scenic route'
+  primary: Geometry and Topology/Differential Geometry
+  secondary:
+  - Geometry and Topology/Manifolds
+  - Algebra/Lie Groups and Lie Algebras
+  - Geometry and Topology/Algebraic Topology
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A broad, advanced introduction to differential geometry covering manifolds, Lie theory, and topology.
 0f4626f64469490f:
   title: Discrete Differential Geometry
   primary: Geometry and Topology/Differential Geometry
@@ -6620,6 +7314,16 @@ e09bda96e99505b1:
   kind: textbook
   confidence: high
   note: Submanifolds, differential topology and Riemannian geometry.
+5163993e5140f4f9:
+  title: 'Riemann Surfaces: Complex Analysis from a Differential Geometric Viewpoint'
+  primary: Geometry and Topology/Differential Geometry
+  secondary:
+  - Analysis/Complex Analysis
+  - Algebra/Algebraic Geometry
+  level: graduate
+  kind: lecture-notes
+  confidence: high
+  note: Graduate lecture notes develop Riemann surfaces and holomorphic line bundles using differential geometry.
 8ca5422091f359ea:
   title: Spirals Helical Lines and Spiral Like Figures
   primary: Geometry and Topology/Differential Geometry
@@ -6649,6 +7353,14 @@ a9f5ae92ec7eef8c:
   kind: textbook
   confidence: high
   note: 'Survey of geometry: Euclidean, transformations, projective, non-Euclidean'
+30d6172779d968da:
+  title: A Treatise on Analytic Geometry
+  primary: Geometry and Topology/Euclidean and Classical Geometry
+  secondary: []
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate treatise on analytic geometry, with emphasis on conics and coordinate methods.
 1e654b5b0c0632b4:
   title: An Introduction To The Geometry Of N Dimensions
   primary: Geometry and Topology/Euclidean and Classical Geometry
@@ -6802,6 +7514,16 @@ e74d8f7d1f058c63:
   kind: paper
   confidence: medium
   note: Paper on parabolic trigonometry, analogue of circular/hyperbolic functions.
+45fd97e25fa045bf:
+  title: Problems in Plane and Solid Geometry, v.1 Plane Geometry
+  primary: Geometry and Topology/Euclidean and Classical Geometry
+  secondary:
+  - General/Problem Books and Solutions
+  level: school
+  kind: problem-book
+  confidence: medium
+  note: A collection of plane geometry problems with solutions for high school and college readers, centered on
+    classical geometry.
 2bfb281d84710890:
   title: Spherical Geometry and its Applications
   primary: Geometry and Topology/Euclidean and Classical Geometry
@@ -6971,6 +7693,16 @@ f58023f62e78d0a1:
   kind: textbook
   confidence: high
   note: Point-set basics then fundamental groups, covers, bundles.
+426ee8b590fd6364:
+  title: Basic Topology
+  primary: Geometry and Topology/Point-Set Topology
+  secondary:
+  - Geometry and Topology/Algebraic Topology
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook covering point-set and algebraic topology, including fundamental groups, homology,
+    surfaces, and knots.
 49bd2eb3fcafdb7f:
   title: Chapter 5 Topology of the Real Numbers
   primary: Geometry and Topology/Point-Set Topology
@@ -7168,6 +7900,16 @@ e3ce039ba82192b3:
   kind: textbook
   confidence: high
   note: Point-set topology from metrics, convergence and completeness toward neighborhoods.
+bccb059128989011:
+  title: Topologies and Uniformities
+  primary: Geometry and Topology/Point-Set Topology
+  secondary:
+  - Analysis/Metric Spaces
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate text on topological and uniform spaces, including metric spaces, that is distinct from
+    the listed book Metric Spaces.
 612864d6324d3285:
   title: Topology
   primary: Geometry and Topology/Point-Set Topology
@@ -7186,6 +7928,16 @@ db46c2ce9e4f4e58:
   kind: textbook
   confidence: high
   note: 'Munkres: general topology then fundamental group, covering spaces, surface classification.'
+861f0b6d4a3335f7:
+  title: Topology
+  primary: Geometry and Topology/Point-Set Topology
+  secondary:
+  - Geometry and Topology/Algebraic Topology
+  - Geometry and Topology/Manifolds
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: This second edition of Munkres’s topology textbook covers point-set and algebraic topology.
 1db13de7494ca243:
   title: Topology e2
   primary: Geometry and Topology/Point-Set Topology
@@ -7195,6 +7947,26 @@ db46c2ce9e4f4e58:
   kind: textbook
   confidence: high
   note: 'Second edition Manetti: general topology, homotopy, fundamental group, sheaf cohomology.'
+7e249652b4415fc5:
+  title: Topology for Analysis
+  primary: Geometry and Topology/Point-Set Topology
+  secondary:
+  - Analysis/Metric Spaces
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A topology text developing generalized analysis, classified under point-set topology.
+46e03c39d25374ed:
+  title: Topology of Surfaces
+  primary: Geometry and Topology/Point-Set Topology
+  secondary:
+  - Geometry and Topology/Algebraic Topology
+  - Geometry and Topology/Manifolds
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate mathematics textbook introducing topology through surfaces, with chapters on point-set
+    topology, homology, and manifolds.
 8cb9f686cc656ed1:
   title: Topology Through Inquiry
   primary: Geometry and Topology/Point-Set Topology
@@ -7214,6 +7986,16 @@ db46c2ce9e4f4e58:
   kind: textbook
   confidence: high
   note: Gentle point-set topology with metric spaces, compactness, Tychonoff.
+d408d3ce109e4d5b:
+  title: 'Topology: A First Course'
+  primary: Geometry and Topology/Point-Set Topology
+  secondary:
+  - Geometry and Topology/Algebraic Topology
+  - Analysis/Metric Spaces
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An introductory topology textbook covering point-set topology, metric spaces, and algebraic topology.
 355474fd2a6b7cd0:
   title: Introduction to Differential Geometry
   primary: Geometry and Topology/Riemannian Geometry
@@ -7379,6 +8161,15 @@ bd32cafb61e6acc9:
   kind: lecture-notes
   confidence: high
   note: Advanced analytical mechanics, rigid bodies, canonical transformations, chaos.
+3da1aee6b1b079f8:
+  title: An Introduction to Mechanics
+  primary: Physics/Classical Mechanics
+  secondary:
+  - Physics/Relativity
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook on classical mechanics, with additional coverage of special relativity.
 9d4960232146e2e3:
   title: Classical Dynamics
   primary: Physics/Classical Mechanics
@@ -7387,6 +8178,14 @@ bd32cafb61e6acc9:
   kind: textbook
   confidence: high
   note: 'Newtonian mechanics: central forces, particle systems, rigid bodies.'
+9dc2640e84cdc0d1:
+  title: Classical Dynamics
+  primary: Physics/Classical Mechanics
+  secondary: []
+  level: undergrad
+  kind: lecture-notes
+  confidence: high
+  note: Cambridge Part II course notes on classical mechanics, covering Newtonian, Lagrangian and Hamiltonian dynamics.
 5bf3496974a49b46:
   title: Classical Mechanics
   primary: Physics/Classical Mechanics
@@ -7452,6 +8251,37 @@ ab2c4252fbe62dca:
   kind: lecture-notes
   confidence: high
   note: Intermediate mechanics with variational principles.
+98bf5af6d7a60fae:
+  title: Intermediate Classical Mechanics
+  primary: Physics/Classical Mechanics
+  secondary:
+  - Physics/Mathematical Physics
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An intermediate textbook on classical mechanics for senior undergraduate and graduate students, covering
+    Newtonian, Lagrangian, and Hamiltonian mechanics.
+d99f05f7fd5484ff:
+  title: Introduction to Continuum Mechanics
+  primary: Physics/Classical Mechanics
+  secondary:
+  - Physics/Mathematical Physics
+  - Analysis/Vector and Tensor Analysis
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: An introductory textbook on continuum mechanics, covering the mechanics of solids and fluids at advanced
+    undergraduate and beginning graduate level.
+ddcd0903e42dca25:
+  title: Introduction to Continuum Mechanics
+  primary: Physics/Classical Mechanics
+  secondary:
+  - Physics/Mathematical Physics
+  - Analysis/Vector and Tensor Analysis
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate textbook on continuum mechanics and elasticity, classified as quantitative mechanics.
 f26e4e94bfee8c13:
   title: Introduction to Mechanics
   primary: Physics/Classical Mechanics
@@ -7460,6 +8290,15 @@ f26e4e94bfee8c13:
   kind: textbook
   confidence: high
   note: 'Kleppner mechanics: Newton''s laws, momentum, energy.'
+2b0c96169e3beb37:
+  title: Introduction to Orbital Mechanics and Spacecraft Attitudes for Thermal Engineers
+  primary: Physics/Classical Mechanics
+  secondary: []
+  level: intro-undergrad
+  kind: other
+  confidence: high
+  note: These are instructional slides on orbital mechanics and spacecraft attitudes, so they concern classical
+    mechanics but are not a book.
 dc3672699b46828d:
   title: Lagrangian and Hamiltonian Mechanics
   primary: Physics/Classical Mechanics
@@ -7469,14 +8308,6 @@ dc3672699b46828d:
   kind: textbook
   confidence: high
   note: Lagrangian and Hamiltonian mechanics plus classical fields.
-b24a5a54c4f04f66:
-  title: Landau Lifshitz Theoretical Physics Volume 1
-  primary: Physics/Classical Mechanics
-  secondary: []
-  level: graduate
-  kind: textbook
-  confidence: high
-  note: Landau-Lifshitz vol 1, Mechanics.
 4903576f8ee0a0fa:
   title: Mathematical Methods Of Classical Mechanics
   primary: Physics/Classical Mechanics
@@ -7487,6 +8318,26 @@ b24a5a54c4f04f66:
   kind: textbook
   confidence: medium
   note: Arnold, geometric treatment of mechanics; from title only.
+b24a5a54c4f04f66:
+  title: Mechanics
+  primary: Physics/Classical Mechanics
+  secondary:
+  - Physics/Mathematical Physics
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: This is Landau and Lifshitz’s advanced theoretical mechanics textbook, covering classical motion, conservation
+    laws, oscillations, and canonical equations.
+68fb53261706ac67:
+  title: 'Orbital Mechanics and Astrodynamics: Techniques and Tools for Space Missions'
+  primary: Physics/Classical Mechanics
+  secondary:
+  - Applied and Computational/Mathematical Modeling
+  level: graduate
+  kind: textbook
+  confidence: high
+  note: A graduate-level textbook on spacecraft orbits and mission design, grounded in classical mechanics and applied
+    mathematical modeling.
 fbbd49cc2f442fbd:
   title: Orbital Mechanics and Introduction
   primary: Physics/Classical Mechanics
@@ -7550,6 +8401,17 @@ d1d38bbbc1fcb8bb:
   kind: textbook
   confidence: medium
   note: Tensor calculus, general relativity and group/representation theory for physicists.
+2b965c6464fe932e:
+  title: Mathematical Relativity
+  primary: Physics/Mathematical Physics
+  secondary:
+  - Physics/Relativity
+  - Geometry and Topology/Differential Geometry
+  level: graduate
+  kind: lecture-notes
+  confidence: high
+  note: These graduate lecture notes develop the mathematical theory of general relativity, including singularity
+    theorems, Einstein’s equations, and black holes.
 d6ee5cd95a981ef0:
   title: Methods of Mathematical Physics Vol 1- Hilbert
   primary: Physics/Mathematical Physics
@@ -7561,6 +8423,14 @@ d6ee5cd95a981ef0:
   kind: monograph
   confidence: high
   note: 'Courant-Hilbert vol 1: eigenvalues, orthogonal functions, variational methods, integral equations.'
+af2d84b2a8652b08:
+  title: Introduction to Quantum Mechanics
+  primary: Physics/Quantum Mechanics
+  secondary: []
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook covering quantum theory and its applications, so it belongs in physics.
 cd2c02b767b5420a:
   title: LandauLifshitz-QuantumMechanics
   primary: Physics/Quantum Mechanics
@@ -7569,6 +8439,24 @@ cd2c02b767b5420a:
   kind: textbook
   confidence: high
   note: Landau-Lifshitz non-relativistic quantum mechanics.
+5e4dbc8b010ac230:
+  title: 'Quantum Mechanics: The Theoretical Minimum'
+  primary: Physics/Quantum Mechanics
+  secondary:
+  - Physics/Mathematical Physics
+  level: intro-undergrad
+  kind: textbook
+  confidence: high
+  note: An introductory, mathematically grounded course in quantum mechanics, so it belongs in physics.
+f19649bce67898ee:
+  title: The Physics of Quantum Mechanics
+  primary: Physics/Quantum Mechanics
+  secondary:
+  - Physics/Mathematical Physics
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An introduction to quantum mechanics for second-year physics students, so it belongs in physics.
 a69a5b0a5fd8f673:
   title: General Relativity
   primary: Physics/Relativity
@@ -7620,6 +8508,16 @@ ca1151e8e8a56148:
   kind: textbook
   confidence: medium
   note: Huang, from title only.
+b467c330dfd258d0:
+  title: Statistical Mechanics
+  primary: Physics/Statistical Mechanics
+  secondary:
+  - Physics/Mathematical Physics
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook on statistical mechanics, covering thermodynamics, ensembles, ideal gases, and
+    phase transitions.
 bc35450f1747ee85:
   title: Information Geometry and Its Applications
   primary: Probability and Statistics/Information Theory
@@ -7703,6 +8601,17 @@ a9487157adf3c29c:
   kind: textbook
   confidence: high
   note: Measure theory, probability, discrete martingales, Markov chains, Brownian motion.
+237674a8d238b7aa:
+  title: Measure-Theoretic Probability
+  primary: Probability and Statistics/Probability Theory
+  secondary:
+  - Analysis/Measure and Integration
+  - Probability and Statistics/Stochastic Processes
+  level: undergrad
+  kind: textbook
+  confidence: high
+  note: An undergraduate textbook on measure-theoretic probability, with applications to statistics, finance, and
+    engineering.
 1813e8c52c7424a8:
   title: Probability and Measure
   primary: Probability and Statistics/Probability Theory
@@ -7841,6 +8750,17 @@ cb375c3e0c8f6fab:
   kind: lecture-notes
   confidence: high
   note: Brownian motion, Ito integration, SDEs, risk-neutral pricing.
+def5a830232434be:
+  title: Basics of Stochastic Analysis
+  primary: Probability and Statistics/Stochastic Calculus and SDEs
+  secondary:
+  - Probability and Statistics/Probability Theory
+  - Differential Equations and Dynamics/Partial Differential Equations
+  level: graduate
+  kind: lecture-notes
+  confidence: high
+  note: Graduate course notes developing stochastic integration, stochastic differential equations, and stochastic
+    heat equations.
 4b46de3a7be7614a:
   title: Brief Introduction to Stochastic Calculus
   primary: Probability and Statistics/Stochastic Calculus and SDEs
@@ -8072,6 +8992,17 @@ e078d44a910f20f7:
   kind: monograph
   confidence: medium
   note: Brownian motion linked to potential theory and Markov semigroups.
+de0bd39e9ef4aecf:
+  title: Discrete Mathematics, Probability Theory and Stochastic Processes
+  primary: Probability and Statistics/Stochastic Processes
+  secondary:
+  - Discrete Mathematics/Discrete Mathematics
+  - Probability and Statistics/Probability Theory
+  level: undergrad
+  kind: textbook
+  confidence: medium
+  note: An undergraduate text on discrete mathematics, probability and stochastic processes with applications in
+    engineering and computer science.
 2232660e1909b42c:
   title: Essentials of Stochastic Processes e3
   primary: Probability and Statistics/Stochastic Processes

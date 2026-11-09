@@ -905,6 +905,91 @@ Physics/Statistical Mechanics/Landau Lifshitz T5 - Unknown.pdf  # repairs 559, 5
 Physics/Quantum Mechanics/LandauLifshitz-QuantumMechanics - Unknown.pdf  # repairs 632, 632 pp
 Physics/Classical Mechanics/Classical Mechanics - Goldstein.pdf  # repairs 691, 691 pp
 
+## Newly ingested (2026-11-08; placed properly when the list is regenerated)
+Foundations/Mathematical Logic/A Concise Introduction to Mathematical Logic - 3rd ed - Rautenberg.pdf  # new, 131 pp
+Foundations/Mathematical Logic/An Introduction to Formal Logic - 2nd ed - Smith.pdf  # new, 428 pp
+Foundations/Mathematical Logic/Beginning Mathematical Logic A Study Guide - 2nd ed - Smith.pdf  # new, 194 pp
+Foundations/Mathematical Logic/First-order Logic - OLP.pdf  # new, 182 pp
+Foundations/Mathematical Logic/Sentential Logic - Roy.pdf  # new, 259 pp
+Foundations/Set Theory/Introduction to Set Theory - 3rd ed - Hrbacek and Jech.pdf  # new, 308 pp
+Foundations/Number Systems/Number Systems and the Foundations of Analysis - Mendelson.pdf  # new, 371 pp
+Foundations/Lattice and Order Theory/Algebraic Theory of Lattices - Crawley and Dilworth.pdf  # new, 216 pp
+Foundations/Lattice and Order Theory/General Lattice Theory - 2nd ed - Grätzer.djvu  # new, ? pp
+Foundations/Lattice and Order Theory/General Lattice Theory - 2nd ed - Grätzer.pdf  # new, 682 pp
+Foundations/Lattice and Order Theory/Lattice Theory Foundation - Grätzer.pdf  # new, 639 pp
+Foundations/Philosophy of Mathematics and Science/Transformation—A Fundamental Idea of Mathematics Education - Rezat, Hattermann and Peter-Koop.pdf  # new, 417 pp
+Foundations/Proofs and Mathematical Reasoning/Pure Mathematics for Beginners A Rigorous Introduction to Logic, Set Theory, Abstract Algebra, Number Theory, Real Analysis, Topology, Complex Analysi - Warner.pdf  # new, 262 pp
+Analysis/Complex Analysis/Riemann Surfaces - Wehler.pdf  # new, 387 pp
+Analysis/Complex Analysis/Visual Complex Analysis - Needham - 2.pdf  # new, 612 pp
+Analysis/Functional Analysis/Linear Topological Spaces - Kelley et al.pdf  # new, 270 pp
+Analysis/Functional Analysis/Topological Vector Spaces - Schaefer.pdf  # new, 307 pp
+Analysis/Real Analysis/Advanced Calculus - 3rd ed - Buck and Buck.pdf  # new, 636 pp
+Analysis/Real Analysis/Foundations of Modern Analysis - Treatise on Analysis Vol I - Dieudonné.pdf  # new, 407 pp
+Analysis/Measure and Integration/Treatise on Analysis Vol II - Dieudonné.pdf  # new, 471 pp
+Geometry and Topology/Manifolds/Treatise on Analysis Vol III - Dieudonné.pdf  # new, 407 pp
+Geometry and Topology/Differential Geometry/Treatise on Analysis Vol IV - Dieudonné.pdf  # new, 461 pp
+Algebra/Lie Groups and Lie Algebras/Treatise on Analysis Vol V - Dieudonné.pdf  # new, 257 pp
+Analysis/Harmonic Analysis/Treatise on Analysis Vol VI - Dieudonné.pdf  # new, 249 pp
+Differential Equations and Dynamics/Partial Differential Equations/Treatise on Analysis Vol VII - Dieudonné.pdf  # new, 388 pp
+Differential Equations and Dynamics/Partial Differential Equations/Treatise on Analysis Vol VIII - Dieudonné.pdf  # new, 374 pp
+Analysis/Real Analysis/Mathematical Analysis – Problems and Exercises II - Feher, Kos and Toth.pdf  # new, 211 pp
+Analysis/Real Analysis/Problems and Theorems in Analysis - Polya and Szego.pdf  # new, 412 pp
+Analysis/Real Analysis/Problems in Real analysis - Godase.pdf  # new, 376 pp
+Analysis/Real Analysis/The Theory of Functions of a Real Variable - 2nd ed - Jeffery.pdf  # new, 246 pp
+Analysis/Vector and Tensor Analysis/Vector and Tensor Calculus - Miranda.pdf  # new, 361 pp
+Algebra/Linear Algebra/Linear Algebra and Its Applications - 4th ed - Strang.pdf  # new, 542 pp
+Algebra/Linear Algebra/Problems and Theorems in Linear Algebra - Prasolov.pdf  # new, 228 pp
+Geometry and Topology/Differential Geometry/Differential Geometry of Curves & Surfaces - 2nd ed - do Carmo.pdf  # new, 529 pp
+Geometry and Topology/Differential Geometry/Differential Geometry an introduction by a scenic route - Bogatskiy.pdf  # new, 1506 pp
+Geometry and Topology/Differential Geometry/Riemann Surfaces Complex Analysis from a Differential Geometric Viewpoint - Knöppel.pdf  # new, 151 pp
+Geometry and Topology/Euclidean and Classical Geometry/A Treatise on Analytic Geometry - Howison.pdf  # new, 627 pp
+Geometry and Topology/Euclidean and Classical Geometry/Problems in Plane and Solid Geometry, v.1 Plane Geometry - Prasolov.pdf  # new, 495 pp
+Geometry and Topology/Point-Set Topology/Basic Topology - 2nd ed - Armstrong.pdf  # new, 260 pp
+Geometry and Topology/Point-Set Topology/Topologies and Uniformities - James.pdf  # new, 236 pp
+Geometry and Topology/Point-Set Topology/Topology - 2nd ed - Munkres.pdf  # new, 552 pp
+Geometry and Topology/Point-Set Topology/Topology for Analysis - Wilansky.pdf  # new, 408 pp
+Geometry and Topology/Point-Set Topology/Topology of Surfaces - Kinsey.pdf  # new, 270 pp
+Geometry and Topology/Point-Set Topology/Topology A First Course - Munkres.pdf  # new, 414 pp
+Probability and Statistics/Stochastic Calculus and SDEs/Basics of Stochastic Analysis - Seppäläinen.pdf  # new, 400 pp
+Probability and Statistics/Stochastic Processes/Discrete Mathematics, Probability Theory and Stochastic Processes - Belhaouari, Bensmail and Mehrdoust.epub  # new, ? pp
+Differential Equations and Dynamics/Dynamical Systems/One-Dimensional Dynamics - de Melo and van Strien.pdf  # new, 594 pp
+Differential Equations and Dynamics/Partial Differential Equations/Applied Partial Differential Equations With Fourier Series and Boundary Value Problems - 5th ed - Haberman.pdf  # new, 779 pp
+Differential Equations and Dynamics/Partial Differential Equations/Introduction to Partial Differential Equations - Olver.pdf  # new, 796 pp
+Discrete Mathematics/Combinatorics/Combinatorics on Words formalized Basics - Holub, Raška and Starosta.pdf  # new, 216 pp
+Discrete Mathematics/Combinatorics/Finite Ordered Sets Concepts, Results and Uses - Caspard, Leclerc and Monjardet.pdf  # new, 352 pp
+Applied and Computational/Data Science and Machine Learning/Make Your Own Neural Network - Rashid.pdf  # new, 224 pp
+Applied and Computational/Mathematical Finance/Introduction to the Mathematics of Finance From Risk Management to Options Pricing - Roman.pdf  # new, 335 pp
+Applied and Computational/Mathematical Finance/Mathematical Methods for Finance Tools for Asset and Risk Management - 2nd ed - Focardi, Fabozzi and Bali.pdf  # new, 322 pp
+Applied and Computational/Mathematical Finance/The Concepts and Practice of Mathematical Finance - 2nd ed - Joshi.pdf  # new, 557 pp
+Applied and Computational/Mathematical Modeling/Signals & Systems - 2nd ed - Oppenheim, Willsky, and Nawab.pdf  # new, 987 pp
+General/History of Mathematics/The History of Mathematics An Introduction - 7th ed - Burton.pdf  # new, 819 pp
+General/Popular and Recreational Mathematics/Street-Fighting Mathematics The Art of Educated Guessing and Opportunistic Problem Solving - Mahajan.pdf  # new, 155 pp
+General/Problem Books and Solutions/Exercises for The Feynman Lectures on Physics - New Millennium ed - Feynman et al.pdf  # new, 324 pp
+General/Reference and Handbooks/Organic Chemistry - 10th ed - McMurry.pdf  # new, 1245 pp
+Calculus/Multivariable and Vector Calculus/Calculus Illustrated. Volume 4 Calculus in Higher Dimensions - Saveliev.pdf  # new, 510 pp
+Calculus/Multivariable and Vector Calculus/Calculus, Volume 2 Multi-Variable Calculus and Linear Algebra, with Applications to Differential Equations and Probability - 2nd ed - Apostol.pdf  # new, 696 pp
+Calculus/Multivariable and Vector Calculus/Vector and Complex Calculus for the Physical Sciences - Waleffe.pdf  # new, 174 pp
+Calculus/Multivariable and Vector Calculus/Vector Calculus - 6th ed - Marsden and Tromba.pdf  # new, 578 pp
+Calculus/Multivariable and Vector Calculus/Vector Calculus - Corral.pdf  # new, 222 pp
+Calculus/Multivariable and Vector Calculus/Vector Calculus - Tong.pdf  # new, 137 pp
+Calculus/Multivariable and Vector Calculus/Vector Calculus for Engineers - Chasnov.pdf  # new, 184 pp
+Calculus/Precalculus/Algebra and Trigonometry with Analytic Geometry - 12th ed - Swokowski and Cole.pdf  # new, 921 pp
+Calculus/Precalculus/Precalculus - OpenStax College.pdf  # new, 1483 pp
+Calculus/Precalculus/Precalculus with Geometry and Trigonometry - Sathaye.pdf  # new, 256 pp
+Calculus/Single-Variable Calculus/A First Course in Calculus - 5th ed - Lang.pdf  # new, 752 pp
+Physics/Classical Mechanics/Classical Dynamics - Tong.pdf  # new, 139 pp
+Physics/Classical Mechanics/Intermediate Classical Mechanics - Pao and Wang.pdf  # new, 442 pp
+Physics/Classical Mechanics/Introduction to Continuum Mechanics - 3rd ed - Lai, Rubin, and Krempl.pdf  # new, 571 pp
+Physics/Classical Mechanics/Introduction to Continuum Mechanics - 4th ed - Lai, Rubin and Krempl.pdf  # new, 535 pp
+Physics/Classical Mechanics/Introduction to Orbital Mechanics and Spacecraft Attitudes for Thermal Engineers - Rickman.pdf  # new, 203 pp
+Physics/Classical Mechanics/Mechanics - 3rd ed - Landau and Lifshitz.pdf  # new, 197 pp
+Physics/Classical Mechanics/Orbital Mechanics and Astrodynamics Techniques and Tools for Space Missions - Hintz.pdf  # new, 399 pp
+Physics/Mathematical Physics/Mathematical Relativity - Natário.pdf  # new, 171 pp
+Physics/Quantum Mechanics/Introduction to Quantum Mechanics - 3rd ed - Griffiths and Schroeter.pdf  # new, 646 pp
+Physics/Quantum Mechanics/Quantum Mechanics The Theoretical Minimum - Susskind and Friedman.pdf  # new, 385 pp
+Physics/Quantum Mechanics/The Physics of Quantum Mechanics - Binney and Skinner.pdf  # new, 310 pp
+Physics/Statistical Mechanics/Statistical Mechanics - Styer.pdf  # new, 277 pp
+
 ## Weaker copies of books listed above (18; config/lower-priority.txt)
 Foundations/Mathematical Logic/On Tarskis Axiomatic Foundation of the Calculus of Relations - Givant.pdf  # repairs 0, 29 pp
 Analysis/Real Analysis/An Introduction to Real Analysis - Hunter - 2.pdf  # repairs 0, 108 pp
@@ -924,3 +1009,16 @@ Probability and Statistics/Stochastic Processes/Markov Chains on Metric Spaces -
 Foundations/Set Theory/Set Theory and Foundations of Mathematics An Introduction to Mathematical Logic Volume 1 Set Theory - Cenzer.pdf  # repairs 8, 222 pp
 Foundations/Type Theory/Homotopy Type Theory Univalent Foundations of Mathematics - The Univalent Foundations Program.pdf  # repairs 10, 490 pp
 Foundations/Category Theory/Categories for the working mathematician - Mac Lane.pdf  # repairs 315, 315 pp
+Algebra/Commutative Algebra/Undergraduate Commutative Algebra - 2nd ed - Reid.pdf  # other edition, 167 pp
+Analysis/Complex Analysis/Complex Analysis, Riemann Surfaces and Integrable Systems - Natanzon.pdf  # other edition, 148 pp
+Analysis/Measure and Integration/Measure and Integral An Introduction to Real Analysis - Wheeden and Zygmund.pdf  # other edition, 298 pp
+Calculus/Multivariable and Vector Calculus/Calculus Early Transcendentals - 7th ed - Stewart.pdf  # other edition, 1356 pp
+Calculus/Single-Variable Calculus/Calculus, Volume 1 One-Variable Calculus, with an Introduction to Linear Algebra - 2nd ed - Apostol.pdf  # other edition, 686 pp
+Differential Equations and Dynamics/Partial Differential Equations/Partial Differential Equations - 2nd ed - Evans.pdf  # other edition, 730 pp
+Foundations/Mathematical Logic/A Mathematical Introduction to Logic - 2nd ed - Enderton.pdf  # other edition, 330 pp
+Foundations/Mathematical Logic/Logic and Structure - 4th ed - van Dalen.pdf  # other edition, 280 pp
+Foundations/Set Theory/Elements of Mathematics Theory of Sets - Bourbaki - 2.pdf  # other edition, 404 pp
+Foundations/Set Theory/Set Theory - 3rd ed - Jech.pdf  # other edition, 752 pp
+Foundations/Type Theory/Simple Type Theory - 2nd ed - Farmer.pdf  # other edition, 345 pp
+Physics/Classical Mechanics/An Introduction to Mechanics - 2nd ed - Kleppner and Kolenkow.pdf  # other edition, 564 pp
+Probability and Statistics/Probability Theory/Measure-Theoretic Probability - Shum.pdf  # other edition, 262 pp
