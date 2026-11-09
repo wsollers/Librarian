@@ -117,6 +117,12 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument(f"--{act}", dest="set_action", action="store_const",
                        const="edition" if act == "edition-copy" else act,
                        help=f"set: action {'edition (other edition, processed last)' if act == 'edition-copy' else act}")
+    p = sub.add_parser("toc", help="tables of contents read by Codex for books whose contents the parser cannot read")
+    p.add_argument("--select", help="these books (path substring or sha prefix), weak sections or not")
+    p.add_argument("--weak", action="store_true", help="every book whose sections look wrong (Physics, Calculus excluded)")
+    p.add_argument("--force", action="store_true", help="ask Codex again even if a toc.json exists")
+    p.add_argument("--dry-run", action="store_true", help="list the books only")
+    p.add_argument("--workers", type=int, default=2)
     p = sub.add_parser("store", help="carry out reports/ingest-plan.yaml: file, tag, queue OCR (dry run unless --apply)")
     p.add_argument("--apply", action="store_true")
     p.add_argument("--no-ocr", action="store_true", help="file and queue, but do not start or hand over OCR")
@@ -228,6 +234,12 @@ def main(argv: list[str] | None = None) -> int:
         else:
             summary["report"] = ingest.render(cfg, ingest.load_plan(cfg))
         print(f"report: {summary.get('report')}", file=sys.stderr)
+    elif a.cmd == "toc":
+        from . import toc
+        if not a.select and not a.weak:
+            raise SystemExit("toc: give --weak or --select")
+        summary.update(toc.run(cfg, connect(cfg.db_path), select=a.select, weak_only=not a.select,
+                               force=a.force, dry_run=a.dry_run, workers=a.workers))
     elif a.cmd == "store":
         from . import ingest
         summary.update(ingest.store(cfg, connect(cfg.db_path), apply=a.apply, start_ocr=not a.no_ocr))

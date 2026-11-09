@@ -202,6 +202,31 @@ def toc_entries(pdf: Optional[Path], pages: dict[int, list[str]], methods: dict[
     return max(runs, key=len) if runs else []
 
 
+def codex_toc(obj: Path) -> list[Entry]:
+    """Contents read by Codex (librarian toc) for books whose contents pages the parser cannot read:
+    objects/<sha>/toc.json, [{"level", "number", "title", "page"}, ...]."""
+    import json
+    f = obj / "toc.json"
+    if not f.is_file():
+        return []
+    try:
+        data = json.loads(f.read_text(encoding="utf-8"))
+    except ValueError:
+        return []
+    out = []
+    for d in data.get("entries", []):
+        t, pg = str(d.get("title") or "").strip(), str(d.get("page") or "").strip()
+        if not t:
+            continue
+        try:
+            lv = max(0, min(3, int(d.get("level", 1))))
+        except (TypeError, ValueError):
+            lv = 1
+        num = d.get("number")
+        out.append(Entry(lv, str(num).strip() if num not in (None, "") else None, t[:200], pg.lower()))
+    return out
+
+
 def printed_to_pdf(printed: str, mapping: dict[int, Optional[str]]) -> Optional[int]:
     exact = [p for p, v in mapping.items() if v == printed]
     if exact:
@@ -222,6 +247,41 @@ def title_on_page(entry: Entry, lines: list[str]) -> bool:
         return False
     top = " ".join(lines[:15]).lower()
     return sum(w in top for w in want) >= max(1, (len(want) + 1) // 2)
+
+
+def heading_in(entry: Entry, lines: list[str]) -> bool:
+    """A heading anywhere on the page: a line starting with the entry's number (or its last part,
+    "3." for 19.3) whose words, with the next line, match the title."""
+    num = (entry.number or "").strip()
+    keys = {num, num.split(".")[-1]} - {""}
+    want = [w for w in _WORD.findall(entry.title.lower()) if w not in {"the", "and", "for", "with", "of"}][:4]
+    if not want:
+        return False
+    for i, ln in enumerate(lines):
+        t = ln.replace("#", "").replace("*", "").strip()
+        if keys and not any(re.match(re.escape(k) + r"[.)]?\s", t) for k in keys):
+            continue
+        txt = (t + " " + (lines[i + 1] if i + 1 < len(lines) else "")).lower()
+        if sum(w in txt for w in want) >= max(1, (len(want) + 1) // 2):
+            return True
+    return False
+
+
+def place_unpaged(entries: list[Entry], pages: dict[int, list[str]]) -> None:
+    """Entries the contents gives without a page (sections run together in a paragraph): look for
+    the heading between the neighbouring located entries."""
+    last = 0
+    for i, e in enumerate(entries):
+        if e.pdf:
+            last = e.pdf
+            continue
+        if e.printed:
+            continue
+        hi = next((f.pdf for f in entries[i + 1:] if f.pdf), max(pages) if pages else 0)
+        for q in range(max(last, 1), hi + 1):
+            if q in pages and heading_in(e, pages[q]):
+                e.pdf, e.verified, last = q, True, q
+                break
 
 
 def heads_entries(pages: dict[int, list[str]]) -> list[Entry]:
@@ -245,7 +305,10 @@ def build(cfg: Config, con: sqlite3.Connection, sha: str, title: str, path: str)
     mapping = {p: v for p, v in con.execute("SELECT pdf_page, printed_page FROM pages WHERE sha256=?", (sha,))}
     methods = {p: m for p, m in con.execute("SELECT pdf_page, method FROM pages WHERE sha256=?", (sha,))}
     pdf = cfg.sources / path if path.lower().endswith(".pdf") else None
-    entries, source = toc_entries(pdf, pages, methods), "toc"
+    entries = codex_toc(obj)
+    source = "codex" if entries else "toc"
+    if not entries:
+        entries = toc_entries(pdf, pages, methods)
 
     toc_end = 0
     for e in entries:
@@ -257,6 +320,8 @@ def build(cfg: Config, con: sqlite3.Connection, sha: str, title: str, path: str)
             if q in pages and title_on_page(e, pages[q]):
                 e.pdf, e.verified = q, True
                 break
+    if source == "codex":
+        place_unpaged(entries, pages)
     entries = [e for e in entries if e.pdf]
     # keep entries in increasing page order (drop ones that jump backwards: misparsed lines)
     ordered, last = [], 0
@@ -265,7 +330,7 @@ def build(cfg: Config, con: sqlite3.Connection, sha: str, title: str, path: str)
             ordered.append(e)
             last = e.pdf
     entries = ordered
-    if len(entries) < 3 or sum(e.verified for e in entries) < 0.3 * len(entries):
+    if source != "codex" and (len(entries) < 3 or sum(e.verified for e in entries) < 0.3 * len(entries)):
         heads = heads_entries(pages)
         if len(heads) >= 3:
             entries, source = heads, "heads"
