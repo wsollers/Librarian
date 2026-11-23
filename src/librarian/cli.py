@@ -48,6 +48,9 @@ def _utf8_stdio() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
+    if args[:1] == ["api"]:
+        from .api import main as api_main
+        return api_main(args[1:])
     if args[:1] == ["mcp"]:   # MCP server on stdio: nothing may be printed to stdout before it takes over
         from .mcp_server import main as mcp_main
         return mcp_main()

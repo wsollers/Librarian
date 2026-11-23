@@ -49,8 +49,8 @@ if ((Test-Path $Lock) -and -not $Relock) {
 } else {
     Step "Installing CUDA PyTorch ($Cuda)"
     & $Py -m pip install --quiet torch --index-url $TorchIndex
-    Step "Installing librarian[embed,dev,mcp]"
-    & $Py -m pip install --quiet -e ".[embed,dev,mcp]"
+    Step "Installing librarian[embed,dev,mcp,api]"
+    & $Py -m pip install --quiet -e ".[embed,dev,mcp,api]"
     Step "Freezing requirements.lock"
     $frozen = & $Py -m pip freeze --exclude-editable
     [IO.File]::WriteAllLines($Lock, $frozen, (New-Object Text.UTF8Encoding $false))  # no BOM
@@ -64,6 +64,11 @@ if ($LASTEXITCODE -ne 0) {
     & $Py -m pip install --quiet "mcp>=1.2,<2"
     if ($LASTEXITCODE -ne 0) { throw "pip failed (mcp)" }
 }
+
+# Older locks do not include the HTTP server. Resolve only missing API requirements.
+Step "Checking LAN API dependencies"
+& $Py -m pip install --quiet -e ".[api]"
+if ($LASTEXITCODE -ne 0) { throw "pip failed (api)" }
 
 Step "Checking tools"
 foreach ($t in "pdfinfo", "pdftotext", "pdftoppm", "pdfimages") {

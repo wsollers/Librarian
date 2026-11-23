@@ -200,7 +200,10 @@ def loading_reply(st: "State") -> dict:
                        "a minute). Call status until ready is true, then retry this call."}
 
 
-def build(state_holder: dict):
+READ_TOOLS = frozenset({"search", "read_page", "list_books", "contents", "subjects", "status"})
+
+
+def build(state_holder: dict, operations: Optional[dict] = None):
     from mcp.server.fastmcp import FastMCP
     import anyio
 
@@ -225,6 +228,14 @@ def build(state_holder: dict):
 
     app = FastMCP("librarian", instructions=INSTRUCTIONS, lifespan=lifespan)
 
+    def tool():
+        """Export shared read operations without exposing management tools to HTTP."""
+        def register(fn):
+            if operations is not None and fn.__name__ in READ_TOOLS:
+                operations[fn.__name__] = fn
+            return app.tool()(fn)
+        return register
+
     async def run(fn):
         st: State = state_holder["state"]
         if not st.ready.is_set():
@@ -239,7 +250,7 @@ def build(state_holder: dict):
                 return fn(st)
         return await anyio.to_thread.run_sync(locked)
 
-    @app.tool()
+    @tool()
     async def search(query: str, k: int = 10, author: Optional[str] = None, book: Optional[str] = None,
                      chapter: Optional[str] = None, section: Optional[str] = None, mode: str = "hybrid",
                      expand: bool = False, rerank: bool = True, subject: Optional[str] = None) -> dict:
@@ -283,7 +294,7 @@ def build(state_holder: dict):
             return out
         return await run(go)
 
-    @app.tool()
+    @tool()
     async def read_page(book: str, pdf_page: Optional[int] = None, printed_page: Optional[str] = None,
                         line_start: Optional[int] = None, line_end: Optional[int] = None, context: int = 6) -> dict:
         """Read a page of a book, lines numbered as in search hits. Do this before asserting what a book says.
@@ -332,9 +343,9 @@ def build(state_holder: dict):
             return out
         return await run(go)
 
-    @app.tool()
+    @tool()
     async def list_books(filter: Optional[str] = None, author: Optional[str] = None, limit: int = 50,
-                         subject: Optional[str] = None) -> dict:
+                         subject: Optional[str] = None, offset: int = 0) -> dict:
         """List indexed books. filter: substring of title or file path (the path holds the subject folders,
         e.g. "Analysis/Functional"); author: substring of the author; subject: subject folders, as for
         search ("Metric Spaces, Topology")."""
@@ -357,12 +368,12 @@ def build(state_holder: dict):
             w = " AND ".join(where)
             total = st.con.execute(f"SELECT count(*) FROM books b WHERE {w}", args).fetchone()[0]
             rows = st.con.execute(f"SELECT b.title, b.author, b.path, b.pdf_pages, b.sha256 FROM books b WHERE {w} "
-                                  f"ORDER BY b.path LIMIT ?", args + [max(1, min(limit, 500))]).fetchall()
+                                  f"ORDER BY b.path LIMIT ? OFFSET ?", args + [max(1, min(limit, 500)), max(0, offset)]).fetchall()
             return {"total": total, "books": [{"title": r[0], "author": r[1], "folder": str(Path(r[2]).parent).replace("\\", "/"),
-                                                "pdf_pages": r[3], "sha256": r[4][:16]} for r in rows]}
+                                                "pdf_pages": r[3], "sha256": r[4]} for r in rows]}
         return await run(go)
 
-    @app.tool()
+    @tool()
     async def find_books(query: str, subject: Optional[str] = None, k: int = 20) -> dict:
         """Books about a topic, judged by their own title, table of contents and preface/introduction
         (not by page text): "Fourier series", "stochastic differential equations", "Lebesgue integral".
@@ -386,7 +397,7 @@ def build(state_holder: dict):
             return {"books": found}
         return await run(go)
 
-    @app.tool()
+    @tool()
     async def profile(book: str) -> dict:
         """One book's profile: its table of contents (chapters) and its preface or introduction text.
         book: sha256 (prefix) or a title/author substring that names one book."""
@@ -403,7 +414,7 @@ def build(state_holder: dict):
             return p or {"error": f"no profile for {hit[1]!r} (not indexed, or librarian profiles not run)"}
         return await run(go)
 
-    @app.tool()
+    @tool()
     async def subjects() -> dict:
         """The library's subject folders (for the subject filter of search and list_books), with the number
         of indexed books in each, subfolders included."""
@@ -412,7 +423,7 @@ def build(state_holder: dict):
             return {"subjects": all_subjects(st.con)}
         return await run(go)
 
-    @app.tool()
+    @tool()
     async def contents(book: str, depth: int = 2) -> dict:
         """Table of contents of one book: chapters (and sections down to `depth`: 1 chapters, 2 sections,
         3 subsections) with printed and PDF page ranges. book: sha256 or a title/author substring."""
@@ -431,7 +442,7 @@ def build(state_holder: dict):
                                   "pdf_pages": [s[4], s[5]]} for s in secs] or "no contents parsed for this book"}
         return await run(go)
 
-    @app.tool()
+    @tool()
     async def intake_check(run: bool = False) -> dict:
         """New books waiting in the inbox folders (Downloads, Drive 'Saved from Chrome' and 'Input'):
         the last check's counts (new, duplicate of a library book, possible other edition, paper, ...),
@@ -441,7 +452,7 @@ def build(state_holder: dict):
         st: State = state_holder["state"]
         return await anyio.to_thread.run_sync(lambda: _intake_check(st.cfg, run))
 
-    @app.tool()
+    @tool()
     async def ingest(run: bool = False) -> dict:
         """New books from the inbox folders. run=true starts `librarian ingest` in the background:
         exact duplicates deleted, papers moved to the papers folder, then each remaining book triaged
@@ -451,7 +462,7 @@ def build(state_holder: dict):
         st: State = state_holder["state"]
         return await anyio.to_thread.run_sync(lambda: _background(st.cfg, "ingest", ["ingest"], run, "ingest.md"))
 
-    @app.tool()
+    @tool()
     async def ingest_set(item: int, subject: Optional[str] = None, action: Optional[str] = None,
                          title: Optional[str] = None, author: Optional[str] = None,
                          surnames: Optional[str] = None, edition: Optional[str] = None) -> dict:
@@ -476,7 +487,7 @@ def build(state_holder: dict):
         except SystemExit as e:
             return {"error": str(e)}
 
-    @app.tool()
+    @tool()
     async def store(apply: bool = False) -> dict:
         """Carry out the ingest plan. apply=false: what would happen (counts). apply=true starts
         `librarian store --apply` in the background: books copied into their subject folders (inbox
@@ -499,7 +510,7 @@ def build(state_holder: dict):
                 return {"error": str(e)}
         return await anyio.to_thread.run_sync(lambda: _background(st.cfg, "store", ["store", "--apply"], True, None))
 
-    @app.tool()
+    @tool()
     async def status() -> dict:
         """Index and server state: build date, books and pages indexed, models and GPU, Ollama."""
         st: State = state_holder["state"]

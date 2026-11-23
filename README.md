@@ -89,6 +89,58 @@ uses a running Ollama, or starts `ollama serve` itself (in a Windows Job Object,
 the server), and loads `LIBRARIAN_EXPAND_MODEL` with `keep_alive=-1`. On exit it unloads the
 model and stops Ollama only if it started it. Log: `<data>\logs\<stamp>-mcp.log`.
 
+## Network search: Windows host and Linux clients
+
+The read-only REST API and HTTP MCP endpoint are implemented. Follow the
+[WinSW setup guide](docs/windows-services.md) for credentials, local HTTPS certificates, Windows Firewall,
+Linux REST/Codex configuration, and automatic startup. The configured server is `192.168.1.243` and the allowed client network is `192.168.1.0/24`; no VPN, cloud relay, or public tunnel is used.
+
+The backend binds only to `127.0.0.1:8765`. Caddy serves HTTPS on the selected LAN IP;
+Windows Firewall and Caddy restrict TCP 443 to the LAN subnet. Every endpoint requires a separate,
+revocable client bearer token. The server stores hashes and reloads them on each request.
+
+```powershell
+scripts\bootstrap.ps1
+$apiState = "$env:LOCALAPPDATA\LibrarianApi"
+scripts\api-secrets.ps1 -Directory $apiState
+scripts\run.ps1 api token-add --tokens "$apiState\tokens.json" --client linux-codex --output "$apiState\linux-codex.token"
+scripts\api-host.ps1 -Mode api -StateDirectory $apiState -Hostname hal5000.fios-router.home
+```
+
+The commands above are for manual foreground operation. For automatic startup use the
+[WinSW installer](docs/windows-services.md#install), which provisions its own service accounts and credentials. This starts the localhost backend; complete the
+[HTTPS and firewall steps](docs/network.md#start-https-on-the-lan) before Linux connects.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /v1/search` | Existing filters; query, k (1–50), mode (hybrid/phrase/fts/semantic), rerank |
+| `GET /v1/books` | filter, author, subject, limit (1–100), offset |
+| `GET /v1/books/{id}/pages/{page}` | Line-numbered text; optional line_start, line_end, context (0–50) |
+| `GET /v1/books/{id}/contents` | Contents; optional depth (1–3) |
+| `GET /v1/subjects` | Subject filters |
+| `GET /v1/status` | Readiness and state: loading, ready, failed |
+| `/mcp` | search, read_page, list_books, contents, subjects, status |
+
+Book IDs are full SHA-256 strings; page numbers are PDF pages. Hits preserve printed-page and
+line citations and return HTTPS `page_url` links. PDF downloads and query expansion are not
+exposed. The local stdio MCP server also has management tools; HTTP never registers them.
+
+REST and MCP share one model instance and search lock. Request bodies are limited to 16 KiB,
+queries to 2,048 characters, and operation responses to 1 MiB. At most four operations run or
+wait for the search lock; excess calls receive 429. Operations return 504 after 60 seconds,
+but unfinished GPU/SQLite work retains its slot until it completes. Body uploads have a
+10-second deadline. Search returns 503 during startup; poll status until ready. MCP reports
+errors in tool result objects. Host/Origin checks, sanitized errors, and disabled HTTP access
+logs protect the boundary. Service telemetry is written to gitignored `.runtime/logs`, with
+90-day retention enforced at startup and after every HTTP request (including rejected requests).
+Logs record client/IP, request ID, route, status, duration, and operation hit counts; never tokens,
+query text, or book text. Restart after indexing to refresh model-side caches.
+
+Keep any future live search UI on the LAN service. A hosted Sites backend cannot directly
+reach it; adding a tunnel would change this boundary. Spaces can hold deliberately saved
+research and citations. Text returned to Codex may be sent to its model provider as part of
+the conversation, even though search runs locally.
+
 ## Inventory / book statuses
 
 | status | meaning |

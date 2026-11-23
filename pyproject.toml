@@ -21,6 +21,7 @@ embed = ["sentence-transformers>=3.0", "sqlite-vec>=0.1.6"]
 dev = ["pytest>=8"]
 # MCP server for the Claude desktop app (librarian mcp)
 mcp = ["mcp>=1.2,<2"]
+api = ["mcp>=1.30,<2", "starlette>=0.49,<2", "uvicorn>=0.35,<1", "pydantic>=2.11,<3"]
 
 [project.scripts]
 librarian = "librarian.cli:main"

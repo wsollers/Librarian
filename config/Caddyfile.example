@@ -1,0 +1,26 @@
+# Copy outside the repository. Set these environment variables in the proxy process:
+# LIBRARIAN_LAN_HOST=hal5000.home.arpa
+# LIBRARIAN_LAN_IP=<Windows LAN IPv4 address>
+# LIBRARIAN_CADDY_DATA=<private state directory>/caddy
+# LIBRARIAN_CLIENT_NETWORK=192.168.1.0/24
+{
+    admin off
+    auto_https disable_redirects
+    skip_install_trust
+    storage file_system {
+        root {$LIBRARIAN_CADDY_DATA}
+    }
+    servers {
+        protocols h1 h2
+    }
+}
+
+https://{$LIBRARIAN_LAN_HOST} {
+    bind {$LIBRARIAN_LAN_IP}
+    tls internal
+    @outside not remote_ip {$LIBRARIAN_CLIENT_NETWORK}
+    respond @outside "LAN access only" 403
+    reverse_proxy 127.0.0.1:8765 {
+        flush_interval -1
+    }
+}
