@@ -1,7 +1,8 @@
 <# Update existing WinSW configuration/log locations. Run elevated; preserves tokens and CA keys. #>
 param(
     [string]$InstallDirectory = "$env:ProgramData\Librarian\Services",
-    [string]$StateDirectory = "$env:ProgramData\Librarian\State"
+    [string]$StateDirectory = "$env:ProgramData\Librarian\State",
+    [ValidateSet('Preserve','Lan','Bearer')][string]$AuthMode = 'Preserve'
 )
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
@@ -12,6 +13,7 @@ if (-not ([Security.Principal.WindowsPrincipal]::new($identity)).IsInRole([Secur
 $envValues = @{}
 foreach ($entry in $proxy.service.env) { $envValues[$entry.name] = $entry.value }
 $modelDirectory = ($api.service.env | Where-Object name -eq HF_HOME).value
+if ($AuthMode -eq 'Preserve') { $AuthMode = if ($api.service.arguments -match '--trust-lan') { 'Lan' } else { 'Bearer' } }
 foreach ($name in @('LibrarianApi','LibrarianHttps')) {
     $svc = Get-CimInstance Win32_Service -Filter "Name='$name'"
     if ($svc.StartName -ine "NT SERVICE\$name" -or $svc.PathName -ine ('"' + (Join-Path $InstallDirectory "$name.exe") + '"')) { throw "Unexpected service identity/path: $name" }
@@ -36,7 +38,7 @@ foreach ($name in @('LibrarianApi','LibrarianHttps')) {
 }
 & (Join-Path $PSScriptRoot 'api-service-config.ps1') -OutputDirectory $InstallDirectory -StateDirectory $StateDirectory `
     -CaddyExe (Join-Path $InstallDirectory 'caddy.exe') -Hostname $envValues.LIBRARIAN_LAN_HOST `
-    -LanAddress $envValues.LIBRARIAN_LAN_IP -ClientNetwork $envValues.LIBRARIAN_CLIENT_NETWORK -ModelDirectory $modelDirectory
+    -LanAddress $envValues.LIBRARIAN_LAN_IP -ClientNetwork $envValues.LIBRARIAN_CLIENT_NETWORK -ModelDirectory $modelDirectory -AuthMode $AuthMode
 
 # Move individual service log files only. All resolved targets must stay under the log root.
 function MoveLogs($source, $filter, $destination) {

@@ -6,7 +6,8 @@ param(
     [string]$Hostname = 'hal5000.fios-router.home',
     [string]$LanAddress = '192.168.1.243',
     [string]$ClientNetwork = '192.168.1.0/24',
-    [string]$ModelDirectory = 'D:\Models\huggingface'
+    [string]$ModelDirectory = 'D:\Models\huggingface',
+    [ValidateSet('Lan','Bearer')][string]$AuthMode = 'Lan'
 )
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
@@ -21,6 +22,7 @@ foreach ($name in @('LibrarianApi','LibrarianHttps')) {
     if ($name -eq 'LibrarianApi') {
         $exe = Join-Path $Repo '.venv\Scripts\python.exe'
         $arguments = '-m librarian api serve --tokens "{0}\auth\tokens.json" --origin "https://{1}"' -f $StateDirectory,$Hostname
+        if ($AuthMode -eq 'Lan') { $arguments = '-m librarian api serve --trust-lan --origin "https://{0}"' -f $Hostname }
         $environment = '<env name="HF_HOME" value="{0}"/><env name="PYTHONIOENCODING" value="utf-8"/><env name="PYTHONDONTWRITEBYTECODE" value="1"/>' -f (Xml $ModelDirectory)
         $depend = ''
         $workingDirectory = $Repo

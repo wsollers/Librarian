@@ -17,7 +17,7 @@ def test_service_configs_have_isolated_accounts_and_direct_processes(tmp_path):
     state = tmp_path / "private state"
     subprocess.run([PS, "-NoProfile", "-File", str(REPO / "scripts/api-service-config.ps1"),
                     "-OutputDirectory", str(output), "-StateDirectory", str(state),
-                    "-CaddyExe", str(tmp_path / "caddy.exe")], check=True, capture_output=True)
+                    "-CaddyExe", str(tmp_path / "caddy.exe"), "-AuthMode", "Bearer"], check=True, capture_output=True)
     api = ET.parse(output / "LibrarianApi.xml").getroot()
     proxy = ET.parse(output / "LibrarianHttps.xml").getroot()
     for root in (api, proxy):

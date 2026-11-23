@@ -12,7 +12,8 @@ param(
     [string]$InterfaceAlias = 'Ethernet',
     [string]$ClientNetwork = '192.168.1.0/24',
     [string]$ModelDirectory = 'D:\Models\huggingface',
-    [switch]$Resume
+    [switch]$Resume,
+    [ValidateSet('Lan','Bearer')][string]$AuthMode = 'Lan'
 )
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
@@ -78,7 +79,7 @@ foreach ($name in @('LibrarianApi','LibrarianHttps')) {
 PrivateDirectory (Join-Path $StateDirectory 'caddy')
 PrivateDirectory (Join-Path $StateDirectory 'auth')
 & (Join-Path $PSScriptRoot 'api-service-config.ps1') -OutputDirectory $InstallDirectory -StateDirectory $StateDirectory `
-    -CaddyExe (Join-Path $InstallDirectory 'caddy.exe') -Hostname $Hostname -LanAddress $LanAddress -ClientNetwork $ClientNetwork -ModelDirectory $ModelDirectory
+    -CaddyExe (Join-Path $InstallDirectory 'caddy.exe') -Hostname $Hostname -LanAddress $LanAddress -ClientNetwork $ClientNetwork -ModelDirectory $ModelDirectory -AuthMode $AuthMode
 foreach ($name in @('LibrarianApi','LibrarianHttps')) {
     if (-not (Get-Service -Name $name -ErrorAction SilentlyContinue)) {
         & (Join-Path $InstallDirectory "$name.exe") install
@@ -110,7 +111,7 @@ try {
         New-Item -ItemType Directory -Path $path -Force | Out-Null
         Grant $path 'NT SERVICE\LibrarianApi' 'Modify'
     }
-    if (-not (Test-Path -LiteralPath (Join-Path $StateDirectory 'auth\tokens.json'))) {
+    if ($AuthMode -eq 'Bearer' -and -not (Test-Path -LiteralPath (Join-Path $StateDirectory 'auth\tokens.json'))) {
         & $python -m librarian api token-add --tokens (Join-Path $StateDirectory 'auth\tokens.json') --client zarathustra --output (Join-Path $StateDirectory 'zarathustra.token')
         if ($LASTEXITCODE -ne 0) { throw 'Client provisioning failed' }
     }
@@ -118,5 +119,5 @@ try {
 & (Join-Path $PSScriptRoot 'api-firewall.ps1') -LanAddress $LanAddress -InterfaceAlias $InterfaceAlias -ClientAddress $ClientNetwork
 Start-Service LibrarianApi
 Start-Service LibrarianHttps
-Write-Host "Services started. Transfer $StateDirectory\zarathustra.token and caddy\pki\authorities\local\root.crt securely to Zarathustra."
+Write-Host "Services started in $AuthMode mode. Public CA: $StateDirectory\caddy\pki\authorities\local\root.crt"
 Write-Host "Check https://$Hostname/v1/status for model readiness; service Running alone does not imply readiness."

@@ -96,27 +96,30 @@ The read-only REST API and HTTP MCP endpoint are implemented. Follow the
 Linux REST/Codex configuration, and automatic startup. The configured server is `192.168.1.243` and the allowed client network is `192.168.1.0/24`; no VPN, cloud relay, or public tunnel is used.
 
 The backend binds only to `127.0.0.1:8765`. Caddy serves HTTPS on the selected LAN IP;
-Windows Firewall and Caddy restrict TCP 443 to the LAN subnet. Every endpoint requires a separate,
-revocable client bearer token. The server stores hashes and reloads them on each request.
+Windows Firewall and Caddy restrict TCP 443 to `192.168.1.0/24`. **Current mode trusts the LAN:
+no token, environment variable, or OAuth login is required.** The API additionally checks the
+forwarded client address from its loopback proxy. Operations remain read-only.
 
-**Linux client setup:** the deployed public CA is tracked at
-[`config/certs/librarian-root.crt`](config/certs/librarian-root.crt). Store the token on Zarathustra
-in `~/.config/librarian/client.token` (permissions `600`), then run
-`export LIBRARIAN_TOKEN="$(cat ~/.config/librarian/client.token)"` before starting Codex.
-See [where to set the token](docs/windows-services.md#where-to-set-the-token) for the token's
-Windows location, secure entry instructions, and persistent shell setup.
+The public CA is tracked at [`config/certs/librarian-root.crt`](config/certs/librarian-root.crt).
+On Debian/Ubuntu, from the repository root:
 
-```powershell
-scripts\bootstrap.ps1
-$apiState = "$env:LOCALAPPDATA\LibrarianApi"
-scripts\api-secrets.ps1 -Directory $apiState
-scripts\run.ps1 api token-add --tokens "$apiState\tokens.json" --client linux-codex --output "$apiState\linux-codex.token"
-scripts\api-host.ps1 -Mode api -StateDirectory $apiState -Hostname hal5000.fios-router.home
+```bash
+sudo install -m 644 config/certs/librarian-root.crt /usr/local/share/ca-certificates/librarian-root.crt
+sudo update-ca-certificates
+curl https://hal5000.fios-router.home/v1/status
 ```
 
-The commands above are for manual foreground operation. For automatic startup use the
-[WinSW installer](docs/windows-services.md#install), which provisions its own service accounts and credentials. This starts the localhost backend; complete the
-[HTTPS and firewall steps](docs/network.md#start-https-on-the-lan) before Linux connects.
+In `~/.codex/config.toml`, use this entry and remove any previous `bearer_token_env_var` line:
+
+```toml
+[mcp_servers.librarian]
+url = "https://hal5000.fios-router.home/mcp"
+tool_timeout_sec = 75
+```
+
+Restart Codex after editing its configuration. See the [WinSW setup guide](docs/windows-services.md)
+for installing/updating the server. Bearer-token mode remains available as an explicit option
+for later; existing tokens are preserved but unused in LAN-trust mode.
 
 | Endpoint | Purpose |
 |---|---|

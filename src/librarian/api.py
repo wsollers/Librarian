@@ -5,6 +5,7 @@ import argparse
 import asyncio
 import hashlib
 import hmac
+import ipaddress
 import json
 import os
 import re
@@ -98,11 +99,12 @@ def save_tokens(path: Path, data: dict) -> None:
 
 class Boundary:
     """ASGI boundary protecting every route, including MCP and unknown routes."""
-    def __init__(self, app, tokens: Path, origin: str, telemetry: Telemetry):
+    def __init__(self, app, tokens: Path | None, origin: str, telemetry: Telemetry, trust_lan=False):
         self.app, self.tokens, self.origin = app, tokens, origin
         self.hosts = {urlsplit(origin).netloc, "127.0.0.1:8765", "localhost:8765"}
         self.active = 0
         self.telemetry = telemetry
+        self.trust_lan = trust_lan
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -147,16 +149,28 @@ class Boundary:
             return await reject(400, "Invalid host")
         if b"origin" in headers and headers[b"origin"].decode("latin1") != self.origin:
             return await reject(403, "Invalid origin")
-        token = headers.get(b"authorization", b"")
-        if not token.startswith(b"Bearer ") or len(token) > 512:
-            return await reject(401, "Authentication required")
-        try:
-            digest = hashlib.sha256(token[7:]).hexdigest()
-            client = next((name for name, value in read_tokens(self.tokens).items() if hmac.compare_digest(digest, value)), None)
-        except (OSError, ValueError):
-            return await reject(503, "Authentication unavailable")
-        if client is None:
-            return await reject(401, "Authentication required")
+        if self.trust_lan:
+            try:
+                peer = ipaddress.ip_address((scope.get('client') or ('', 0))[0])
+                if not peer.is_loopback:
+                    return await reject(403, 'Loopback proxy required')
+                forwarded = headers.get(b'x-forwarded-for')
+                if forwarded is not None and ipaddress.ip_address(forwarded.decode('ascii')) not in ipaddress.ip_network('192.168.1.0/24'):
+                    return await reject(403, 'LAN access only')
+            except (ValueError, UnicodeError):
+                return await reject(403, 'Invalid client address')
+            client = 'trusted-lan'
+        else:
+            token = headers.get(b"authorization", b"")
+            if not token.startswith(b"Bearer ") or len(token) > 512:
+                return await reject(401, "Authentication required")
+            try:
+                digest = hashlib.sha256(token[7:]).hexdigest()
+                client = next((name for name, value in read_tokens(self.tokens).items() if hmac.compare_digest(digest, value)), None)
+            except (OSError, ValueError):
+                return await reject(503, "Authentication unavailable")
+            if client is None:
+                return await reject(401, "Authentication required")
         scope['librarian_client'] = client
         if self.active >= 16:
             return await reject(429, "Too many requests")
@@ -263,7 +277,7 @@ class Service:
             return {"error": "Search timed out"}, 504
 
 
-def create_app(tokens: Path, origin: str, *, holder=None, operations=None, log_root: Path = ROOT):
+def create_app(tokens: Path | None, origin: str, *, holder=None, operations=None, log_root: Path = ROOT, trust_lan=False):
     from mcp.server.fastmcp import FastMCP
     from mcp.server.transport_security import TransportSecuritySettings
     from mcp.types import ToolAnnotations
@@ -271,7 +285,7 @@ def create_app(tokens: Path, origin: str, *, holder=None, operations=None, log_r
     parsed = urlsplit(origin)
     if parsed.scheme != "https" or not parsed.hostname or parsed.path or parsed.query or parsed.fragment or parsed.username:
         raise ValueError("origin must be an HTTPS origin without a path")
-    if not read_tokens(tokens):
+    if not trust_lan and (tokens is None or not read_tokens(tokens)):
         raise ValueError("provision at least one client token before starting")
     supplied_state = holder is not None
     holder = holder if supplied_state else {}
@@ -367,14 +381,16 @@ def create_app(tokens: Path, origin: str, *, holder=None, operations=None, log_r
         route("/v1/status", "status"), Mount("/", app=mcp.streamable_http_app())], lifespan=lifespan)
     app.state.service = service
     app.state.mcp = mcp
-    return Boundary(app, tokens, origin, telemetry)
+    return Boundary(app, tokens, origin, telemetry, trust_lan=trust_lan)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     serve = sub.add_parser("serve")
-    serve.add_argument("--tokens", type=Path, required=True)
+    auth = serve.add_mutually_exclusive_group(required=True)
+    auth.add_argument("--tokens", type=Path)
+    auth.add_argument("--trust-lan", action="store_true", help="Trust 192.168.1.0/24 via the loopback HTTPS proxy without tokens")
     serve.add_argument("--origin", required=True, help="HTTPS LAN origin, e.g. https://hal5000.home.arpa")
     for cmd in ("token-add", "token-revoke"):
         p = sub.add_parser(cmd)
@@ -405,10 +421,10 @@ def main(argv=None):
         print("Client credential updated; token values are never printed.")
         return 0
     import uvicorn
-    tokens = args.tokens.resolve()
+    tokens = args.tokens.resolve() if args.tokens else None
     os.chdir(mcp_server.REPO)
     mcp_server.load_env(mcp_server.REPO / ".env")
-    app = create_app(tokens, args.origin)
+    app = create_app(tokens, args.origin, trust_lan=args.trust_lan)
     uvicorn.run(app, host="127.0.0.1", port=8765, workers=1, access_log=False,
                 proxy_headers=False, limit_concurrency=32, timeout_keep_alive=5)
     return 0

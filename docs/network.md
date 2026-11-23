@@ -1,7 +1,8 @@
 # LAN deployment
 
 **For the selected WinSW deployment, start with [Windows services](windows-services.md).**
-The foreground instructions below are for manual diagnosis or an alternate installation.
+The current deployment trusts `192.168.1.0/24` without tokens. The token-based instructions
+below describe optional bearer mode; use `-AuthMode Bearer` for that alternate installation.
 
 The backend binds only to `127.0.0.1:8765`. Caddy terminates HTTPS on a specific Windows LAN
 IPv4 address. Windows Firewall permits only approved Linux client addresses. No VPN, cloud

@@ -5,7 +5,8 @@ param(
     [Parameter(Mandatory)][string]$Hostname,
     [string]$LanAddress,
     [string]$CaddyExe,
-    [string]$ClientNetwork = '192.168.1.0/24'
+    [string]$ClientNetwork = '192.168.1.0/24',
+    [ValidateSet('Lan','Bearer')][string]$AuthMode = 'Lan'
 )
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
@@ -13,7 +14,11 @@ Set-Location $Repo
 if ($Hostname -notmatch '^[a-zA-Z0-9][a-zA-Z0-9.-]*$') { throw 'Invalid hostname' }
 $statePath = (Resolve-Path -LiteralPath $StateDirectory).Path
 if ($Mode -eq 'api') {
-    & (Join-Path $Repo 'scripts\run.ps1') api serve --tokens (Join-Path $statePath 'tokens.json') --origin "https://$Hostname"
+    if ($AuthMode -eq 'Lan') {
+        & (Join-Path $Repo 'scripts\run.ps1') api serve --trust-lan --origin "https://$Hostname"
+    } else {
+        & (Join-Path $Repo 'scripts\run.ps1') api serve --tokens (Join-Path $statePath 'tokens.json') --origin "https://$Hostname"
+    }
 } else {
     $ip = [Net.IPAddress]::Parse($LanAddress)
     $b = $ip.GetAddressBytes()

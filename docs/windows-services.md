@@ -20,7 +20,8 @@ and an actual Windows reboot have not yet been verified.
 | Service binaries/config | `C:\ProgramData\Librarian\Services` |
 | Private state | `C:\ProgramData\Librarian\State` |
 
-Any device on that subnet may connect, but every API/MCP request still requires a valid token.
+**Current mode: LAN trust. Any device on `192.168.1.0/24` may use the read-only API/MCP
+without a token. HTTPS and the subnet restrictions remain enabled.**
 Both Windows Firewall and Caddy enforce the client network. Firewall scope includes the specific
 interface, local address and TCP port 443, across network profiles. This works even though this
 Ethernet connection is currently classified Public; no system-wide profile change is required.
@@ -43,7 +44,7 @@ scripts\api-startup.ps1 -WinSWExe .runtime\windows\WinSW-x64.exe -CaddyExe .runt
 ```
 
 Defaults are the values above. The installer creates private directories, generates WinSW XML,
-installs the services, grants filesystem permissions, provisions a `zarathustra` token, adds the
+installs the services, grants filesystem permissions, adds the
 firewall rule, and starts both services. It refuses to overwrite existing installation/state
 directories or services. For a failed partial install, inspect the error and existing state before
 retrying; do not delete credentials or CA keys to make the installer run again. After inspection,
@@ -69,6 +70,31 @@ scripts\api-service-config.ps1 -OutputDirectory .runtime\preview -StateDirectory
 
 ## Connect Zarathustra
 
+After installing the public CA below, no token setup is needed. Test with:
+
+```bash
+curl https://hal5000.fios-router.home/v1/status
+```
+
+Use this in `~/.codex/config.toml` and restart Codex:
+
+```toml
+[mcp_servers.librarian]
+url = "https://hal5000.fios-router.home/mcp"
+tool_timeout_sec = 75
+```
+
+Remove any old `bearer_token_env_var` setting. `codex mcp login` is not needed.
+
+To apply this mode to an existing Windows installation, run elevated:
+
+```powershell
+scripts\api-update-services.ps1 -AuthMode Lan
+```
+
+Updates without `-AuthMode` preserve the installed mode. To restore token authentication,
+use `-AuthMode Bearer` with a provisioned token store; token-management details follow.
+
 ### Public CA certificate
 
 The deployed public CA certificate is tracked at
@@ -84,7 +110,9 @@ sudo update-ca-certificates
 Expected file SHA-256: `6db10bae8eb72a08d72b202c0ae73e194c37a1c966cf2fa1ca89ff1946d931ca`.
 Only the public certificate is in Git. The CA private key stays on HAL5000.
 
-### Where to set the token
+### Optional bearer-token mode: where to set the token
+
+**Skip the remaining token instructions while LAN-trust mode is enabled.**
 
 **On Zarathustra, store the actual token in `~/.config/librarian/client.token`.** The existing
 token value is in `F:\repos\librarian\.runtime\zarathustra\client.token` on Windows (or the

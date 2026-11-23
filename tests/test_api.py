@@ -190,3 +190,22 @@ def test_real_sqlite_search_to_page(tmp_path):
                 st.con.execute("DELETE FROM books")
     finally:
         st.close()
+
+
+def test_explicit_lan_trust_needs_no_token_but_enforces_proxy_and_subnet(tmp_path):
+    ready = threading.Event()
+    ready.set()
+    holder = {'state': SimpleNamespace(ready=ready, error=None)}
+    app = api.create_app(None, ORIGIN, holder=holder, operations={}, log_root=tmp_path / 'logs', trust_lan=True)
+    with TestClient(app, base_url=ORIGIN, client=('127.0.0.1', 1234)) as client:
+        assert client.get('/v1/status').status_code == 200
+        assert client.get('/v1/status', headers={'X-Forwarded-For': '192.168.1.228'}).status_code == 200
+        for ip in ('10.30.38.1', '192.168.2.1', '1.1.1.1', 'malformed', '192.168.1.228, 1.1.1.1'):
+            assert client.get('/v1/status', headers={'X-Forwarded-For': ip}).status_code == 403
+        assert client.get('/v1/status', headers={'Origin': 'https://evil.example'}).status_code == 403
+        assert {t['name'] for t in rpc(client, 'tools/list').json()['result']['tools']} == mcp_server.READ_TOOLS
+    app = api.create_app(None, ORIGIN, holder=holder, operations={}, log_root=tmp_path / 'logs', trust_lan=True)
+    with TestClient(app, base_url=ORIGIN, client=('192.168.1.228', 1234)) as client:
+        assert client.get('/v1/status').status_code == 403  # must arrive through local Caddy
+    with pytest.raises(ValueError):
+        api.create_app(None, ORIGIN, holder=holder, operations={}, log_root=tmp_path / 'logs')
