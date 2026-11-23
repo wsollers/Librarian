@@ -99,6 +99,13 @@ The backend binds only to `127.0.0.1:8765`. Caddy serves HTTPS on the selected L
 Windows Firewall and Caddy restrict TCP 443 to the LAN subnet. Every endpoint requires a separate,
 revocable client bearer token. The server stores hashes and reloads them on each request.
 
+**Linux client setup:** the deployed public CA is tracked at
+[`config/certs/librarian-root.crt`](config/certs/librarian-root.crt). Store the token on Zarathustra
+in `~/.config/librarian/client.token` (permissions `600`), then run
+`export LIBRARIAN_TOKEN="$(cat ~/.config/librarian/client.token)"` before starting Codex.
+See [where to set the token](docs/windows-services.md#where-to-set-the-token) for the token's
+Windows location, secure entry instructions, and persistent shell setup.
+
 ```powershell
 scripts\bootstrap.ps1
 $apiState = "$env:LOCALAPPDATA\LibrarianApi"

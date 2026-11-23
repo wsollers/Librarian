@@ -69,6 +69,54 @@ scripts\api-service-config.ps1 -OutputDirectory .runtime\preview -StateDirectory
 
 ## Connect Zarathustra
 
+### Public CA certificate
+
+The deployed public CA certificate is tracked at
+[`config/certs/librarian-root.crt`](../config/certs/librarian-root.crt). After pulling the repository
+on Zarathustra, install it from the repository root (Debian/Ubuntu):
+
+```bash
+sha256sum config/certs/librarian-root.crt
+sudo install -m 644 config/certs/librarian-root.crt /usr/local/share/ca-certificates/librarian-root.crt
+sudo update-ca-certificates
+```
+
+Expected file SHA-256: `6db10bae8eb72a08d72b202c0ae73e194c37a1c966cf2fa1ca89ff1946d931ca`.
+Only the public certificate is in Git. The CA private key stays on HAL5000.
+
+### Where to set the token
+
+**On Zarathustra, store the actual token in `~/.config/librarian/client.token`.** The existing
+token value is in `F:\repos\librarian\.runtime\zarathustra\client.token` on Windows (or the
+administrator-only `C:\ProgramData\Librarian\State\zarathustra.token`). Transfer that file securely,
+or paste its contents at the hidden prompt below. Run as the Linux user who runs Codex:
+
+```bash
+mkdir -p ~/.config/librarian
+chmod 700 ~/.config/librarian
+read -rsp 'Paste Librarian token: ' LIBRARIAN_TOKEN
+printf '\n'
+(umask 077; printf '%s\n' "$LIBRARIAN_TOKEN" > ~/.config/librarian/client.token)
+chmod 600 ~/.config/librarian/client.token
+export LIBRARIAN_TOKEN
+```
+
+For each new shell, load the saved value before starting Codex:
+
+```bash
+export LIBRARIAN_TOKEN="$(cat ~/.config/librarian/client.token)"
+codex
+```
+
+To load it automatically in Bash, add **that export line** to `~/.bashrc`; do not put the literal
+token in shell startup files or Git. A running Codex process must be restarted from the shell
+with the variable set. `bearer_token_env_var = "LIBRARIAN_TOKEN"` in `~/.codex/config.toml`
+names the environment variable; it is not the place to paste the token itself. The full MCP
+configuration is below. If using a launcher other than the shell, its process must receive the
+same environment variable.
+
+### Connection files and verification
+
 Using an elevated shell on Windows, securely transfer these files to the Linux user:
 
 - `C:\ProgramData\Librarian\State\zarathustra.token` → `~/.config/librarian/client.token`
